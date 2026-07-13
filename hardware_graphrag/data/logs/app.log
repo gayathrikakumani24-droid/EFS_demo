@@ -1,0 +1,506 @@
+2026-07-11 12:27:42 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-11 12:30:13 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-11 12:31:07 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-51-73_SEC A4.docx': 75 sections.
+2026-07-11 12:31:07 | INFO     | graphrag.chunking.hierarchical | Created 78 hierarchical chunks for doc doc_44e78e0366.
+2026-07-11 12:31:11 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:11 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_5f8e5e9e64; falling back to heuristics.
+2026-07-11 12:31:12 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:12 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_5488fbc43a; falling back to heuristics.
+2026-07-11 12:31:13 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:13 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_25e6994399; falling back to heuristics.
+2026-07-11 12:31:15 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:15 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ebb7bb0326; falling back to heuristics.
+2026-07-11 12:31:16 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:16 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_008bff09ca; falling back to heuristics.
+2026-07-11 12:31:17 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:17 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_afa5311667; falling back to heuristics.
+2026-07-11 12:31:19 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:19 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_67a1124b71; falling back to heuristics.
+2026-07-11 12:31:20 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:20 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_75637dc5b9; falling back to heuristics.
+2026-07-11 12:31:21 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:21 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_04b36de80f; falling back to heuristics.
+2026-07-11 12:31:22 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:22 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_55f89e4f21; falling back to heuristics.
+2026-07-11 12:31:24 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:24 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9b19e021ac; falling back to heuristics.
+2026-07-11 12:31:25 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:25 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_0b5d7aed87; falling back to heuristics.
+2026-07-11 12:31:26 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:26 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_abf4efb380; falling back to heuristics.
+2026-07-11 12:31:28 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:28 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_1cb78be118; falling back to heuristics.
+2026-07-11 12:31:29 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:29 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_d97ed670c2; falling back to heuristics.
+2026-07-11 12:31:30 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:30 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_b62d89c161; falling back to heuristics.
+2026-07-11 12:31:32 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:32 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2b7393cff9; falling back to heuristics.
+2026-07-11 12:31:33 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:33 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_86a30eca77; falling back to heuristics.
+2026-07-11 12:31:34 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:34 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_6a2c63f77f; falling back to heuristics.
+2026-07-11 12:31:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_c92082b69b; falling back to heuristics.
+2026-07-11 12:31:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f903291e03; falling back to heuristics.
+2026-07-11 12:31:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_74aaed9c26; falling back to heuristics.
+2026-07-11 12:31:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_1271f5fb37; falling back to heuristics.
+2026-07-11 12:31:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:41 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3a81ab7969; falling back to heuristics.
+2026-07-11 12:31:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_62b84b9648; falling back to heuristics.
+2026-07-11 12:31:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2997771612; falling back to heuristics.
+2026-07-11 12:31:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4b45088bc8; falling back to heuristics.
+2026-07-11 12:31:46 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_6408c9e003; falling back to heuristics.
+2026-07-11 12:31:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:48 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_220ca233ea; falling back to heuristics.
+2026-07-11 12:31:49 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:49 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_c22883563f; falling back to heuristics.
+2026-07-11 12:31:50 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:50 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_e5b3f47a70; falling back to heuristics.
+2026-07-11 12:31:52 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:52 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_a6b8e8d8a3; falling back to heuristics.
+2026-07-11 12:31:53 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:53 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_86106fb420; falling back to heuristics.
+2026-07-11 12:31:55 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:55 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_63e78cf589; falling back to heuristics.
+2026-07-11 12:31:56 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:56 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_16fd8fe1de; falling back to heuristics.
+2026-07-11 12:31:57 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:57 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_66831c6581; falling back to heuristics.
+2026-07-11 12:31:59 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:31:59 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4926c2f8f2; falling back to heuristics.
+2026-07-11 12:32:00 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:00 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2469a2789d; falling back to heuristics.
+2026-07-11 12:32:01 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:01 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3c15c95ebe; falling back to heuristics.
+2026-07-11 12:32:03 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:03 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_affca6dbc1; falling back to heuristics.
+2026-07-11 12:32:04 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:04 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_e35eeeb6d0; falling back to heuristics.
+2026-07-11 12:32:05 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:05 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ddab8171e8; falling back to heuristics.
+2026-07-11 12:32:07 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:07 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ea55a0abe2; falling back to heuristics.
+2026-07-11 12:32:08 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:08 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_05486a1e79; falling back to heuristics.
+2026-07-11 12:32:09 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:09 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ee19ba256f; falling back to heuristics.
+2026-07-11 12:32:10 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:10 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_607c2eb584; falling back to heuristics.
+2026-07-11 12:32:12 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:12 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9b4c9cf009; falling back to heuristics.
+2026-07-11 12:32:13 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:13 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f5453c7db7; falling back to heuristics.
+2026-07-11 12:32:14 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:14 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_c2acc38340; falling back to heuristics.
+2026-07-11 12:32:16 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:16 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3b8dea11dd; falling back to heuristics.
+2026-07-11 12:32:17 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:17 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_7d9de990f0; falling back to heuristics.
+2026-07-11 12:32:19 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:19 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2b447b0a62; falling back to heuristics.
+2026-07-11 12:32:20 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:20 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_926f61ec6a; falling back to heuristics.
+2026-07-11 12:32:21 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:21 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_6aad2e5ddc; falling back to heuristics.
+2026-07-11 12:32:23 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:23 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3f99cabd6b; falling back to heuristics.
+2026-07-11 12:32:24 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:24 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_5bdb3646de; falling back to heuristics.
+2026-07-11 12:32:25 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:25 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_e184eb0e1c; falling back to heuristics.
+2026-07-11 12:32:27 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:27 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_b86c162de6; falling back to heuristics.
+2026-07-11 12:32:28 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:28 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3b7782de05; falling back to heuristics.
+2026-07-11 12:32:29 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:29 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ef47cc0c86; falling back to heuristics.
+2026-07-11 12:32:31 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:31 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_898aa12273; falling back to heuristics.
+2026-07-11 12:32:32 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:32 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_55497e641f; falling back to heuristics.
+2026-07-11 12:32:33 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:33 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_01d6fe4541; falling back to heuristics.
+2026-07-11 12:32:35 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:35 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2d8c1e366b; falling back to heuristics.
+2026-07-11 12:32:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_c1227c66f1; falling back to heuristics.
+2026-07-11 12:32:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ff5d45b87b; falling back to heuristics.
+2026-07-11 12:32:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_02ee21e943; falling back to heuristics.
+2026-07-11 12:32:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_64f0d43366; falling back to heuristics.
+2026-07-11 12:32:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:41 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_a070e3e9e1; falling back to heuristics.
+2026-07-11 12:32:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_26cdc7c5a6; falling back to heuristics.
+2026-07-11 12:32:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f74276a67c; falling back to heuristics.
+2026-07-11 12:32:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_a78f7aaa92; falling back to heuristics.
+2026-07-11 12:32:46 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_1ec01fc7f4; falling back to heuristics.
+2026-07-11 12:32:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:48 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9c1bfca49e; falling back to heuristics.
+2026-07-11 12:32:49 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:49 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_e8ca93b67e; falling back to heuristics.
+2026-07-11 12:32:50 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:50 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_19eaff8e4a; falling back to heuristics.
+2026-07-11 12:32:52 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:52 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_82498d4f46; falling back to heuristics.
+2026-07-11 12:32:53 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:53 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_b47353f2a9; falling back to heuristics.
+2026-07-11 12:32:54 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:54 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_5f8e5e9e64; falling back to heuristics.
+2026-07-11 12:32:56 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:56 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_5488fbc43a; falling back to heuristics.
+2026-07-11 12:32:57 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:57 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_25e6994399; falling back to heuristics.
+2026-07-11 12:32:58 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:32:58 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_afa5311667; falling back to heuristics.
+2026-07-11 12:33:00 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:00 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_67a1124b71; falling back to heuristics.
+2026-07-11 12:33:01 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:01 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_04b36de80f; falling back to heuristics.
+2026-07-11 12:33:02 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:03 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_55f89e4f21; falling back to heuristics.
+2026-07-11 12:33:04 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:04 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_9b19e021ac; falling back to heuristics.
+2026-07-11 12:33:05 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:05 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_1cb78be118; falling back to heuristics.
+2026-07-11 12:33:06 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:07 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_d97ed670c2; falling back to heuristics.
+2026-07-11 12:33:08 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:08 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_2b7393cff9; falling back to heuristics.
+2026-07-11 12:33:09 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:09 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_86a30eca77; falling back to heuristics.
+2026-07-11 12:33:11 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:11 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_6a2c63f77f; falling back to heuristics.
+2026-07-11 12:33:12 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:12 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_f903291e03; falling back to heuristics.
+2026-07-11 12:33:14 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:14 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_74aaed9c26; falling back to heuristics.
+2026-07-11 12:33:15 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:15 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_1271f5fb37; falling back to heuristics.
+2026-07-11 12:33:17 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:17 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_86106fb420; falling back to heuristics.
+2026-07-11 12:33:18 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:18 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_63e78cf589; falling back to heuristics.
+2026-07-11 12:33:19 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:19 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_16fd8fe1de; falling back to heuristics.
+2026-07-11 12:33:21 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:21 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_2469a2789d; falling back to heuristics.
+2026-07-11 12:33:22 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:22 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_ddab8171e8; falling back to heuristics.
+2026-07-11 12:33:23 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:23 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_7d9de990f0; falling back to heuristics.
+2026-07-11 12:33:25 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:25 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_b86c162de6; falling back to heuristics.
+2026-07-11 12:33:26 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:26 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_3b7782de05; falling back to heuristics.
+2026-07-11 12:33:27 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:27 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_ef47cc0c86; falling back to heuristics.
+2026-07-11 12:33:29 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:29 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_898aa12273; falling back to heuristics.
+2026-07-11 12:33:30 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:30 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_55497e641f; falling back to heuristics.
+2026-07-11 12:33:32 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:32 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_01d6fe4541; falling back to heuristics.
+2026-07-11 12:33:33 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:33 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_02ee21e943; falling back to heuristics.
+2026-07-11 12:33:34 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Connection error.
+2026-07-11 12:33:34 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_f74276a67c; falling back to heuristics.
+2026-07-11 12:33:35 | INFO     | graphrag.normalization.entities | Normalized 203 raw entity mentions into 62 unique canonical entities.
+2026-07-11 12:33:39 | INFO     | graphrag.graph.builder    | Graph build complete: {'nodes': 62, 'edges': 441}
+2026-07-11 12:34:25 | INFO     | graphrag.vector.faiss_store | Added 78 chunks to vector store (total: 78).
+2026-07-11 12:43:56 | ERROR    | graphrag.extraction.llm_client | LLM text completion failed: Connection error.
+2026-07-11 12:43:56 | INFO     | graphrag.retrieval.hybrid | Answered question with 31 merged chunks (6 vector, 31 graph-linked).
+2026-07-11 12:54:11 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 62 nodes, 441 edges.
+2026-07-11 12:54:11 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-11 12:55:12 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-11 12:56:08 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx': 828 sections.
+2026-07-11 12:56:09 | INFO     | graphrag.chunking.hierarchical | Created 856 hierarchical chunks for doc doc_83c071541e.
+2026-07-11 12:56:11 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2d4d311309; falling back to heuristics.
+2026-07-11 12:56:20 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9d04d93cf5; falling back to heuristics.
+2026-07-11 12:56:20 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_6551e5ba04; falling back to heuristics.
+2026-07-11 12:56:20 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_c6353edb04; falling back to heuristics.
+2026-07-11 12:56:21 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_5169156ed1; falling back to heuristics.
+2026-07-11 12:56:22 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_71b291a700; falling back to heuristics.
+2026-07-11 12:56:28 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_1fed0add71; falling back to heuristics.
+2026-07-11 12:56:55 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_08c466c53a; falling back to heuristics.
+2026-07-11 12:56:58 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_69ca0a1628; falling back to heuristics.
+2026-07-11 12:57:01 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_294987fbcf; falling back to heuristics.
+2026-07-11 12:57:03 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_385db8985f; falling back to heuristics.
+2026-07-11 12:57:06 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Extra data: line 3 column 1 (char 19)
+2026-07-11 12:57:06 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_154e314513; falling back to heuristics.
+2026-07-11 12:57:16 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Invalid control character at: line 2 column 66 (char 80)
+2026-07-11 12:57:16 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_a83b24aa5f; falling back to heuristics.
+2026-07-11 12:57:29 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Invalid control character at: line 2 column 72 (char 86)
+2026-07-11 12:57:29 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4ca2ccde61; falling back to heuristics.
+2026-07-11 12:57:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_fca462b037; falling back to heuristics.
+2026-07-11 12:57:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_112b786e0e; falling back to heuristics.
+2026-07-11 12:57:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_b7d86d8878; falling back to heuristics.
+2026-07-11 12:58:07 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9dbcfe4cda; falling back to heuristics.
+2026-07-11 12:58:07 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4a0d13f99e; falling back to heuristics.
+2026-07-11 12:58:17 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_63d454fde2; falling back to heuristics.
+2026-07-11 12:58:52 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_d62a324e14; falling back to heuristics.
+2026-07-11 12:59:06 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_6f53c04b60; falling back to heuristics.
+2026-07-11 12:59:09 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2c0f284ce0; falling back to heuristics.
+2026-07-11 12:59:12 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_dddb553a0e; falling back to heuristics.
+2026-07-11 12:59:14 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_6eb363c401; falling back to heuristics.
+2026-07-11 12:59:16 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Extra data: line 3 column 1 (char 19)
+2026-07-11 12:59:16 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_e42f7379b1; falling back to heuristics.
+2026-07-11 13:00:53 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 62 nodes, 441 edges.
+2026-07-11 13:00:53 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-11 13:03:16 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-11 13:04:00 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-11 13:04:00 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_8215992cca.
+2026-07-11 13:04:07 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Unterminated string starting at: line 51 column 4 (char 8110)
+2026-07-11 13:04:07 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9cf11abcc5; falling back to heuristics.
+2026-07-11 13:07:12 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Unterminated string starting at: line 43 column 16 (char 8273)
+2026-07-11 13:07:12 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_34f9c9282e; falling back to heuristics.
+2026-07-11 13:08:24 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_d436cf02fc; falling back to heuristics.
+2026-07-11 13:08:38 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Invalid control character at: line 3 column 98 (char 120)
+2026-07-11 13:08:38 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_6725a82034; falling back to heuristics.
+2026-07-11 13:08:41 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Expecting value: line 41 column 66 (char 8104)
+2026-07-11 13:08:41 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_69903b2906; falling back to heuristics.
+2026-07-11 13:09:15 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Invalid control character at: line 3 column 99 (char 121)
+2026-07-11 13:09:15 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_0740bca904; falling back to heuristics.
+2026-07-11 13:09:38 | INFO     | graphrag.normalization.entities | Normalized 185 raw entity mentions into 59 unique canonical entities.
+2026-07-11 13:09:40 | INFO     | graphrag.graph.builder    | Graph build complete: {'nodes': 115, 'edges': 576}
+2026-07-11 13:09:58 | INFO     | graphrag.vector.faiss_store | Added 31 chunks to vector store (total: 109).
+2026-07-11 19:26:36 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 115 nodes, 576 edges.
+2026-07-11 19:26:36 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-11 19:29:09 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-11 19:30:32 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-11 19:30:32 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_d9d4e759e9.
+2026-07-11 19:31:46 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Unterminated string starting at: line 51 column 4 (char 8110)
+2026-07-11 19:31:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_36f733ed47; falling back to heuristics.
+2026-07-11 19:34:55 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Unterminated string starting at: line 43 column 16 (char 8273)
+2026-07-11 19:34:55 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_5a79c17e22; falling back to heuristics.
+2026-07-11 19:35:31 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 3766, Requested 2400. Please try again in 1.66s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-11 19:35:31 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_e04e1f15be; falling back to heuristics.
+2026-07-11 19:35:53 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_ada37d209d; falling back to heuristics.
+2026-07-11 19:36:10 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Invalid control character at: line 3 column 98 (char 120)
+2026-07-11 19:36:10 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_92a3dbd130; falling back to heuristics.
+2026-07-11 19:36:21 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Expecting value: line 41 column 66 (char 8104)
+2026-07-11 19:36:21 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_e5c18bd312; falling back to heuristics.
+2026-07-11 19:36:44 | WARNING  | graphrag.extraction.llm_client | LLM returned non-JSON output, discarding. Error: Invalid control character at: line 3 column 99 (char 121)
+2026-07-11 19:36:44 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_cec63b0081; falling back to heuristics.
+2026-07-11 19:37:22 | INFO     | graphrag.normalization.entities | Normalized 174 raw entity mentions into 60 unique canonical entities.
+2026-07-11 19:37:24 | INFO     | graphrag.graph.builder    | Graph build complete: {'nodes': 118, 'edges': 642}
+2026-07-11 19:37:24 | INFO     | graphrag.vector.faiss_store | Added 31 chunks to vector store (total: 140).
+2026-07-11 19:40:41 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 118 nodes, 642 edges.
+2026-07-11 19:40:41 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 118 nodes, 642 edges.
+2026-07-11 19:40:42 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-11 19:40:42 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-11 19:41:09 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-11 19:41:09 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-11 19:41:29 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-11 19:41:29 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-11 19:41:29 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_d49299da45.
+2026-07-11 19:41:29 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_d49299da45.
+2026-07-11 19:41:37 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 2000) for more complete extractions.
+2026-07-11 19:41:37 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 2000) for more complete extractions.
+2026-07-11 19:43:37 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-11 19:43:37 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-11 19:43:37 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_b1539ee6d8.
+2026-07-11 19:43:37 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_b1539ee6d8.
+2026-07-11 19:44:37 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 2000) for more complete extractions.
+2026-07-11 19:44:37 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 2000) for more complete extractions.
+2026-07-13 11:50:50 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 118 nodes, 642 edges.
+2026-07-13 11:50:50 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-13 12:00:28 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-13 12:00:28 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_9e982583ef.
+2026-07-13 12:00:35 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8290, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:35 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3d8f535e2b; falling back to heuristics.
+2026-07-13 12:00:35 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8292, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:35 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4fdc9f7957; falling back to heuristics.
+2026-07-13 12:00:35 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8256, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:35 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ca66752ad2; falling back to heuristics.
+2026-07-13 12:00:35 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8325, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:35 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_b597d16ad3; falling back to heuristics.
+2026-07-13 12:00:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8420, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9d1ef5069b; falling back to heuristics.
+2026-07-13 12:00:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8462, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_8a791a7444; falling back to heuristics.
+2026-07-13 12:00:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8254, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_92d19d616a; falling back to heuristics.
+2026-07-13 12:00:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8343, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_8140b09660; falling back to heuristics.
+2026-07-13 12:00:36 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8382, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:36 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_b0de47c913; falling back to heuristics.
+2026-07-13 12:00:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8408, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_c5ecf86ea6; falling back to heuristics.
+2026-07-13 12:00:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8281, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_d5c357c49c; falling back to heuristics.
+2026-07-13 12:00:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8236, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_871835eb1d; falling back to heuristics.
+2026-07-13 12:00:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8403, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9e70a06b64; falling back to heuristics.
+2026-07-13 12:00:37 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8266, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:37 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ebdacb246f; falling back to heuristics.
+2026-07-13 12:00:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8389, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_adb0426178; falling back to heuristics.
+2026-07-13 12:00:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8301, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_9cc4cb0e51; falling back to heuristics.
+2026-07-13 12:00:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8474, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_e98a91c075; falling back to heuristics.
+2026-07-13 12:00:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8234, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_5edcad5e38; falling back to heuristics.
+2026-07-13 12:00:38 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8382, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:38 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_a223c6225f; falling back to heuristics.
+2026-07-13 12:00:39 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8247, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:39 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_43a471e6d7; falling back to heuristics.
+2026-07-13 12:00:39 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8262, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:39 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_aa98e71dc6; falling back to heuristics.
+2026-07-13 12:00:39 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8398, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:39 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_98178626d6; falling back to heuristics.
+2026-07-13 12:00:39 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8362, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:39 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4a208ec4a4; falling back to heuristics.
+2026-07-13 12:00:39 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8380, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:39 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_99c40c1fee; falling back to heuristics.
+2026-07-13 12:00:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8239, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_a2cedfd6c6; falling back to heuristics.
+2026-07-13 12:00:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8300, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f9ba27279e; falling back to heuristics.
+2026-07-13 12:00:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8255, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_7254c20238; falling back to heuristics.
+2026-07-13 12:00:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8274, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_3869e62547; falling back to heuristics.
+2026-07-13 12:00:40 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8248, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:40 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_923ad5b230; falling back to heuristics.
+2026-07-13 12:00:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8257, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:41 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_19c92fdb92; falling back to heuristics.
+2026-07-13 12:00:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8257, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:41 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_8aab78f01b; falling back to heuristics.
+2026-07-13 12:00:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8306, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:41 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_4fdc9f7957; falling back to heuristics.
+2026-07-13 12:00:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8365, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:41 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_8140b09660; falling back to heuristics.
+2026-07-13 12:00:41 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8422, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:41 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_c5ecf86ea6; falling back to heuristics.
+2026-07-13 12:00:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8256, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:42 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_ebdacb246f; falling back to heuristics.
+2026-07-13 12:00:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8383, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:42 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_adb0426178; falling back to heuristics.
+2026-07-13 12:00:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8482, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:42 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_e98a91c075; falling back to heuristics.
+2026-07-13 12:00:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8368, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:42 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_4a208ec4a4; falling back to heuristics.
+2026-07-13 12:00:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8316, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:00:42 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_f9ba27279e; falling back to heuristics.
+2026-07-13 12:00:42 | INFO     | graphrag.normalization.entities | Normalized 33 raw entity mentions into 19 unique canonical entities.
+2026-07-13 12:00:43 | INFO     | graphrag.graph.builder    | Graph build complete: {'nodes': 123, 'edges': 665}
+2026-07-13 12:00:54 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-13 12:00:55 | INFO     | graphrag.vector.faiss_store | Added 31 chunks to vector store (total: 171).
+2026-07-13 12:02:31 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-13 12:02:31 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_8d704adbde.
+2026-07-13 12:02:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8290, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2d1ee72cc1; falling back to heuristics.
+2026-07-13 12:02:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8292, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_5e22b99271; falling back to heuristics.
+2026-07-13 12:02:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8256, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_caf5549569; falling back to heuristics.
+2026-07-13 12:02:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8325, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_91afe2d13f; falling back to heuristics.
+2026-07-13 12:02:42 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8420, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:42 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_537a35bda9; falling back to heuristics.
+2026-07-13 12:02:43 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8462, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:43 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_2b232749b6; falling back to heuristics.
+2026-07-13 12:02:43 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8254, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:43 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ef1155aebb; falling back to heuristics.
+2026-07-13 12:02:43 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8343, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:43 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_03157f1d97; falling back to heuristics.
+2026-07-13 12:02:43 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8382, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:43 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_da7a1371e1; falling back to heuristics.
+2026-07-13 12:02:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8408, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_54b4240b9f; falling back to heuristics.
+2026-07-13 12:02:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8281, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_70156fbca4; falling back to heuristics.
+2026-07-13 12:02:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8236, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_56abc37729; falling back to heuristics.
+2026-07-13 12:02:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8403, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_44c398fbbb; falling back to heuristics.
+2026-07-13 12:02:44 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8266, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:44 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_481f8a2461; falling back to heuristics.
+2026-07-13 12:02:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8389, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_17d6184fec; falling back to heuristics.
+2026-07-13 12:02:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8301, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_ce69236ba7; falling back to heuristics.
+2026-07-13 12:02:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8474, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f9259769f4; falling back to heuristics.
+2026-07-13 12:02:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8234, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_05e209bda4; falling back to heuristics.
+2026-07-13 12:02:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8382, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f24989cfcf; falling back to heuristics.
+2026-07-13 12:02:45 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8247, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:45 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_03b109f023; falling back to heuristics.
+2026-07-13 12:02:46 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8262, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_79c3ba1b98; falling back to heuristics.
+2026-07-13 12:02:46 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8398, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_f1f2071bde; falling back to heuristics.
+2026-07-13 12:02:46 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8362, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_4e8ea5e025; falling back to heuristics.
+2026-07-13 12:02:46 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8380, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:46 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_d126231efc; falling back to heuristics.
+2026-07-13 12:02:47 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8239, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:47 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_72ee10b8a0; falling back to heuristics.
+2026-07-13 12:02:47 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8300, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:47 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_cbf0f85d8a; falling back to heuristics.
+2026-07-13 12:02:47 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8255, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:47 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_318a830bcd; falling back to heuristics.
+2026-07-13 12:02:47 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8274, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:47 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_25aef33ea7; falling back to heuristics.
+2026-07-13 12:02:47 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8248, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:47 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_bdbd6abbd5; falling back to heuristics.
+2026-07-13 12:02:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8257, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:48 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_1b72497d5c; falling back to heuristics.
+2026-07-13 12:02:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8257, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:48 | DEBUG    | graphrag.extraction.entities | LLM produced no usable entities for chunk chunk_cb4187733d; falling back to heuristics.
+2026-07-13 12:02:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8306, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:48 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_5e22b99271; falling back to heuristics.
+2026-07-13 12:02:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8365, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:48 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_03157f1d97; falling back to heuristics.
+2026-07-13 12:02:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8422, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:48 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_54b4240b9f; falling back to heuristics.
+2026-07-13 12:02:48 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8256, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:48 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_481f8a2461; falling back to heuristics.
+2026-07-13 12:02:49 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8383, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:49 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_17d6184fec; falling back to heuristics.
+2026-07-13 12:02:49 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8482, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:49 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_f9259769f4; falling back to heuristics.
+2026-07-13 12:02:49 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8368, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:49 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_4e8ea5e025; falling back to heuristics.
+2026-07-13 12:02:49 | ERROR    | graphrag.extraction.llm_client | LLM call failed: Error code: 413 - {'error': {'message': 'Request too large for model `llama-3.1-8b-instant` in organization `org_01kga4pswrf6487shnjfe115pc` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 8316, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+2026-07-13 12:02:49 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_cbf0f85d8a; falling back to heuristics.
+2026-07-13 12:02:49 | INFO     | graphrag.normalization.entities | Normalized 33 raw entity mentions into 19 unique canonical entities.
+2026-07-13 12:02:50 | INFO     | graphrag.graph.builder    | Graph build complete: {'nodes': 123, 'edges': 665}
+2026-07-13 12:02:50 | INFO     | graphrag.vector.faiss_store | Added 31 chunks to vector store (total: 202).
+2026-07-13 12:06:19 | INFO     | graphrag.graph.builder    | Loaded cached in-memory graph: 123 nodes, 665 edges.
+2026-07-13 12:06:19 | INFO     | graphrag.graph.builder    | Using in-memory graph store.
+2026-07-13 12:07:22 | INFO     | graphrag.vector.faiss_store | Loaded SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2' (dim=384).
+2026-07-13 12:08:44 | INFO     | graphrag.parsing.docx     | Parsed DOCX 'amba_axi_protocol_spec.docx-41-50_SEC A3.docx': 31 sections.
+2026-07-13 12:08:44 | INFO     | graphrag.chunking.hierarchical | Created 31 hierarchical chunks for doc doc_63118bac04.
+2026-07-13 12:09:23 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 800) for more complete extractions.
+2026-07-13 12:11:53 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_c50c76717b; falling back to heuristics.
+2026-07-13 12:13:13 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_41dab6b19b; falling back to heuristics.
+2026-07-13 12:13:18 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 800) for more complete extractions.
+2026-07-13 12:13:54 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 800) for more complete extractions.
+2026-07-13 12:14:13 | WARNING  | graphrag.extraction.llm_client | LLM response was truncated (hit max_tokens). Attempting to recover partial JSON; consider raising LLM_MAX_TOKENS (currently 800) for more complete extractions.
+2026-07-13 12:14:13 | DEBUG    | graphrag.extraction.relationships | LLM produced no usable relationships for chunk chunk_dd024ae133; falling back to heuristics.
+2026-07-13 12:14:47 | INFO     | graphrag.normalization.entities | Normalized 187 raw entity mentions into 58 unique canonical entities.
+2026-07-13 12:14:49 | INFO     | graphrag.graph.builder    | Graph build complete: {'nodes': 139, 'edges': 729}
+2026-07-13 12:14:50 | INFO     | graphrag.vector.faiss_store | Added 31 chunks to vector store (total: 233).
+2026-07-13 12:22:29 | INFO     | graphrag.retrieval.hybrid | Answered question with 6 merged chunks (6 vector, 2 graph-linked).
+2026-07-13 12:25:24 | INFO     | graphrag.retrieval.hybrid | Answered question with 36 merged chunks (6 vector, 34 graph-linked).
+2026-07-13 12:26:18 | INFO     | graphrag.retrieval.hybrid | Answered question with 65 merged chunks (6 vector, 62 graph-linked).
+2026-07-13 12:35:02 | INFO     | graphrag.retrieval.hybrid | Answered question with 65 merged chunks (6 vector, 62 graph-linked).

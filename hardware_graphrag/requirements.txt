@@ -1,0 +1,25 @@
+# --- Core app ---
+streamlit>=1.35.0
+python-dotenv>=1.0.1
+
+# --- Document parsing ---
+PyMuPDF>=1.24.0
+pdfplumber>=0.11.0
+python-docx>=1.1.0
+
+# --- Chunking / general ---
+numpy>=1.26.0
+
+# --- Embeddings & vector search ---
+sentence-transformers>=2.7.0
+faiss-cpu>=1.8.0
+
+# --- Knowledge graph ---
+neo4j>=5.20.0
+
+# --- Graph visualization ---
+streamlit-agraph>=0.0.45
+
+# --- LLM providers (pluggable; install what you need) ---
+openai>=1.30.0          # used for both OpenAI and Groq (OpenAI-compatible API)
+google-generativeai>=0.5.0   # optional, only needed if LLM_PROVIDER=gemini
