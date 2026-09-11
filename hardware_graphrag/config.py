@@ -16,7 +16,7 @@ from typing import List
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass
 
@@ -42,14 +42,52 @@ def _env_float(key: str, default: float) -> float:
         return default
 
 
+def _resolve_llm_api_key(provider: str) -> str:
+    prov = (provider or os.getenv("LLM_PROVIDER", "openrouter")).lower().strip()
+    llm_key = os.getenv("LLM_API_KEY", "").strip()
+    openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    openai_key = os.getenv("OPENAI_API_KEY", "").strip()
+    gemini_key = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", "")).strip()
+
+    if prov == "openrouter":
+        if openrouter_key:
+            return openrouter_key
+        if llm_key and not llm_key.startswith("gsk_"):
+            return llm_key
+        return openai_key or groq_key
+    elif prov == "groq":
+        if groq_key:
+            return groq_key
+        if llm_key and (llm_key.startswith("gsk_") or not openrouter_key):
+            return llm_key
+        return ""
+    elif prov == "openai":
+        if openai_key:
+            return openai_key
+        if llm_key and not (llm_key.startswith("gsk_") or llm_key.startswith("sk-or-v1-")):
+            return llm_key
+        return ""
+    elif prov == "gemini":
+        if gemini_key:
+            return gemini_key
+        if llm_key:
+            return llm_key
+        return ""
+
+    return llm_key or openrouter_key or groq_key or openai_key or gemini_key
+
+
 @dataclass
 class LLMConfig:
-    provider: str = os.getenv("LLM_PROVIDER", "openai")   # openai | groq | gemini | none
-    model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
-    api_key: str = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", ""))
-    base_url: str = os.getenv("LLM_BASE_URL", "")          # for OpenAI-compatible / Groq endpoints
+    provider: str = os.getenv("LLM_PROVIDER", "groq")   # openai | groq | openrouter | gemini | none
+    model: str = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
+    extraction_model: str = os.getenv("LLM_EXTRACTION_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-20b"))
+    code_model: str = os.getenv("LLM_CODE_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-120b"))
+    api_key: str = field(default_factory=lambda: _resolve_llm_api_key(os.getenv("LLM_PROVIDER", "groq")))
+    base_url: str = os.getenv("LLM_BASE_URL", "")          # for OpenAI-compatible / Groq / OpenRouter endpoints
     temperature: float = _env_float("LLM_TEMPERATURE", 0.0)
-    max_tokens: int = _env_int("LLM_MAX_TOKENS", 4000)
+    max_tokens: int = _env_int("LLM_MAX_TOKENS", 8192)
     timeout_s: int = _env_int("LLM_TIMEOUT_S", 60)
 
 
@@ -98,6 +136,14 @@ class AppConfig:
     neo4j: Neo4jConfig = field(default_factory=Neo4jConfig)
     chunking: ChunkingConfig = field(default_factory=ChunkingConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
+
+    # Verification / Repair optimization configuration settings (Disabled by default for maximum speed)
+    max_repair_iterations: int = _env_int("MAX_REPAIR_ITERATIONS", 0)
+    compliance_threshold: int = _env_int("COMPLIANCE_THRESHOLD", 90)
+    enable_static_verification: bool = _env_bool("ENABLE_STATIC_VERIFICATION", False)
+    enable_semantic_verification: bool = _env_bool("ENABLE_SEMANTIC_VERIFICATION", False)
+    verify_secondary_artifacts: bool = _env_bool("VERIFY_SECONDARY_ARTIFACTS", False)
+    skip_duplicate_verification: bool = _env_bool("SKIP_DUPLICATE_VERIFICATION", True)
 
     def ensure_dirs(self) -> None:
         for d in (self.data_dir, self.upload_dir, self.vector_index_dir, self.graph_cache_dir):

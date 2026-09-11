@@ -54,6 +54,36 @@ def _overlap_prefix(previous_text: str, ratio: float) -> str:
     return previous_text[-n:]
 
 
+def _split_table_by_rows(table_text: str, max_chars: int) -> List[str]:
+    """Split very large markdown tables into atomic row groups, repeating headers on every piece."""
+    lines = [l.strip() for l in table_text.split("\n") if l.strip()]
+    if len(lines) <= 2 or len(table_text) <= max_chars:
+        return [table_text]
+
+    header_lines = lines[:2]
+    header_block = "\n".join(header_lines)
+    data_rows = lines[2:]
+
+    chunks = []
+    current_rows = []
+    current_len = len(header_block)
+
+    for row in data_rows:
+        row_len = len(row) + 1
+        if current_len + row_len > max_chars and current_rows:
+            chunks.append(header_block + "\n" + "\n".join(current_rows))
+            current_rows = [row]
+            current_len = len(header_block) + row_len
+        else:
+            current_rows.append(row)
+            current_len += row_len
+
+    if current_rows:
+        chunks.append(header_block + "\n" + "\n".join(current_rows))
+
+    return chunks or [table_text]
+
+
 def chunk_document(parsed_doc: ParsedDocument) -> List[Chunk]:
     """
     Convert a ParsedDocument's flat section list into hierarchical Chunks.
@@ -91,11 +121,17 @@ def chunk_document(parsed_doc: ParsedDocument) -> List[Chunk]:
                 continue
 
         chapter, section, subsection = section_path(sec)
-        pieces = _semantic_split(text, cfg.max_chunk_chars, cfg.min_chunk_chars)
+
+        # Atomic table handling: preserve full table context or row-group with headers
+        is_table = sec.content_type == "table" or text.startswith("|")
+        if is_table:
+            pieces = _split_table_by_rows(text, cfg.max_chunk_chars)
+        else:
+            pieces = _semantic_split(text, cfg.max_chunk_chars, cfg.min_chunk_chars)
 
         prev_piece_text = ""
         for i, piece in enumerate(pieces):
-            overlap = _overlap_prefix(prev_piece_text, cfg.overlap_ratio) if i > 0 else ""
+            overlap = _overlap_prefix(prev_piece_text, cfg.overlap_ratio) if (i > 0 and not is_table) else ""
             chunk = Chunk(
                 chunk_id=new_id("chunk"),
                 doc_id=parsed_doc.doc_id,

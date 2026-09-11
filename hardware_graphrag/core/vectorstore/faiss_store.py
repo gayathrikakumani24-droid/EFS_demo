@@ -136,11 +136,13 @@ class VectorStore:
 
     # ------------------------------------------------------------------
     def add_chunks(self, chunks: List[Chunk], entity_names_by_chunk: Optional[Dict[str, List[str]]] = None,
-                   linked_node_ids_by_chunk: Optional[Dict[str, List[str]]] = None) -> None:
+                   linked_node_ids_by_chunk: Optional[Dict[str, List[str]]] = None,
+                   efs_metadata_by_chunk: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
         if not chunks:
             return
         entity_names_by_chunk = entity_names_by_chunk or {}
         linked_node_ids_by_chunk = linked_node_ids_by_chunk or {}
+        efs_metadata_by_chunk = efs_metadata_by_chunk or {}
 
         texts = [c.text for c in chunks]
         vectors = self._embed(texts)
@@ -150,6 +152,7 @@ class VectorStore:
         vectors = vectors / norms
 
         for c in chunks:
+            efs_meta = efs_metadata_by_chunk.get(c.chunk_id, {})
             self.metadata[c.chunk_id] = {
                 "text": c.text,
                 "doc_id": c.doc_id,
@@ -161,6 +164,12 @@ class VectorStore:
                 "content_type": c.content_type,
                 "entities": entity_names_by_chunk.get(c.chunk_id, []),
                 "linked_node_ids": linked_node_ids_by_chunk.get(c.chunk_id, []),
+                # EFS IR metadata links
+                "efs_ir_id": efs_meta.get("efs_ir_id"),
+                "constraint_ids": efs_meta.get("constraint_ids", []),
+                "signal_ids": efs_meta.get("signal_ids", []),
+                "component_ids": efs_meta.get("component_ids", []),
+                "transaction_ids": efs_meta.get("transaction_ids", []),
             }
         self.chunk_ids.extend(c.chunk_id for c in chunks)
 
@@ -174,7 +183,33 @@ class VectorStore:
         self._save()
         logger.info(f"Added {len(chunks)} chunks to vector store (total: {len(self.chunk_ids)}).")
 
-    def search(self, query: str, top_k: int = 6) -> List[RetrievedChunk]:
+    def clear_document(self, document_id: str) -> None:
+        """Remove all chunks associated with a specific document_id."""
+        if not document_id:
+            return
+        keep_indices = [i for i, cid in enumerate(self.chunk_ids) if self.metadata.get(cid, {}).get("doc_id") != document_id and self.metadata.get(cid, {}).get("document_id") != document_id]
+        if len(keep_indices) == len(self.chunk_ids):
+            return
+        
+        self.chunk_ids = [self.chunk_ids[i] for i in keep_indices]
+        self.metadata = {cid: self.metadata[cid] for cid in self.chunk_ids}
+        
+        if _HAS_FAISS and self._index is not None and self._index.ntotal > 0:
+            if keep_indices:
+                all_vecs = np.zeros((self._index.ntotal, self._dim), dtype="float32")
+                for i in range(self._index.ntotal):
+                    all_vecs[i] = self._index.reconstruct(i)
+                keep_vecs = all_vecs[keep_indices]
+                self._index = faiss.IndexFlatIP(self._dim)
+                self._index.add(keep_vecs)
+            else:
+                self._index = faiss.IndexFlatIP(self._dim)
+        elif self._vectors is not None:
+            self._vectors = self._vectors[keep_indices] if keep_indices else None
+        self._save()
+        logger.info(f"Cleared document '{document_id}' from vector store.")
+
+    def search(self, query: str, top_k: int = 6, document_id: Optional[str] = None) -> List[RetrievedChunk]:
         if not self.chunk_ids:
             return []
         q_vec = self._embed([query])
@@ -182,12 +217,15 @@ class VectorStore:
         if norm > 0:
             q_vec = q_vec / norm
 
+        # Fetch more candidates if document filtering is active
+        fetch_k = min(top_k * 5 if document_id else top_k, len(self.chunk_ids))
+
         if _HAS_FAISS and self._index is not None:
-            scores, indices = self._index.search(q_vec, min(top_k, len(self.chunk_ids)))
+            scores, indices = self._index.search(q_vec, fetch_k)
             scores, indices = scores[0], indices[0]
         else:
             sims = (self._vectors @ q_vec.T).flatten()
-            top_idx = np.argsort(-sims)[:top_k]
+            top_idx = np.argsort(-sims)[:fetch_k]
             scores, indices = sims[top_idx], top_idx
 
         results = []
@@ -196,6 +234,13 @@ class VectorStore:
                 continue
             chunk_id = self.chunk_ids[idx]
             meta = self.metadata.get(chunk_id, {})
+            
+            # Strict document isolation filter
+            if document_id:
+                meta_doc = meta.get("doc_id") or meta.get("document_id")
+                if meta_doc and meta_doc != document_id:
+                    continue
+
             results.append(
                 RetrievedChunk(
                     chunk_id=chunk_id,
@@ -205,10 +250,89 @@ class VectorStore:
                     metadata=meta,
                 )
             )
+            if len(results) >= top_k:
+                break
         return results
 
     def get_chunk(self, chunk_id: str) -> Optional[dict]:
         return self.metadata.get(chunk_id)
+
+    def link_efs_objects_to_chunks(self, efs_ir: EFSIR) -> None:
+        """Update existing chunk metadata to link them to EFS IR object IDs based on traceability."""
+        updated = False
+        
+        # Helper to append to a list in metadata
+        def add_ref(chunk_id: str, key: str, val: str):
+            nonlocal updated
+            if chunk_id in self.metadata:
+                lst = self.metadata[chunk_id].setdefault(key, [])
+                if val not in lst:
+                    lst.append(val)
+                    updated = True
+        
+        for comp in efs_ir.components:
+            cid = comp.traceability.chunk_id
+            if cid:
+                add_ref(cid, "component_ids", comp.component_id)
+                
+        for iface in efs_ir.interfaces:
+            cid = iface.traceability.chunk_id
+            if cid:
+                add_ref(cid, "interface_ids", iface.interface_id)
+                
+        for sig in efs_ir.signals:
+            cid = sig.traceability.chunk_id
+            if cid:
+                add_ref(cid, "signal_ids", sig.signal_id)
+                
+        for reg in efs_ir.registers:
+            cid = reg.traceability.chunk_id
+            if cid:
+                add_ref(cid, "register_ids", reg.register_id)
+                
+        for instr in getattr(efs_ir, "instructions", []):
+            cid = instr.traceability.chunk_id
+            if cid:
+                add_ref(cid, "instruction_ids", instr.instruction_id)
+                
+        for opc in getattr(efs_ir, "opcodes", []):
+            cid = opc.traceability.chunk_id
+            if cid:
+                add_ref(cid, "opcode_ids", opc.opcode_id)
+                
+        for fsm in efs_ir.fsms:
+            cid = fsm.traceability.chunk_id
+            if cid:
+                add_ref(cid, "fsm_ids", fsm.fsm_id)
+                
+        for const in efs_ir.constraints:
+            cid = const.traceability.chunk_id
+            if cid:
+                add_ref(cid, "constraint_ids", const.constraint_id)
+                
+        for rule in efs_ir.timing_rules:
+            cid = rule.traceability.chunk_id
+            if cid:
+                add_ref(cid, "timing_rule_ids", rule.rule_id)
+                
+        for rule in efs_ir.protocol_rules:
+            cid = rule.traceability.chunk_id
+            if cid:
+                add_ref(cid, "protocol_rule_ids", rule.rule_id)
+                
+        for flow in efs_ir.flows:
+            cid = flow.traceability.chunk_id
+            if cid:
+                add_ref(cid, "flow_ids", flow.flow_id)
+                
+        for conf in getattr(efs_ir, "conflicts", []):
+            cid = conf.traceability.chunk_id
+            if cid:
+                add_ref(cid, "conflict_ids", conf.conflict_id)
+                
+        if updated:
+            self._save()
+            logger.info("Updated vector store metadata with EFS IR object references.")
 
     def stats(self) -> Dict[str, int]:
         return {"total_chunks": len(self.chunk_ids), "dim": self._dim}

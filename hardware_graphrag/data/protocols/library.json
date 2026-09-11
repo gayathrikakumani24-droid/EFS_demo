@@ -1,0 +1,82 @@
+{
+  "AXI4": {
+    "name": "AXI4",
+    "filename": "amba_axi_protocol_spec.docx",
+    "chunks": 692,
+    "entities": 361,
+    "relationships": 5566,
+    "created_at": "2026-08-18T11:34:17.817661",
+    "reuse_count": 890,
+    "status": "Ready"
+  },
+  "AXI5": {
+    "name": "AXI5",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  },
+  "APB": {
+    "name": "APB",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  },
+  "AHB": {
+    "name": "AHB",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  },
+  "PCIe": {
+    "name": "PCIe",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  },
+  "USB": {
+    "name": "USB",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  },
+  "SPI": {
+    "name": "SPI",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  },
+  "I2C": {
+    "name": "I2C",
+    "filename": null,
+    "chunks": 0,
+    "entities": 0,
+    "relationships": 0,
+    "created_at": null,
+    "reuse_count": 0,
+    "status": "Not Uploaded"
+  }
+}

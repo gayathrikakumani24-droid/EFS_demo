@@ -26,6 +26,15 @@ except ImportError:
 _WORD_HEADING_STYLE_RE = re.compile(r"Heading\s*(\d+)", re.IGNORECASE)
 
 
+def iter_block_items(doc):
+    """Yield Paragraph and Table objects in exact document sequence order."""
+    for child in doc.element.body:
+        if child.tag.endswith("p"):
+            yield docx.text.paragraph.Paragraph(child, doc)
+        elif child.tag.endswith("tbl"):
+            yield docx.table.Table(child, doc)
+
+
 class DocxParser(BaseParser):
     file_type = "docx"
 
@@ -41,74 +50,92 @@ class DocxParser(BaseParser):
         current_section: Optional[DocSection] = None
         text_buf: List[str] = []
         raw_len = 0
-        pseudo_page = 1  # DOCX has no fixed pagination without rendering; approximate by paragraph blocks
+        pseudo_page = 1
+        t_idx = 0
 
         def flush(sec, buf):
             if sec is not None and buf:
                 sec.text = (sec.text + "\n" + "\n".join(buf)).strip()
             buf.clear()
 
-        for para in document.paragraphs:
-            line_text = para.text.strip()
-            raw_len += len(line_text)
-            if not line_text:
-                continue
+        for block in iter_block_items(document):
+            if isinstance(block, docx.text.paragraph.Paragraph):
+                para = block
+                line_text = para.text.strip()
+                raw_len += len(line_text)
+                if not line_text:
+                    continue
 
-            style_name = para.style.name if para.style else ""
-            style_match = _WORD_HEADING_STYLE_RE.match(style_name)
-            heading_match = HeadingClassifier.match_heading(line_text)
+                style_name = para.style.name if para.style else ""
+                style_match = _WORD_HEADING_STYLE_RE.match(style_name)
+                heading_match = HeadingClassifier.match_heading(line_text)
 
-            if style_match or heading_match:
-                flush(current_section, text_buf)
-                if style_match:
-                    level = max(int(style_match.group(1)) - 1, 0)
-                    number, title = "", line_text
-                else:
-                    number, level, title = heading_match
+                if style_match or heading_match:
+                    flush(current_section, text_buf)
+                    if style_match:
+                        level = max(int(style_match.group(1)) - 1, 0)
+                        number, title = "", line_text
+                    else:
+                        number, level, title = heading_match
 
-                sec = self._new_section(
-                    title=title, level=min(level, 4), section_number=number,
-                    page=pseudo_page, content_type="text",
-                )
-                if level == 0:
-                    current_chapter = title
-                sec.chapter = current_chapter
-                sections.append(sec)
-                current_section = sec
-                pseudo_page += 1
-                continue
+                    sec = self._new_section(
+                        title=title, level=min(level, 4), section_number=number,
+                        page=pseudo_page, content_type="text",
+                    )
+                    if level == 0:
+                        current_chapter = title
+                    sec.chapter = current_chapter
+                    sections.append(sec)
+                    current_section = sec
+                    pseudo_page += 1
+                    continue
 
-            content_type = HeadingClassifier.classify_content_type(line_text)
-            if content_type != "text":
-                flush(current_section, text_buf)
-                special = self._new_section(
-                    title=line_text[:80], level=(current_section.level + 1) if current_section else 1,
-                    page=pseudo_page, content_type=content_type, text=line_text,
-                )
-                special.chapter = current_chapter
-                sections.append(special)
-                continue
+                content_type = HeadingClassifier.classify_content_type(line_text)
+                if content_type != "text":
+                    flush(current_section, text_buf)
+                    special = self._new_section(
+                        title=line_text[:80], level=(current_section.level + 1) if current_section else 1,
+                        page=pseudo_page, content_type=content_type, text=line_text,
+                    )
+                    special.chapter = current_chapter
+                    sections.append(special)
+                    continue
 
-            if current_section is None:
-                current_section = self._new_section(title=current_chapter, level=0, page=pseudo_page)
-                current_section.chapter = current_chapter
-                sections.append(current_section)
-            text_buf.append(line_text)
+                if current_section is None:
+                    current_section = self._new_section(title=current_chapter, level=0, page=pseudo_page)
+                    current_section.chapter = current_chapter
+                    sections.append(current_section)
+                text_buf.append(line_text)
+
+            elif isinstance(block, docx.table.Table):
+                table = block
+                if not table.rows:
+                    continue
+                t_idx += 1
+                headers = [cell.text.strip() for cell in table.rows[0].cells]
+                table_lines = ["| " + " | ".join(headers) + " |"]
+                table_lines.append("| " + " | ".join(["---"] * max(1, len(headers))) + " |")
+                for row in table.rows[1:]:
+                    row_cells = [cell.text.strip() for cell in row.cells]
+                    table_lines.append("| " + " | ".join(row_cells) + " |")
+
+                rows_text = "\n".join(table_lines)
+                if rows_text.strip():
+                    flush(current_section, text_buf)
+                    sec_title = f"Table #{t_idx}"
+                    if current_section and current_section.title:
+                        sec_title = f"Table #{t_idx}: {current_section.title}"
+                    sec = self._new_section(
+                        title=sec_title,
+                        level=(current_section.level + 1) if current_section else 2,
+                        page=pseudo_page,
+                        content_type="table",
+                        text=rows_text,
+                    )
+                    sec.chapter = current_chapter
+                    sections.append(sec)
 
         flush(current_section, text_buf)
-
-        # tables
-        for t_idx, table in enumerate(document.tables):
-            rows_text = "\n".join(
-                " | ".join(cell.text.strip() for cell in row.cells) for row in table.rows
-            )
-            if rows_text.strip():
-                sec = self._new_section(
-                    title=f"Table #{t_idx + 1}", level=2, page=pseudo_page,
-                    content_type="table", text=rows_text,
-                )
-                sec.chapter = current_chapter
-                sections.append(sec)
 
         self._link_sections(sections)
         logger.info(f"Parsed DOCX '{self.filename}': {len(sections)} sections.")

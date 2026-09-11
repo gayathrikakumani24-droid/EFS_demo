@@ -1,0 +1,1611 @@
+{
+  "metadata": {
+    "design_id": "DSN_6752bd76",
+    "design_name": "a",
+    "canonical_id": "a",
+    "display_name": "A",
+    "aliases": [
+      "A",
+      "a"
+    ],
+    "project_name": "default_project",
+    "protocol": "generic",
+    "protocol_version": "1.0",
+    "document_id": "",
+    "document_hash": "",
+    "ingestion_id": "",
+    "source_documents": [
+      "amba_axi_protocol_spec.docx",
+      "amba_axi_protocol_spec.docx",
+      "matrix_compute_unit.docx"
+    ],
+    "specification_revision": "1.0",
+    "ir_schema_version": "1.0",
+    "generation_timestamp": "2026-09-10T11:55:13.879773"
+  },
+  "components": [
+    {
+      "component_id": "COMP_edd95fc0",
+      "name": "A",
+      "type": "top_level_design",
+      "description": "Top-Level Composite Design Module: A",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'A'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_b334304f",
+      "name": "top_level_matrix_compute_unit",
+      "type": "top_level_matrix_compute_unit",
+      "description": "Integrates instruction execution, configuration, scheduling, matrix storage, computation, DMA, status, and interrupt logic.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'top_level_matrix_compute_unit'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_f1f160e6",
+      "name": "instruction_input_queue",
+      "type": "instruction_input_queue",
+      "description": "Captures and holds 64-bit instructions presented with start, providing a stable instruction to the decoder and preventing loss during execution.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'instruction_input_queue'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_75ac1b70",
+      "name": "instruction_decoder",
+      "type": "instruction_decoder",
+      "description": "Decodes the 64-bit instruction into opcode, destination and source register identifiers, operation class, matrix dimensions, collective-operation attributes, and validity/error indications. Generates exactly one one-hot operation strobe for each supported opcode.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_001",
+        "page": 1,
+        "chapter": "",
+        "section": "Functional Specification for Multi Core Matrix Compute Unit.",
+        "original_text": "",
+        "source_entity_id": "ENT_0929440b",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "component_id": "COMP_d80f5a0f",
+      "name": "instruction_control_processor",
+      "type": "instruction_control_processor",
+      "description": "Sequences instruction acceptance, operand preparation, execution launch, memory operations, barriers, and completion. Maintains the architectural busy, done, and error state.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'instruction_control_processor'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_fde5a31e",
+      "name": "architectural_register_file",
+      "type": "architectural_register_file",
+      "description": "Stores matrix register descriptors and metadata for registers M0 through M15, including base address, rows, columns, element type, and validity. Supplies derived dimensions to the decoder/control processor.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'architectural_register_file'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_fd1a3723",
+      "name": "matrix_data_store",
+      "type": "matrix_data_store",
+      "description": "Provides on-chip buffering for active tiles, source operands, accumulators, and result tiles. Organizes storage by core and tile to support parallel access.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'matrix_data_store'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_65764dae",
+      "name": "global_scheduler",
+      "type": "global_scheduler",
+      "description": "Partitions matrix operations into tiles, distributes work across processing cores, coordinates collective operations, and tracks outstanding work.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_036",
+        "page": 35,
+        "chapter": "",
+        "section": "Performance Goals",
+        "original_text": "",
+        "source_entity_id": "ENT_942359a8",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "component_id": "COMP_fe791b22",
+      "name": "work_stealing_scheduler",
+      "type": "work_stealing_scheduler",
+      "description": "Maintains per-core work queues and permits idle cores to acquire pending tiles from other queues to improve load balance.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'work_stealing_scheduler'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_5d31321b",
+      "name": "local_tiling_engine",
+      "type": "local_tiling_engine",
+      "description": "Generates tile coordinates and local loop indices for matrices up to 32 by 32 and converts architectural matrix descriptors into core-local tile operations.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_036",
+        "page": 35,
+        "chapter": "",
+        "section": "Performance Goals",
+        "original_text": "",
+        "source_entity_id": "ENT_831d1b0a",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "component_id": "COMP_3745afa9",
+      "name": "matrix_processing_cores",
+      "type": "matrix_processing_cores",
+      "description": "Replicates the matrix processing datapath across a configurable number of cores. Each core performs tiled matrix arithmetic and local data movement.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_ece15371",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "component_id": "COMP_732cfdc7",
+      "name": "matrix_alu",
+      "type": "matrix_alu",
+      "description": "Implements elementwise add, subtract, divide, multiply-accumulate, transpose, inverse support operations, determinant/reduction support, slice, concatenate, and identity/zero generation using 64-bit numerical operands.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'matrix_alu'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_1391b498",
+      "name": "fpu_64bit",
+      "type": "fpu_64bit",
+      "description": "Performs IEEE-compatible or implementation-defined 64-bit floating-point arithmetic for matrix addition, subtraction, multiplication, division, reduction, inverse, eigenvalue, and SVD support.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'fpu_64bit'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_387ba12f",
+      "name": "dma_engine",
+      "type": "dma_engine",
+      "description": "Moves matrix tiles between external memory and the on-chip matrix data store using the 512-bit AXI4 master read and write channels. Supports burst transfers, outstanding transaction tracking, and response/error capture.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_036",
+        "page": 35,
+        "chapter": "",
+        "section": "Performance Goals",
+        "original_text": "",
+        "source_entity_id": "ENT_74f668ff",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "component_id": "COMP_bcba0b2e",
+      "name": "interrupt_controller",
+      "type": "interrupt_controller",
+      "description": "Aggregates completion, fault, illegal instruction, DMA error, arithmetic exception, and barrier timeout events and presents a sticky interrupt status and interrupt output.",
+      "interfaces": [
+        "IF_fac85af2"
+      ],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_033",
+        "page": 32,
+        "chapter": "",
+        "section": "External Interfaces",
+        "original_text": "",
+        "source_entity_id": "ENT_2f4dde3a",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "component_id": "COMP_de8a39d0",
+      "name": "configuration_status_register_block",
+      "type": "configuration_status_register_block",
+      "description": "Implements the control/status register interface, captures software configuration, exposes execution status and counters, and provides software reset/interrupt controls.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'configuration_status_register_block'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_d282ca77",
+      "name": "error_and_assertion_monitor",
+      "type": "error_and_assertion_monitor",
+      "description": "Detects illegal opcodes, invalid dimensions, matrix-shape mismatches, AXI response errors, arithmetic exceptions, queue overflow/underflow, and collective-operation deadlock conditions.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'error_and_assertion_monitor'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "interfaces": [
+    {
+      "interface_id": "IF_fac85af2",
+      "name": "external_bus_interface",
+      "protocol": "generic",
+      "role": "slave",
+      "signals": [
+        "SIG_dd97c409",
+        "SIG_ceef9e15",
+        "SIG_9141b831",
+        "SIG_8a371f3c",
+        "SIG_8757495e",
+        "SIG_f70f5bf9",
+        "SIG_f3748bed",
+        "SIG_c57eac91",
+        "SIG_f0c80189"
+      ],
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Primary bus port boundary interface.",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'generic'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "signals": [
+    {
+      "signal_id": "SIG_dd97c409",
+      "name": "clk",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Synchronous design clock",
+      "semantic_role": "clock",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_deb25765",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "signal_id": "SIG_ceef9e15",
+      "name": "rst_n",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Active-low external reset",
+      "semantic_role": "reset",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_03b32a34",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "signal_id": "SIG_9141b831",
+      "name": "instruction_in",
+      "width": "64",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Instruction payload",
+      "semantic_role": "data",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'instruction_in'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "signal_id": "SIG_8a371f3c",
+      "name": "start",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Instruction capture request",
+      "semantic_role": "control",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_033",
+        "page": 32,
+        "chapter": "",
+        "section": "External Interfaces",
+        "original_text": "",
+        "source_entity_id": "ENT_2af23424",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "signal_id": "SIG_8757495e",
+      "name": "busy",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Accelerator busy status",
+      "semantic_role": "control",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_033",
+        "page": 32,
+        "chapter": "",
+        "section": "External Interfaces",
+        "original_text": "",
+        "source_entity_id": "ENT_cf6202f4",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "signal_id": "SIG_f70f5bf9",
+      "name": "done",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Instruction completion indication",
+      "semantic_role": "control",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_033",
+        "page": 32,
+        "chapter": "",
+        "section": "External Interfaces",
+        "original_text": "",
+        "source_entity_id": "ENT_847710dc",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "signal_id": "SIG_f3748bed",
+      "name": "error",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Sticky or transaction-level error indication",
+      "semantic_role": "data",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_056",
+        "page": 55,
+        "chapter": "",
+        "section": "Performance Scaling",
+        "original_text": "",
+        "source_entity_id": "ENT_8ea82dae",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "signal_id": "SIG_c57eac91",
+      "name": "interrupt",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Interrupt controller output",
+      "semantic_role": "data",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'interrupt'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "signal_id": "SIG_f0c80189",
+      "name": "decoder_strobe_compat",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Optional test/compatibility input",
+      "semantic_role": "data",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'decoder_strobe_compat'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "clocks": [
+    {
+      "signal_id": "SIG_dd97c409",
+      "name": "clk",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Synchronous design clock",
+      "semantic_role": "clock",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_deb25765",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "resets": [
+    {
+      "signal_id": "SIG_ceef9e15",
+      "name": "rst_n",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "description": "Active-low external reset",
+      "semantic_role": "reset",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_03b32a34",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "parameters": [],
+  "registers": [
+    {
+      "register_id": "REG_53173f7f",
+      "name": "Register File",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register Register File",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_001",
+        "page": 1,
+        "chapter": "",
+        "section": "Functional Specification for Multi Core Matrix Compute Unit.",
+        "original_text": "",
+        "source_entity_id": "ENT_29c40428",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "register_id": "REG_c6131b85",
+      "name": "matrix register",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register matrix register",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_d831eba0",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "register_id": "REG_929352c1",
+      "name": "configuration registers",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register configuration registers",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_033",
+        "page": 32,
+        "chapter": "",
+        "section": "External Interfaces",
+        "original_text": "",
+        "source_entity_id": "ENT_264b95be",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "register_id": "REG_379d1914",
+      "name": "status registers",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register status registers",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_033",
+        "page": 32,
+        "chapter": "",
+        "section": "External Interfaces",
+        "original_text": "",
+        "source_entity_id": "ENT_7daadeb9",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "register_id": "REG_fd5b3c64",
+      "name": "Matrix Registers",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register Matrix Registers",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_004",
+        "page": 4,
+        "chapter": "",
+        "section": "Matrix ALU : Performs the actual matrix operations",
+        "original_text": "",
+        "source_entity_id": "ENT_1813ccd5",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "register_id": "REG_1d3177ce",
+      "name": "M0\u2013M15",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register M0\u2013M15",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'M0\u2013M15'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_32af6d85",
+      "name": "Local Register File",
+      "address": "",
+      "offset": "0x0",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": "0",
+      "fields": [],
+      "description": "Register Local Register File",
+      "side_effects": "",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_036",
+        "page": 35,
+        "chapter": "",
+        "section": "Performance Goals",
+        "original_text": "",
+        "source_entity_id": "ENT_9b55e5f1",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "instructions": [
+    {
+      "instruction_id": "INSTR_9a331e27",
+      "name": "assembly instructions",
+      "mnemonic": "assembly instructions",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction assembly instructions",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_001",
+        "page": 1,
+        "chapter": "",
+        "section": "Functional Specification for Multi Core Matrix Compute Unit.",
+        "original_text": "",
+        "source_entity_id": "ENT_0b296f14",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_1a86799f",
+      "name": "instruction",
+      "mnemonic": "instruction",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction instruction",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_004",
+        "page": 4,
+        "chapter": "",
+        "section": "Matrix ALU : Performs the actual matrix operations",
+        "original_text": "",
+        "source_entity_id": "ENT_e6c58260",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_099f5369",
+      "name": "MREDUCE",
+      "mnemonic": "MREDUCE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MREDUCE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_9ea2453e",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_5e5a7360",
+      "name": "MDISTRIBUTE",
+      "mnemonic": "MDISTRIBUTE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MDISTRIBUTE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_5760dbd6",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_95050470",
+      "name": "MPARTITION",
+      "mnemonic": "MPARTITION",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MPARTITION",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_a966005d",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_0317744a",
+      "name": "MBARRIER",
+      "mnemonic": "MBARRIER",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MBARRIER",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_a256c83f",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_d7299dab",
+      "name": "MLOAD",
+      "mnemonic": "MLOAD",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MLOAD",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_bcc8bbf1",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_f8afd639",
+      "name": "MZERO",
+      "mnemonic": "MZERO",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MZERO",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_31f96b9a",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_822baa18",
+      "name": "MIDENTITY",
+      "mnemonic": "MIDENTITY",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MIDENTITY",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_aebd2557",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_c28a9513",
+      "name": "MSIZE",
+      "mnemonic": "MSIZE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MSIZE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_c76545c1",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_6b5a1b63",
+      "name": "MADD",
+      "mnemonic": "MADD",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MADD",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_d6bdcfc6",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_525e672c",
+      "name": "MSUB",
+      "mnemonic": "MSUB",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MSUB",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_85a8ad06",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_d6dda0ec",
+      "name": "MMUL",
+      "mnemonic": "MMUL",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MMUL",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_62510aea",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_3a5bac39",
+      "name": "MDIV",
+      "mnemonic": "MDIV",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MDIV",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_acaf1626",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_7bc4926a",
+      "name": "MTRANS",
+      "mnemonic": "MTRANS",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MTRANS",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_7a31a685",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_6a99f9ff",
+      "name": "MINV",
+      "mnemonic": "MINV",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MINV",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_13c6ae2d",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_26dd5586",
+      "name": "MDET",
+      "mnemonic": "MDET",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MDET",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_c4199491",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_cf673fd6",
+      "name": "MEIG",
+      "mnemonic": "MEIG",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MEIG",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_e88bc12e",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_e72db15f",
+      "name": "MSVD",
+      "mnemonic": "MSVD",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MSVD",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_055041c8",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_52207159",
+      "name": "MSLICE",
+      "mnemonic": "MSLICE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MSLICE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_ad9bde16",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_14a25484",
+      "name": "MCONCAT",
+      "mnemonic": "MCONCAT",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MCONCAT",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_b5cf1e32",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_702f9276",
+      "name": "MTYPE",
+      "mnemonic": "MTYPE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MTYPE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_1f84774d",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_81575230",
+      "name": "MSTORE",
+      "mnemonic": "MSTORE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MSTORE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_e40a73f8",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_bda978ad",
+      "name": "opcode map",
+      "mnemonic": "opcode map",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction opcode map",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'opcode map'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_c0442a85",
+      "name": "RESOLVED",
+      "mnemonic": "RESOLVED",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Rev. 1 stated the instruction is 64 bits in Section 3.1 but 32 bits in the External Interfaces section. This document uses 64 bits consistently (see Section 6).",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'RESOLVED'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_5db02776",
+      "name": "MMUL_COLLECTIVE",
+      "mnemonic": "MMUL_COLLECTIVE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MMUL_COLLECTIVE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_17d040c8",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_3d56b1ba",
+      "name": "MINV_COLLECTIVE",
+      "mnemonic": "MINV_COLLECTIVE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MINV_COLLECTIVE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_ea55f688",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_0445ae77",
+      "name": "MSVD_COLLECTIVE",
+      "mnemonic": "MSVD_COLLECTIVE",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction MSVD_COLLECTIVE",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_053",
+        "page": 52,
+        "chapter": "",
+        "section": "Collective Operations",
+        "original_text": "",
+        "source_entity_id": "ENT_4c78f878",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "instruction_id": "INSTR_c7381189",
+      "name": "instruction_decoder",
+      "mnemonic": "instruction_decoder",
+      "opcode": "",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "fields": [],
+      "description": "Instruction instruction_decoder",
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_001",
+        "page": 1,
+        "chapter": "",
+        "section": "Functional Specification for Multi Core Matrix Compute Unit.",
+        "original_text": "",
+        "source_entity_id": "ENT_0929440b",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "instruction_formats": [],
+  "opcodes": [
+    {
+      "opcode_id": "OPC_fdb533a3",
+      "mnemonic": "MREDUCE",
+      "binary_encoding": "010010",
+      "operation": "Opcode for MREDUCE",
+      "operands": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_9ea2453e",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "opcode_id": "OPC_cd360626",
+      "mnemonic": "MDISTRIBUTE",
+      "binary_encoding": "010011",
+      "operation": "Opcode for MDISTRIBUTE",
+      "operands": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_5760dbd6",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "opcode_id": "OPC_da031360",
+      "mnemonic": "MPARTITION",
+      "binary_encoding": "010100",
+      "operation": "Opcode for MPARTITION",
+      "operands": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_a966005d",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "opcode_id": "OPC_df918b5f",
+      "mnemonic": "MBARRIER",
+      "binary_encoding": "010101",
+      "operation": "Opcode for MBARRIER",
+      "operands": [],
+      "traceability": {
+        "doc_id": "doc_4477ce62e7",
+        "chunk_id": "BLK_025",
+        "page": 25,
+        "chapter": "",
+        "section": "Assembly Syntax",
+        "original_text": "",
+        "source_entity_id": "ENT_a256c83f",
+        "extraction_method": "pipeline_normalized",
+        "confidence": 0.95
+      }
+    },
+    {
+      "opcode_id": "OPC_281eecf8",
+      "mnemonic": "reserved opcodes",
+      "binary_encoding": "",
+      "operation": "Opcode encoding ",
+      "operands": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'reserved opcodes'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_7862d0df",
+      "mnemonic": "assigned opcode",
+      "binary_encoding": "",
+      "operation": "Opcode encoding ",
+      "operands": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'assigned opcode'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_c00d6d6d",
+      "mnemonic": "unassigned opcode",
+      "binary_encoding": "",
+      "operation": "Opcode encoding ",
+      "operands": [],
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'unassigned opcode'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "fsms": [],
+  "transactions": [],
+  "functional_behavior": [],
+  "memory": [],
+  "protocol_rules": [
+    {
+      "rule_id": "PRULE_c56a9ce8",
+      "name": "write transaction that is progressing to its final destination/write transaction that is progressing to its final destination p.93",
+      "type": "general",
+      "description": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_18959ea2eb",
+        "original_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.8404223918914795
+      }
+    },
+    {
+      "rule_id": "PRULE_f94fac09",
+      "name": "destination is permitted to wait for VALID to be asserted before asserting the corresponding READY/destination is permitted to wait for VALID to be asserted before asserting the corresponding READY p.54",
+      "type": "handshake",
+      "description": "If READY is asserted, it is permitted to deassert READY before VALID is asserted.\nIn Figure A3.4, both the source and destination happen to indicate that they can transfer the address, data, or control information after edge 1. In this case, the transfer occurs at the rising clock edge when the assertion of both VALID and READY can be recognized. These assertions mean that the transfer occurs at edge 2.\nA3.2. Channel handshake",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_bbddb4d02e",
+        "original_text": "If READY is asserted, it is permitted to deassert READY before VALID is asserted.\nIn Figure A3.4, both the source and destination happen to indicate that they can transfer the address, data, or control information after edge 1. In this case, the transfer occurs at the rising clock edge when the assertion of both VALID and READY can be recognized. These assertions mean that the transfer occurs at edge 2.\nA3.2. Channel handshake",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.8381671905517578
+      }
+    },
+    {
+      "rule_id": "PRULE_170a2572",
+      "name": "Manager that does not use RLAST can omit the input from its interface/Manager that does not use RLAST can omit the input from its interface p.57",
+      "type": "general",
+      "description": "The property RLAST_Present is used to determine if the RLAST signal is present.\nTable A3.7: RLAST_Present property\nA3.4. Relationships between the channels",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_00da5d3d02",
+        "original_text": "The property RLAST_Present is used to determine if the RLAST signal is present.\nTable A3.7: RLAST_Present property\nA3.4. Relationships between the channels",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.65
+      }
+    },
+    {
+      "rule_id": "PRULE_d5a18af5",
+      "name": "caching Manager that receives snoop transactions/Store p.318",
+      "type": "general",
+      "description": "The action of a Manager component changing the value held at a particular address location. For a processor, a store occurs as the result of executing a particular instruction. Whether the store results in the Manager issuing a read or write transaction depends on whether the accessed cache line is held in the local cache, and if it is in the local cache, the state it is in.\nSubordinate\nAn agent that receives and responds to requests.",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_027e99338f",
+        "original_text": "The action of a Manager component changing the value held at a particular address location. For a processor, a store occurs as the result of executing a particular instruction. Whether the store results in the Manager issuing a read or write transaction depends on whether the accessed cache line is held in the local cache, and if it is in the local cache, the state it is in.\nSubordinate\nAn agent that receives and responds to requests.",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.65
+      }
+    }
+  ],
+  "timing_rules": [],
+  "timing_requirements": [],
+  "performance_requirements": [
+    {
+      "perf_id": "PERF_c8424944",
+      "metric": "PERFORMANCE",
+      "target_value": "GHz",
+      "condition": "Performance target PERFORMANCE =  GHz",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'PERFORMANCE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_085de6f6",
+      "metric": "PERFORMANCE",
+      "target_value": "million elements/second",
+      "condition": "Performance target PERFORMANCE =  million elements/second",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'PERFORMANCE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_45766aca",
+      "metric": "FREQUENCY",
+      "target_value": "1 GHz",
+      "condition": "Performance target FREQUENCY = 1 GHz",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'FREQUENCY'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_2552887e",
+      "metric": "THROUGHPUT",
+      "target_value": "6.25",
+      "condition": "Performance target THROUGHPUT = 6.25 ",
+      "traceability": {
+        "doc_id": "user_spec",
+        "chunk_id": "USER_SPEC_TEXT",
+        "original_text": "Specification entry for 'THROUGHPUT'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "errors": [],
+  "constraints": [],
+  "requirements": [],
+  "resolutions": [],
+  "examples": [],
+  "ambiguities": [],
+  "contradictions": [],
+  "extraction_quality": {
+    "source_completeness": "complete",
+    "ir_completeness": "complete",
+    "extraction_status": "success",
+    "missing_information": []
+  }
+}

@@ -28,23 +28,38 @@ st.set_page_config(
 
 PAGES = {
     "Dashboard": "ui.dashboard",
+    "Developer Debug View": "ui.debug_view",
+    "Protocol Library": "ui.protocol_library",
+    "Protocol Graph Explorer": "ui.graph_view",
+    "Existing GraphRAG QA": "ui.qa_page",
+    "Hardware Design": "ui.hardware_design",
+    "Design Plan": "ui.design_plan",
+    "EFS IR Review": "ui.efs_ir_review",
+    "Generated RTL": "ui.generated_rtl",
+    "PlantUML Diagrams": "ui.plantuml_diagrams",
+    # Existing features must remain
     "Document Upload": "ui.upload_page",
     "Chunk Explorer": "ui.chunk_explorer",
     "Entity Explorer": "ui.entity_explorer",
-    "Knowledge Graph": "ui.graph_view",
     "Vector Search": "ui.vector_search_page",
-    "Question Answering": "ui.qa_page",
     "Logs": "ui.logs_page",
 }
 
 PAGE_ICONS = {
     "Dashboard": "📊",
+    "Developer Debug View": "🔍",
+    "Protocol Library": "📚",
+    "Protocol Graph Explorer": "🕸️",
+    "Existing GraphRAG QA": "💬",
+    "Hardware Design": "💻",
+    "Design Plan": "📋",
+    "EFS IR Review": "🖥️",
+    "Generated RTL": "⚙️",
+    "PlantUML Diagrams": "📊",
     "Document Upload": "📤",
     "Chunk Explorer": "🧩",
     "Entity Explorer": "🏷️",
-    "Knowledge Graph": "🕸️",
     "Vector Search": "🔍",
-    "Question Answering": "💬",
     "Logs": "📜",
 }
 
@@ -72,8 +87,25 @@ def _render_sidebar_status() -> None:
 
 
 def main() -> None:
+    from utils.protocol_manager import bootstrap_library, select_protocol
+
+    # Bootstrap the protocol library
+    bootstrap_library()
+
+    # Set default active protocol if not in session state
+    if "active_protocol" not in st.session_state:
+        st.session_state["active_protocol"] = "AXI4"
+
+    # Make sure CONFIG directories are dynamically re-routed on every rerun
+    try:
+        select_protocol(st.session_state["active_protocol"])
+    except Exception as e:
+        logger.warning(f"Failed to load active protocol {st.session_state['active_protocol']}: {e}")
+
     st.sidebar.title(f"🔩 {CONFIG.app_title}")
     st.sidebar.caption("Hardware Spec → Knowledge Graph + Vector RAG")
+    
+    st.sidebar.markdown(f"**Active Protocol Engine:** `{st.session_state['active_protocol']}`")
 
     page_names = list(PAGES.keys())
     labels = [f"{PAGE_ICONS[name]}  {name}" for name in page_names]

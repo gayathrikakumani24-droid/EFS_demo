@@ -13,25 +13,32 @@ from __future__ import annotations
 import re
 from typing import List
 
+from config import CONFIG
 from core.extraction.llm_client import get_llm_client
 from utils.models import Chunk, Entity, ENTITY_TYPES, new_id
 from utils.logger import get_logger
 
 logger = get_logger("extraction.entities")
 
-_SYSTEM_PROMPT = f"""You are a hardware specification analysis expert. Extract structured entities
-from the given text chunk of a hardware/protocol specification document.
+_SYSTEM_PROMPT = f"""You are an expert in digital hardware protocols, RTL design, verification, and knowledge-graph construction.
+Your task is to analyze the given text chunk of a hardware protocol specification document and convert its relevant information into structured protocol entities suitable for Neo4j and GraphRAG.
 
-Valid entity types: {", ".join(ENTITY_TYPES)}
+Valid entity types:
+{", ".join(ENTITY_TYPES)}
+
+Categories of interest:
+1. Protocol-Level: Protocol, Interface, Channel, Component, Master, Slave, Initiator, Target, Register, Field
+2. Transactions & Steps: Transaction (Read, Write, Burst, Handshake, Reset), TransactionStep (ordered sequence step)
+3. Signals & Timing: Signal (width, direction, valid/ready), State, Event, Response, Error, ClockDomain, TimingConstraint, TimingRule
+4. Rules & Conditions: ProtocolRule (normative MUST, SHALL, SHOULD, REQUIRED, PROHIBITED), Condition (VALID/READY handshakes, preconditions), Constraint
 
 Return ONLY a JSON object of the form:
-{{"entities": [{{"name": "<canonical-ish name>", "type": "<one of the valid types>", "text_span": "<verbatim snippet from input>"}}]}}
+{{"entities": [{{"name": "<canonical name>", "type": "<one of valid types>", "text_span": "<verbatim snippet from input>"}}]}}
 
 Rules:
-- Only extract entities that are explicitly present in the text.
-- Use the most specific correct type.
-- Do not invent entities that aren't supported by the text.
-- If nothing qualifies, return {{"entities": []}}.
+- Only extract entities explicitly supported by the text.
+- Preserve exact signal names, channel names, and transaction names.
+- Do not invent entities. If nothing qualifies, return {{"entities": []}}.
 """
 
 # ------------------------------------------------------------------
@@ -43,10 +50,15 @@ _HEURISTIC_PATTERNS = [
     (re.compile(r"\b(AXI4?|AHB|APB|PCIe|I2C|SPI|UART|USB\d?|SATA|DDR\d?)\b"), "Protocol"),
     (re.compile(r"\b(\w+\s?Interface)\b", re.IGNORECASE), "Interface"),
     (re.compile(r"\b(Write Address Channel|Read Address Channel|Write Data Channel|Read Data Channel|Write Response Channel|WA Channel|RA Channel|WD Channel|RD Channel|WR Channel|B Channel)\b", re.IGNORECASE), "Channel"),
-    (re.compile(r"\b([A-Z][A-Z0-9_]{2,}(?:VALID|READY|RESET|CLK|ENABLE|SEL|ACK|REQ))\b"), "Signal"),
+    (re.compile(r"\b([A-Z][A-Z0-9_]{2,}(?:VALID|READY|RESET|CLK|ENABLE|SEL|ACK|REQ|ADDR|DATA|RESP|STRB|LAST|ID|BURST|LEN|SIZE|LOCK|CACHE|PROT))\b"), "Signal"),
     (re.compile(r"\b(\w+\s?Register)\b", re.IGNORECASE), "Register"),
     (re.compile(r"\b(bit\s*\d+(?:[:\-]\d+)?)\b", re.IGNORECASE), "Field"),
-    (re.compile(r"\b(Read Transaction|Write Transaction|Burst Transaction|\w+ Transaction)\b", re.IGNORECASE), "Transaction"),
+    (re.compile(r"\b(Read Transaction|Write Transaction|Burst Transaction|\w+ Transaction|\w+ Transfer)\b", re.IGNORECASE), "Transaction"),
+    (re.compile(r"\b(STEP_\d+|\bstep \d+\b)\b", re.IGNORECASE), "TransactionStep"),
+    (re.compile(r"\b(Master|Initiator)\b", re.IGNORECASE), "Master"),
+    (re.compile(r"\b(Slave|Target)\b", re.IGNORECASE), "Slave"),
+    (re.compile(r"\b(MUST|SHALL|SHOULD|MUST NOT|SHALL NOT|REQUIRED|PROHIBITED)\b[^\.\n]{5,100}", re.IGNORECASE), "ProtocolRule"),
+    (re.compile(r"\b(VALID\s*==?\s*1\s*&&\s*READY\s*==?\s*1|VALID\s*and\s*READY)\b", re.IGNORECASE), "Condition"),
     (re.compile(r"\b(setup time|hold time|t_su|t_h|propagation delay|latency of \w+)\b", re.IGNORECASE), "TimingConstraint"),
     (re.compile(r"\b(\w+\s?clock domain|CLK_\w+)\b", re.IGNORECASE), "ClockDomain"),
     (re.compile(r"\b(memory region|address space|\w+ RAM|\w+ ROM)\b", re.IGNORECASE), "MemoryRegion"),
@@ -98,11 +110,13 @@ def extract_entities(chunk: Chunk) -> List[Entity]:
             f"Chapter: {chunk.chapter}\nSection: {chunk.section}\nHeading: {chunk.heading}\n\n"
             f"Text:\n{chunk.text}"
         )
-        result = llm.complete_json(_SYSTEM_PROMPT, user_prompt)
+        result = llm.complete_json(_SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
         if result and isinstance(result.get("entities"), list):
             entities = []
             for item in result["entities"]:
-                etype = item.get("type", "").strip()
+                if not isinstance(item, dict):
+                    continue
+                etype = (item.get("type") or "").strip()
                 if etype not in ENTITY_TYPES:
                     continue
                 name = (item.get("name") or "").strip()
@@ -119,7 +133,7 @@ def extract_entities(chunk: Chunk) -> List[Entity]:
                         page=chunk.page,
                         chapter=chunk.chapter,
                         section=chunk.section,
-                        original_text=item.get("text_span", chunk.text[:300]),
+                        original_text=item.get("text_span", chunk.text[:300]) if isinstance(item.get("text_span"), str) else chunk.text[:300],
                     )
                 )
             if entities:

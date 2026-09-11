@@ -68,9 +68,12 @@ _root_configured = False
 
 def _configure_root() -> None:
     global _root_configured
+    root = logging.getLogger("graphrag")
+    if root.handlers:
+        _root_configured = True
+        return
     if _root_configured:
         return
-    root = logging.getLogger("graphrag")
     root.setLevel(logging.DEBUG)
 
     console = logging.StreamHandler()
@@ -111,3 +114,41 @@ def get_recent_logs(category: str = "all", level: str = "ALL", limit: int = 500)
 
 def clear_logs() -> None:
     _LOG_BUFFER.clear()
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "w", encoding="utf-8") as f:
+                f.truncate(0)
+        except Exception:
+            pass
+
+
+def _load_initial_logs() -> None:
+    if not os.path.exists(LOG_FILE):
+        return
+    try:
+        with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            for line in lines[-_MAX_BUFFER:]:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(" | ", 3)
+                if len(parts) == 4:
+                    asctime, levelname, logger_name, message = parts
+                    levelname = levelname.strip()
+                    logger_name = logger_name.strip()
+                    category = _categorize(logger_name)
+                    _LOG_BUFFER.append({
+                        "time": asctime,
+                        "level": levelname,
+                        "logger": logger_name,
+                        "category": category,
+                        "message": message,
+                        "formatted": line,
+                    })
+    except Exception:
+        pass
+
+
+# Load logs from file on startup to populate the in-memory ring buffer
+_load_initial_logs()

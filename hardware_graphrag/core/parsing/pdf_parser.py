@@ -153,14 +153,19 @@ class PDFParser(BaseParser):
 
     def _extract_tables_for_page(self, page_index: int, sections: List[DocSection], chapter: str) -> None:
         with pdfplumber.open(self.filepath) as pdf:
-            if page_index - 1 >= len(pdf.pages):
-                return
-            page = pdf.pages[page_index - 1]
-            tables = page.extract_tables()
+            pdf_page = pdf.pages[page_index - 1]
+            tables = pdf_page.extract_tables()
             for t_idx, table in enumerate(tables):
-                rows_text = "\n".join(
-                    " | ".join(cell or "" for cell in row) for row in table if row
-                )
+                if not table:
+                    continue
+                headers = [str(cell).strip() if cell else "" for cell in table[0]]
+                table_lines = ["| " + " | ".join(headers) + " |"]
+                table_lines.append("| " + " | ".join(["---"] * max(1, len(headers))) + " |")
+                for row in table[1:]:
+                    row_cells = [str(cell).strip() if cell else "" for cell in row]
+                    table_lines.append("| " + " | ".join(row_cells) + " |")
+                
+                rows_text = "\n".join(table_lines)
                 if rows_text.strip():
                     sec = self._new_section(
                         title=f"Table (p.{page_index}#{t_idx + 1})",

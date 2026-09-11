@@ -24,7 +24,8 @@ from utils.logger import get_logger
 
 logger = get_logger("registry")
 
-_REGISTRY_PATH = os.path.join(CONFIG.graph_cache_dir, "registry.pkl")
+def _get_registry_path() -> str:
+    return os.path.join(CONFIG.graph_cache_dir, "registry.pkl")
 
 
 @dataclass
@@ -34,6 +35,8 @@ class Registry:
     entities: Dict[str, List[Entity]] = field(default_factory=dict)      # doc_id -> entities
     relationships: Dict[str, List[Relationship]] = field(default_factory=dict)  # doc_id -> relationships
     errors: Dict[str, List[str]] = field(default_factory=dict)           # doc_id -> error messages
+    active_req_ir: Optional[Any] = None
+    active_efs_ir: Optional[Any] = None
 
     def all_chunks(self) -> List[Chunk]:
         out: List[Chunk] = []
@@ -64,10 +67,16 @@ def get_registry() -> Registry:
     return _singleton
 
 
+def reset_registry() -> None:
+    global _singleton
+    _singleton = None
+
+
 def _load() -> Registry:
-    if os.path.exists(_REGISTRY_PATH):
+    path = _get_registry_path()
+    if os.path.exists(path):
         try:
-            with open(_REGISTRY_PATH, "rb") as f:
+            with open(path, "rb") as f:
                 return pickle.load(f)
         except Exception as e:
             logger.warning(f"Failed to load registry cache, starting fresh: {e}")
@@ -76,8 +85,10 @@ def _load() -> Registry:
 
 def save_registry() -> None:
     registry = get_registry()
+    path = _get_registry_path()
     try:
-        with open(_REGISTRY_PATH, "wb") as f:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
             pickle.dump(registry, f)
     except Exception as e:
         logger.error(f"Failed to persist registry cache: {e}")
@@ -92,11 +103,16 @@ def register_result(result) -> None:
     registry.entities[doc_id] = result.entities
     registry.relationships[doc_id] = result.relationships
     registry.errors[doc_id] = result.errors
+    if getattr(result, "req_ir", None):
+        registry.active_req_ir = result.req_ir
+    if getattr(result, "efs_ir", None):
+        registry.active_efs_ir = result.efs_ir
     save_registry()
 
 
 def clear_registry() -> None:
     global _singleton
     _singleton = Registry()
-    if os.path.exists(_REGISTRY_PATH):
-        os.remove(_REGISTRY_PATH)
+    path = _get_registry_path()
+    if os.path.exists(path):
+        os.remove(path)

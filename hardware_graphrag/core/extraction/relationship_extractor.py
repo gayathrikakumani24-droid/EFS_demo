@@ -19,28 +19,47 @@ import re
 from itertools import combinations
 from typing import List
 
+from config import CONFIG
 from core.extraction.llm_client import get_llm_client
 from utils.models import Chunk, Entity, Relationship, RELATIONSHIP_TYPES, new_id
 from utils.logger import get_logger
 
 logger = get_logger("extraction.relationships")
 
-_SYSTEM_PROMPT = f"""You are a hardware specification analysis expert. Given a text chunk and a
-list of entities already identified in it, extract relationships between
-those entities only (do not invent new entities).
+_SYSTEM_PROMPT = f"""You are an expert in digital hardware protocols and knowledge-graph construction.
+Given a text chunk of a hardware spec and a list of identified entities in it, extract semantic relationships between those entities only.
 
-Valid relationship types: {", ".join(RELATIONSHIP_TYPES)}
+Valid relationship types:
+{", ".join(RELATIONSHIP_TYPES)}
+
+Key relationship categories to extract:
+- Channel & Signal: (:Protocol)-[:HAS_CHANNEL]->(:Channel), (:Channel)-[:HAS_SIGNAL]->(:Signal), (:Transaction)-[:USES_CHANNEL]->(:Channel), (:Transaction)-[:USES_SIGNAL]->(:Signal)
+- Transaction & Component: (:Transaction)-[:INITIATED_BY]->(:Master), (:Transaction)-[:TARGETS]->(:Slave), (:Transaction)-[:NEXT_STEP]->(:TransactionStep), (:Transaction)-[:FOLLOWED_BY]->(:Transaction)
+- Rules & Conditions: (:ProtocolRule)-[:APPLIES_TO]->(:Transaction), (:ProtocolRule)-[:CONSTRAINS]->(:Signal), (:Condition)-[:ENABLES]->(:Transaction), (:Transaction)-[:PRODUCES]->(:Response), (:Transaction)-[:MAY_CAUSE]->(:Error)
 
 Return ONLY a JSON object of the form:
-{{"relationships": [{{"source": "<entity name>", "relation": "<one of the valid types>", "target": "<entity name>", "evidence": "<short verbatim snippet>"}}]}}
+{{"relationships": [{{"source": "<entity name>", "relation": "<one of valid types>", "target": "<entity name>", "evidence": "<short verbatim snippet>"}}]}}
 
 Rules:
 - source and target MUST be exact names from the provided entity list.
-- Only emit relationships clearly supported by the text.
+- Only emit relationships clearly supported by the text chunk.
 - If nothing qualifies, return {{"relationships": []}}.
 """
 
 _KEYWORD_CUES = [
+    (re.compile(r"\bhas channel\b", re.IGNORECASE), "HAS_CHANNEL"),
+    (re.compile(r"\bhas signal\b", re.IGNORECASE), "HAS_SIGNAL"),
+    (re.compile(r"\buses channel\b", re.IGNORECASE), "USES_CHANNEL"),
+    (re.compile(r"\buses signal\b", re.IGNORECASE), "USES_SIGNAL"),
+    (re.compile(r"\binitiated by\b", re.IGNORECASE), "INITIATED_BY"),
+    (re.compile(r"\btargets\b", re.IGNORECASE), "TARGETS"),
+    (re.compile(r"\bnext step\b", re.IGNORECASE), "NEXT_STEP"),
+    (re.compile(r"\bfollowed by\b", re.IGNORECASE), "FOLLOWED_BY"),
+    (re.compile(r"\bapplies to\b", re.IGNORECASE), "APPLIES_TO"),
+    (re.compile(r"\bconstrains\b", re.IGNORECASE), "CONSTRAINS"),
+    (re.compile(r"\benables\b", re.IGNORECASE), "ENABLES"),
+    (re.compile(r"\bmay cause\b", re.IGNORECASE), "MAY_CAUSE"),
+    (re.compile(r"\bdefines\b", re.IGNORECASE), "DEFINES"),
     (re.compile(r"\bhandshake", re.IGNORECASE), "HANDSHAKES_WITH"),
     (re.compile(r"\brequires?\b", re.IGNORECASE), "REQUIRES"),
     (re.compile(r"\bdepends? on\b", re.IGNORECASE), "DEPENDS_ON"),
@@ -108,11 +127,13 @@ def extract_relationships(chunk: Chunk, entities: List[Entity]) -> List[Relation
         user_prompt = (
             f"Entities: {entity_names}\n\nText:\n{chunk.text}"
         )
-        result = llm.complete_json(_SYSTEM_PROMPT, user_prompt)
+        result = llm.complete_json(_SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
         if result and isinstance(result.get("relationships"), list):
             valid_names = set(entity_names)
             rels = []
             for item in result["relationships"]:
+                if not isinstance(item, dict):
+                    continue
                 rel_type = (item.get("relation") or "").strip()
                 source = (item.get("source") or "").strip()
                 target = (item.get("target") or "").strip()
@@ -120,6 +141,9 @@ def extract_relationships(chunk: Chunk, entities: List[Entity]) -> List[Relation
                     continue
                 if source not in valid_names or target not in valid_names or source == target:
                     continue
+                evidence = item.get("evidence", "")
+                if not isinstance(evidence, str):
+                    evidence = ""
                 rels.append(
                     Relationship(
                         rel_id=new_id("rel"),
@@ -128,7 +152,7 @@ def extract_relationships(chunk: Chunk, entities: List[Entity]) -> List[Relation
                         target=target,
                         chunk_id=chunk.chunk_id,
                         doc_id=chunk.doc_id,
-                        evidence=item.get("evidence", ""),
+                        evidence=evidence,
                     )
                 )
             if rels:

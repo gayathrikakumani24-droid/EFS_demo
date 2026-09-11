@@ -72,6 +72,10 @@ def _process_file(uploaded_file) -> None:
     try:
         result = run_pipeline(save_path, filename=uploaded_file.name, progress_cb=progress_cb)
         register_result(result)
+        if result.req_ir:
+            st.session_state["active_req_ir"] = result.req_ir
+        if result.efs_ir:
+            st.session_state["active_efs_ir"] = result.efs_ir
 
         if result.errors:
             st.warning(f"Completed with {len(result.errors)} warning(s)/error(s): {result.errors}")

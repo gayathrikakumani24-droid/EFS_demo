@@ -19,10 +19,24 @@ _TYPE_COLORS = {
 
 
 def render() -> None:
-    st.title("🕸️ Knowledge Graph")
-    st.caption("Explore extracted entities and their relationships.")
-
     store = get_graph_store()
+    col_title, col_btn1, col_btn2 = st.columns([3, 1.5, 1.5])
+    with col_title:
+        st.title("🕸️ Knowledge Graph")
+        st.caption("Explore extracted entities and their relationships.")
+    with col_btn1:
+        if st.button("🧹 Deduplicate Graph", use_container_width=True):
+            if hasattr(store, "deduplicate_nodes"):
+                n_rem, e_rem = store.deduplicate_nodes()
+                st.success(f"Deduplicated graph! Removed {n_rem} duplicate nodes.")
+                st.rerun()
+    with col_btn2:
+        if st.button("🗑️ Reset Graph", use_container_width=True):
+            if hasattr(store, "clear"):
+                store.clear()
+                st.warning("Knowledge graph cache reset.")
+                st.rerun()
+
     all_nodes = store.all_nodes()
     all_edges = store.all_edges()
 

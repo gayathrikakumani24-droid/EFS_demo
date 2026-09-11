@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "design_id": "DSN_41001662",
+    "design_name": "unnamed_design",
+    "project_name": "default_project",
+    "protocol": "generic",
+    "protocol_version": "1.0",
+    "source_documents": [],
+    "specification_revision": "1.0",
+    "ir_schema_version": "1.0",
+    "generation_timestamp": "2026-08-25T20:56:23.863484"
+  },
+  "components": [],
+  "interfaces": [],
+  "signals": [],
+  "registers": [],
+  "transactions": [],
+  "fsms": [],
+  "constraints": [],
+  "timing_rules": [],
+  "protocol_rules": [],
+  "flows": [],
+  "assertions": [],
+  "coverage": [],
+  "instructions": [],
+  "opcodes": [],
+  "memory_regions": [],
+  "data_structures": [],
+  "errors": [],
+  "performance_requirements": [],
+  "conflicts": [],
+  "requirements": []
+}

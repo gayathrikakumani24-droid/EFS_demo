@@ -54,6 +54,8 @@ class ParsedDocument:
     sections: List[DocSection] = field(default_factory=list)
     total_pages: int = 0
     raw_text_len: int = 0
+    document_hash: str = ""
+    ingestion_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -62,6 +64,8 @@ class ParsedDocument:
             "file_type": self.file_type,
             "total_pages": self.total_pages,
             "raw_text_len": self.raw_text_len,
+            "document_hash": self.document_hash,
+            "ingestion_id": self.ingestion_id,
             "sections": [s.to_dict() for s in self.sections],
         }
 
@@ -86,6 +90,8 @@ class Chunk:
     previous_chunk: Optional[str] = None
     next_chunk: Optional[str] = None
     overlap_prefix: str = ""        # text carried over from previous chunk (10-20%)
+    document_hash: str = ""
+    ingestion_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -96,16 +102,20 @@ class Chunk:
 # --------------------------------------------------------------------------
 
 ENTITY_TYPES = [
-    "Protocol", "Interface", "Channel", "Signal", "Register", "Field",
-    "Transaction", "TimingConstraint", "ClockDomain", "MemoryRegion",
-    "Address", "Interrupt", "State", "Command", "DataStructure", "Feature",
+    "Protocol", "Interface", "Channel", "Transaction", "TransactionStep", "Signal",
+    "Register", "Field", "Component", "Master", "Slave", "Initiator", "Target",
+    "State", "Event", "Response", "Error", "Constraint", "TimingRule", "ProtocolRule",
+    "Condition", "TimingConstraint", "ClockDomain", "MemoryRegion", "Address",
+    "Interrupt", "Command", "DataStructure", "Feature",
 ]
 
 RELATIONSHIP_TYPES = [
-    "BELONGS_TO", "PART_OF", "USES", "DEPENDS_ON", "HANDSHAKES_WITH",
-    "CONNECTS_TO", "ASSERTED_BEFORE", "ASSERTED_AFTER", "TRANSITIONS_TO",
-    "GENERATES", "REQUIRES", "CONFIGURES", "READS_FROM", "WRITES_TO",
-    "REFERENCES", "DEFINED_IN",
+    "HAS_CHANNEL", "HAS_SIGNAL", "USES_CHANNEL", "USES_SIGNAL", "INITIATED_BY",
+    "TARGETS", "REQUIRES", "PRODUCES", "FOLLOWED_BY", "CONTROLLED_BY", "DEPENDS_ON",
+    "APPLIES_TO", "CONSTRAINS", "ENABLES", "MAY_CAUSE", "DEFINES", "NEXT_STEP",
+    "BELONGS_TO", "PART_OF", "USES", "HANDSHAKES_WITH", "CONNECTS_TO",
+    "ASSERTED_BEFORE", "ASSERTED_AFTER", "TRANSITIONS_TO", "GENERATES",
+    "CONFIGURES", "READS_FROM", "WRITES_TO", "REFERENCES", "DEFINED_IN",
 ]
 
 
@@ -124,6 +134,8 @@ class Entity:
     section: str = ""
     original_text: str = ""
     aliases: List[str] = field(default_factory=list)
+    document_hash: str = ""
+    ingestion_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -140,6 +152,8 @@ class Relationship:
     chunk_id: str
     doc_id: str
     evidence: str = ""
+    document_hash: str = ""
+    ingestion_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -173,3 +187,4 @@ class QAResult:
     retrieved_chunks: List[RetrievedChunk]
     graph_context: Optional[GraphContext]
     citations: List[str] = field(default_factory=list)
+    efs_ir: Optional[Any] = None
