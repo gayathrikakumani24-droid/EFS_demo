@@ -170,9 +170,18 @@ def _extractive_fallback_answer(question: str, chunks: List[RetrievedChunk]) -> 
 
 def answer_question(question: str, document_id: Optional[str] = None) -> QAResult:
     vector_store = get_vector_store()
+    from core.retrieval.query_analyzer import classify_query_category
+
+    cat = classify_query_category(question)
+    if cat == "fact":
+        top_k_v = getattr(CONFIG, "top_k_vector_fact", 2)
+    elif cat in ("multi-hop", "comparison", "full-flow"):
+        top_k_v = getattr(CONFIG, "top_k_vector_multihop", 5)
+    else:
+        top_k_v = getattr(CONFIG.retrieval, "top_k_vector", 4)
 
     graph_context = _graph_search(question, document_id=document_id)
-    vector_hits = vector_store.search(question, top_k=CONFIG.retrieval.top_k_vector, document_id=document_id)
+    vector_hits = vector_store.search(question, top_k=top_k_v, document_id=document_id)
     merged_chunks = _merge_results(vector_hits, graph_context.chunk_ids)
 
     context_text, citations = _format_context(merged_chunks)

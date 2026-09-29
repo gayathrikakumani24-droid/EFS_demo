@@ -25,7 +25,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from core.efs_ir.models import EFSIR, EFSConflict, EFSResolution, EFSRegister, EFSSignal, EFSOpcode
 from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-from core.agents.orchestrator import resume_design_flow_with_resolutions, run_design_flow
 
 
 def create_base_efs_ir() -> EFSIR:

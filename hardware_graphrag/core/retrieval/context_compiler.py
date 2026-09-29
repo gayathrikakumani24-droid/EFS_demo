@@ -17,8 +17,10 @@ from core.retrieval.dependency_resolver import resolve_dependencies, ResolvedDep
 from core.retrieval.protocol_resolver import resolve_protocol_context, validate_protocol_context_completeness
 from core.retrieval.token_budget import TokenBudgetManager
 from core.retrieval.context_pack import ContextPack
+from config import CONFIG
 from core.vectorstore.faiss_store import get_vector_store
 from utils.logger import get_logger
+from core.context_compiler import compile_context
 
 logger = get_logger("retrieval.context_compiler")
 
@@ -48,9 +50,14 @@ def compile_task_context(
     res_result = resolve_target(intent.target, efs_ir)
     if not res_result.is_success():
         logger.warning(f"Target resolution failed: {res_result.error_message}")
+        diag = res_result.diagnostic_details or {
+            "type": "TARGET_RESOLUTION_FAILED",
+            "description": res_result.error_message
+        }
         pack = ContextPack(
             task=intent,
-            conflicts=[{"type": "TARGET_RESOLUTION_FAILED", "description": res_result.error_message}]
+            conflicts=[],
+            diagnostics=[diag]
         )
         return pack, res_result
 
@@ -71,7 +78,8 @@ def compile_task_context(
     try:
         vstore = get_vector_store()
         search_query = f"{target_comp.name} {intent.task} interface behavior requirements"
-        vector_hits = vstore.search(search_query, top_k=5)
+        top_k = getattr(CONFIG, "top_k_vector_fact", 2) if getattr(intent, "query_category", "fact") == "fact" else getattr(CONFIG, "top_k_vector_multihop", 5)
+        vector_hits = vstore.search(search_query, top_k=top_k)
         for hit in vector_hits:
             meta = hit.metadata or {}
             user_source_evidence.append({
@@ -91,15 +99,21 @@ def compile_task_context(
     for const in efs_ir.constraints:
         if (target_comp.name.lower() in const.expected_behavior.lower() or
             any(target_comp.name.lower() in str(so).lower() for so in const.source_objects)):
-            func_reqs.append(const.to_dict())
+            c_dict = const.to_dict()
+            # Clean oversized chunk evidence from constraint dict
+            c_dict.pop("source_chunks", None)
+            c_dict.pop("source_references", None)
+            func_reqs.append(c_dict)
 
     # Extract timing rules
-    timing_rules = [t.to_dict() for t in efs_ir.timing_rules]
+    timing_rules = [t.to_dict() for t in efs_ir.timing_rules][:10]
 
     # Extract FSM dictionary for target
     fsm_dict = {}
     if dep_res.fsms:
         fsm_dict = dep_res.fsms[0].to_dict()
+    elif efs_ir.fsms:
+        fsm_dict = efs_ir.fsms[0].to_dict()
 
     # Extract conflicts
     conflicts_dict = [c.to_dict() for c in efs_ir.conflicts if c.resolution_status == "UNRESOLVED"]
@@ -114,6 +128,8 @@ def compile_task_context(
         len(dep_res.interfaces) + len(dep_res.registers) + len(dep_res.fsms)
     )
 
+    context_ver = getattr(getattr(efs_ir, "metadata", None), "model_version", 1)
+
     pack = ContextPack(
         task=intent,
         target_component=target_comp.to_dict(),
@@ -126,7 +142,7 @@ def compile_task_context(
         functional_requirements=func_reqs,
         timing_rules=timing_rules,
         protocol_rules=relevant_proto_rules,
-        constraints=[c.to_dict() for c in efs_ir.constraints],
+        constraints=func_reqs,
         source_evidence=user_source_evidence,
         protocol_source_evidence=proto_evidence,
         relevant_protocol_chunks=proto_chunks,
@@ -137,6 +153,7 @@ def compile_task_context(
         selected_source_chunks=len(user_source_evidence) + len(proto_chunks),
         total_protocol_rules=len(all_protocol_rules),
         selected_protocol_rules=len(relevant_proto_rules),
+        context_version=context_ver
     )
 
     # 7. Protocol Context Completeness Check & Mandatory Re-retrieval Pass

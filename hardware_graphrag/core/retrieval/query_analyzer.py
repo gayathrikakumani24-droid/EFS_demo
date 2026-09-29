@@ -12,6 +12,8 @@ from typing import Optional
 from core.retrieval.context_pack import TaskIntent
 from utils.logger import get_logger
 
+from utils.logger import get_logger, truncate_for_log
+
 logger = get_logger("retrieval.query_analyzer")
 
 # Supported Task Types
@@ -27,12 +29,35 @@ SUPPORTED_TASKS = [
 ]
 
 
+def classify_query_category(query: str) -> str:
+    """Classify user query into lightweight retrieval categories: fact | relationship | multi-hop | comparison | full-flow."""
+    q_lower = query.lower().strip()
+    if any(k in q_lower for k in ["compare", "difference", "vs", "versus"]):
+        return "comparison"
+    elif any(k in q_lower for k in ["full flow", "complete flow", "end to end", "sequence", "architecture"]):
+        return "full-flow"
+    elif any(k in q_lower for k in ["how does", "why does", "impact", "depend", "connect"]):
+        return "multi-hop"
+    elif any(k in q_lower for k in ["relationship", "channel", "handshake", "interface"]):
+        return "relationship"
+    else:
+        return "fact"
+
+
 def _analyze_query_rule_based(query: str) -> TaskIntent:
     """Fallback rule-based parser for user queries."""
     q_clean = query.strip()
+
+    # If query contains multiple lines or is a document, isolate the first line or specific query phrase
+    if "\n" in q_clean or len(q_clean) > 150:
+        lines = [line.strip() for line in q_clean.split("\n") if line.strip()]
+        # Check if first line or any line starts with a generation command
+        cmd_line = next((l for l in lines if re.match(r"^(?:generate|build|create|make|draw|show)\b", l, re.IGNORECASE)), "")
+        q_clean = cmd_line if cmd_line else lines[0] if lines else ""
+
     q_lower = q_clean.lower()
 
-    # 1. Identify Task Type & Language
+    cat = classify_query_category(query)
     task = "RTL_GENERATION"
     language = "Verilog"
 
@@ -58,16 +83,12 @@ def _analyze_query_rule_based(query: str) -> TaskIntent:
         task = "FSM_GENERATION"
         language = "Verilog"
 
-    # 2. Identify Protocol Interface dynamically from query terms or matching discovered entities
     interface: Optional[str] = None
-    # Generic matching for interface tokens ending in interface/bus/channel/controller or uppercase tokens
-    interface_matches = re.findall(r"\b([A-Za-z0-9_]+(?:_interface|_bus|_channel|_ctrl))\b", q_clean, re.IGNORECASE)
+    interface_matches = re.findall(r"\b(AXI\d?|AHB|APB|PCIe|UART|SPI|I2C|[A-Za-z0-9_]+(?:_interface|_bus|_channel|_ctrl))\b", q_clean, re.IGNORECASE)
     if interface_matches:
-        interface = interface_matches[0]
+        interface = interface_matches[0].upper()
 
-    # 3. Identify Target Component Name
     target = ""
-    
     clean_q = re.sub(r"^(?:generate|build|create|make|draw|show|display|render)\s+", "", q_clean, flags=re.IGNORECASE).strip()
     clean_q = re.sub(
         r"^(?:synthesizable\s+)?(?:plantuml|puml|verilog|systemverilog|vhdl|uvm|sva|efs\s+ir|efs|rtl|code|design|spec|assertions?|testbench|tb|diagrams?|architecture|fsm)\s*",
@@ -87,17 +108,15 @@ def _analyze_query_rule_based(query: str) -> TaskIntent:
     }
 
     if clean_q and clean_q.lower() not in generic_terms:
-        # Check if clean_q looks like a specific entity name vs a descriptive clause
         words = clean_q.split()
-        # Filter out prepositions and common stopwords if converting to camelCase
         filtered_words = [w for w in words if w.lower() not in ("for", "the", "a", "an", "of", "in", "to", "architecture", "diagram", "code")]
-        if filtered_words:
-            if len(filtered_words) <= 3 and all(w[0].isupper() or w.isalnum() or "/" in w for w in filtered_words):
-                target = "".join([w.capitalize() if "/" not in w else w.upper() for w in filtered_words])
+        if filtered_words and len(filtered_words) <= 5 and len(" ".join(filtered_words)) <= 60:
+            if len(filtered_words) <= 3 and all(w.isalnum() or "/" in w for w in filtered_words):
+                target = "".join([w[0].upper() + w[1:] if "/" not in w else w.upper() for w in filtered_words])
             else:
                 target = " ".join(filtered_words)
 
-    if target and target.lower() in generic_terms:
+    if target and (target.lower() in generic_terms or len(target) > 60):
         target = ""
 
     return TaskIntent(
@@ -105,7 +124,8 @@ def _analyze_query_rule_based(query: str) -> TaskIntent:
         target=target,
         interface=interface,
         language=language,
-        raw_query=query
+        raw_query=query,
+        query_category=cat
     )
 
 
@@ -132,18 +152,18 @@ def analyze_query(query: str) -> TaskIntent:
                 '  "language": "Verilog" | "SystemVerilog" | "VHDL" | "PlantUML"\n'
                 "}"
             )
-            user_prompt = f"Query: \"{query}\""
+            user_prompt = f"Query: \"{truncate_for_log(query, 120)}\""
             res = llm.complete_json(system_prompt, user_prompt)
             if res and isinstance(res, dict) and "task" in res:
                 task = str(res.get("task", "RTL_GENERATION")).upper()
                 if task not in SUPPORTED_TASKS:
                     task = "RTL_GENERATION"
                 target = str(res.get("target") or "").strip()
-                if target.lower() in ("null", "none", "system", "top", "all", "design", "efs", "plantuml", "architecture"):
+                if target.lower() in ("null", "none", "system", "top", "all", "design", "efs", "plantuml", "architecture") or len(target) > 60:
                     target = ""
-                elif target and " " in target:
+                elif target and " " in target and len(target.split()) <= 3:
                     words = target.split()
-                    if len(words) <= 3 and all(w.isalnum() for w in words):
+                    if all(w.isalnum() for w in words):
                         target = "".join([w.capitalize() for w in words])
                 interface = res.get("interface")
                 if interface:
@@ -170,13 +190,13 @@ def analyze_query(query: str) -> TaskIntent:
                     language=language,
                     raw_query=query
                 )
-                logger.info(f"LLM Query parsed: intent task={intent.task}, target='{intent.target}', interface='{intent.interface}', language='{intent.language}'")
+                logger.info(f"LLM Query parsed: intent task={intent.task}, target='{intent.target}', interface='{intent.interface}', language='{intent.language}', query_len={len(query)}")
                 return intent
     except Exception as e:
         logger.debug(f"LLM query parsing skipped/failed: {e}. Falling back to rule-based parser.")
 
     intent = _analyze_query_rule_based(query)
-    logger.info(f"Rule-based Query parsed: intent task={intent.task}, target='{intent.target}', interface='{intent.interface}', language='{intent.language}'")
+    logger.info(f"Rule-based Query parsed: intent task={intent.task}, target='{intent.target}', interface='{intent.interface}', language='{intent.language}', query_len={len(query)}")
     return intent
 
 

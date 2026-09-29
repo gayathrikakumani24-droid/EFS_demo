@@ -48,55 +48,115 @@ def _format_protocol_rules_compact(rules: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def generate_design_spec(requirement_model: Dict[str, Any], plan: Dict[str, Any], protocol_rules: List[Dict[str, Any]]) -> str:
-    """Generate a cohesive, structured Design Specification document."""
-    logger.info("Generating intermediate hardware design specification...")
+def _clean_model_for_json(req_model: Any) -> Dict[str, Any]:
+    """Ensure requirement_model is clean and JSON serializable."""
+    if hasattr(req_model, "to_full_combined_dict"):
+        data = req_model.to_full_combined_dict()
+    elif hasattr(req_model, "to_dict"):
+        data = req_model.to_dict()
+    elif isinstance(req_model, dict):
+        data = req_model
+    else:
+        return {}
+
+    def _sanitize(val: Any) -> Any:
+        if hasattr(val, "to_dict"):
+            return _sanitize(val.to_dict())
+        elif isinstance(val, dict):
+            return {k: _sanitize(v) for k, v in val.items() if not str(k).startswith("_")}
+        elif isinstance(val, (list, tuple, set)):
+            return [_sanitize(x) for x in val]
+        elif isinstance(val, (str, int, float, bool)) or val is None:
+            return val
+        return str(val)
+
+    return _sanitize(data)
+
+
+def generate_design_spec(requirement_model: Any, plan: Dict[str, Any], protocol_rules: List[Dict[str, Any]], efs_ir: Optional[Any] = None) -> str:
+    """Generate a cohesive, structured Design Specification document using compiled GenerationContext."""
+    logger.info("Generating intermediate hardware design specification using compiled GenerationContext...")
     llm = get_llm_client()
-    
-    # Preserving full requirement model details without array capping
-    compact_model = {}
-    for k, v in requirement_model.items():
-        if isinstance(v, list):
-            compact_model[k] = v
-        else:
-            compact_model[k] = v
 
-    rules_str = _format_protocol_rules_compact(protocol_rules)
-    user_prompt = f"""
-=== REQUIREMENT MODEL ===
-{json.dumps(compact_model, indent=2)}
+    from core.context_compiler.generation_context import GenerationContext
+    model_to_use = efs_ir if efs_ir is not None else requirement_model
+    gen_ctx = GenerationContext.from_spec_inputs(
+        model_to_use,
+        plan,
+        protocol_rules,
+        artifact_type="design_spec",
+        token_budget=4000
+    )
 
-=== ARCHITECTURE PLAN ===
-{json.dumps(plan, indent=2)}
-
-=== RETRIEVED PROTOCOL RULES ===
-{rules_str}
+    user_prompt = f"""=== COMPILED DESIGN SPECIFICATION CONTEXT ===
+{gen_ctx.to_prompt_json(indent=2)}
 """
+    gen_ctx.calculate_metrics(user_prompt, system_prompt=SYSTEM_PROMPT)
 
     if llm.available:
         result = llm.complete_text(SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
+        provider_tokens = llm.last_usage.get("prompt_tokens") if hasattr(llm, "last_usage") else None
+        output_tokens = llm.last_usage.get("completion_tokens", 0) if hasattr(llm, "last_usage") else 0
+        gen_ctx.log_telemetry(
+            generation_name="spec_agent_generate_design_spec",
+            model=CONFIG.llm.extraction_model,
+            provider_tokens=provider_tokens,
+            output_tokens=output_tokens
+        )
         if result:
             return result
         logger.warning("LLM failed to return a valid design spec text. Falling back to heuristic spec.")
 
-    return get_heuristic_spec(requirement_model, plan, protocol_rules)
+    clean_model = _clean_model_for_json(requirement_model)
+    return get_heuristic_spec(clean_model, plan, protocol_rules)
 
 
 def get_heuristic_spec(req_model: Dict[str, Any], plan: Dict[str, Any], protocol_rules: List[Dict[str, Any]]) -> str:
     """Heuristic spec generator when LLM is unavailable."""
     ports_rows = []
-    for port in req_model.get("interfaces", []):
-        ports_rows.append(f"| {port['name']} | {port['width']} | {port['direction']} | {port['description']} |")
+    ports = req_model.get("signals") or req_model.get("interfaces") or []
+    for port in ports:
+        if isinstance(port, dict):
+            p_name = port.get("name", "signal")
+            p_width = port.get("width", "1")
+            p_dir = port.get("direction", "input")
+            p_desc = port.get("description", "-")
+            ports_rows.append(f"| {p_name} | {p_width} | {p_dir} | {p_desc} |")
+        elif hasattr(port, "name"):
+            p_name = getattr(port, "name", "signal")
+            p_width = getattr(port, "width", "1")
+            p_dir = getattr(port, "direction", "input")
+            p_desc = getattr(port, "description", "-")
+            ports_rows.append(f"| {p_name} | {p_width} | {p_dir} | {p_desc} |")
         
     regs_rows = []
     for r in req_model.get("registers", []):
-        regs_rows.append(f"| {r['name']} | {r['offset']} | {r['access']} | {r['description']} |")
+        if isinstance(r, dict):
+            r_name = r.get("name", "REG")
+            r_offset = r.get("offset", r.get("address", "-"))
+            r_access = r.get("access", r.get("mode", "RW"))
+            r_desc = r.get("description", "-")
+            regs_rows.append(f"| {r_name} | {r_offset} | {r_access} | {r_desc} |")
+        elif hasattr(r, "name"):
+            r_name = getattr(r, "name", "REG")
+            r_offset = getattr(r, "offset", getattr(r, "address", "-"))
+            r_access = getattr(r, "access", getattr(r, "mode", "RW"))
+            r_desc = getattr(r, "description", "-")
+            regs_rows.append(f"| {r_name} | {r_offset} | {r_access} | {r_desc} |")
 
     rules_list = []
     for rule in protocol_rules:
-        rules_list.append(f"- **Rule (from {rule['citation']})**: {rule['text']}")
+        if isinstance(rule, dict):
+            citation = rule.get("citation") or rule.get("source") or "Specification"
+            text = rule.get("text") or rule.get("rule") or rule.get("description") or str(rule)
+            rules_list.append(f"- **Rule (from {citation})**: {text}")
+        else:
+            rules_list.append(f"- **Rule**: {rule}")
 
-    return f"""# Hardware Design Specification: {req_model.get('protocol_references', ['Custom'])[0]} Peripheral Controller
+    proto_refs = req_model.get("protocol_references", [])
+    proto_title = proto_refs[0] if proto_refs else req_model.get("design_name", "Hardware")
+
+    return f"""# Hardware Design Specification: {proto_title} Peripheral Controller
 
 ## 1. Module Hierarchy
 The controller comprises the following sub-modules:

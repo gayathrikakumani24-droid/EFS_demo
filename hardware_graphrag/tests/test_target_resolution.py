@@ -136,3 +136,88 @@ def test_8_anti_hardcoding_custom_hardware_design():
 
     # Ensure it does NOT resolve to Simple Register-Controlled Data Engine
     assert "Counter" in res1.target_component.name
+
+
+def test_9_resolve_hierarchical_target(sample_design_efs_ir):
+    """TEST 9 — Hierarchical target 'Simple Register-Controlled Data Engine.Register_Bank' resolves correctly."""
+    res = resolve_target("Simple Register-Controlled Data Engine.Register_Bank", sample_design_efs_ir)
+    assert res.is_success() is True
+    assert res.target_component.name == "Register_Bank"
+
+
+def test_10_resolve_custom_peripheral_controller():
+    """TEST 10 — Custom Peripheral Controller resolves canonical top-level ID and submodules."""
+    spec_text = "# Hardware Design Specification: Custom Peripheral Controller"
+    req_model = {"title": "Custom Peripheral Controller"}
+    plan = {
+        "system_architecture": "Custom Peripheral Controller",
+        "submodules": [
+            {"name": "Register_File", "purpose": "Control/status registers"},
+            {"name": "FSM_Control_Unit", "purpose": "State machine logic"}
+        ]
+    }
+    builder = EFSIRBuilder(req_model=req_model, plan=plan, design_spec=spec_text)
+    efs_ir = builder.build()
+
+    # Exact top-level display name
+    res1 = resolve_target("Custom Peripheral Controller", efs_ir)
+    assert res1.is_success() is True
+    assert res1.target_component.name == "Custom Peripheral Controller"
+
+    # Canonical ID
+    res2 = resolve_target("customperipheralcontroller", efs_ir)
+    assert res2.is_success() is True
+
+    # Submodules
+    res3 = resolve_target("Register_File", efs_ir)
+    assert res3.is_success() is True
+    assert res3.target_component.name == "Register_File"
+
+
+def test_11_unrelated_target_failure_diagnostic():
+    """TEST 11 — Requested target 'InstructionDecoder' on 'Custom Peripheral Controller' returns TARGET_NOT_FOUND with diagnostic."""
+    spec_text = "# Hardware Design Specification: Custom Peripheral Controller"
+    req_model = {"title": "Custom Peripheral Controller"}
+    plan = {
+        "system_architecture": "Custom Peripheral Controller",
+        "submodules": [
+            {"name": "Register_File", "purpose": "Registers"},
+            {"name": "FSM_Control_Unit", "purpose": "State machine"}
+        ]
+    }
+    builder = EFSIRBuilder(req_model=req_model, plan=plan, design_spec=spec_text)
+    efs_ir = builder.build()
+
+    res = resolve_target("InstructionDecoder", efs_ir)
+    assert res.is_success() is False
+    assert res.status == "TARGET_NOT_FOUND"
+    assert "TARGET_RESOLUTION_FAILED" in res.error_message
+    assert "InstructionDecoder" in res.error_message
+    assert "customperipheralcontroller" in res.error_message
+    assert "Custom Peripheral Controller" in res.error_message
+    assert "Register_File" in res.error_message
+    assert "FSM_Control_Unit" in res.error_message
+    assert "Reason:" in res.error_message
+
+
+def test_12_stale_state_spec_switch_invalidation():
+    """TEST 12 — Switching specifications prevents target leakage across design boundaries."""
+    # Design A
+    spec_a = "# Hardware Design Specification: InstructionDecoder Module"
+    builder_a = EFSIRBuilder(req_model={"title": "InstructionDecoder Module"}, design_spec=spec_a)
+    efs_ir_a = builder_a.build()
+
+    # Design B
+    spec_b = "# Hardware Design Specification: Custom Peripheral Controller"
+    builder_b = EFSIRBuilder(req_model={"title": "Custom Peripheral Controller"}, design_spec=spec_b)
+    efs_ir_b = builder_b.build()
+
+    # Target from Design A must resolve on EFS IR A
+    res_a = resolve_target("InstructionDecoder Module", efs_ir_a)
+    assert res_a.is_success() is True
+
+    # Target from Design A MUST FAIL on EFS IR B (no leakage)
+    res_b = resolve_target("InstructionDecoder Module", efs_ir_b)
+    assert res_b.is_success() is False
+    assert res_b.status == "TARGET_NOT_FOUND"
+

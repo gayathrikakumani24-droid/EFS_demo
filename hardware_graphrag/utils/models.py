@@ -102,19 +102,25 @@ class Chunk:
 # --------------------------------------------------------------------------
 
 ENTITY_TYPES = [
-    "Protocol", "Interface", "Channel", "Transaction", "TransactionStep", "Signal",
-    "Register", "Field", "Component", "Master", "Slave", "Initiator", "Target",
-    "State", "Event", "Response", "Error", "Constraint", "TimingRule", "ProtocolRule",
-    "Condition", "TimingConstraint", "ClockDomain", "MemoryRegion", "Address",
-    "Interrupt", "Command", "DataStructure", "Feature",
+    "Design", "Component", "Interface", "Channel", "Signal", "Register", "Field",
+    "Transaction", "TransactionStep", "FSM", "State", "Flow", "Constraint",
+    "TimingRule", "TimingConstraint", "ProtocolRule", "Protocol", "Master", "Slave",
+    "Initiator", "Target", "ClockDomain", "MemoryRegion", "Address", "Interrupt",
+    "Command", "DataStructure", "Feature", "Instruction", "Opcode", "Event",
+    "Response", "Error", "Condition",
 ]
 
 RELATIONSHIP_TYPES = [
-    "HAS_CHANNEL", "HAS_SIGNAL", "USES_CHANNEL", "USES_SIGNAL", "INITIATED_BY",
-    "TARGETS", "REQUIRES", "PRODUCES", "FOLLOWED_BY", "CONTROLLED_BY", "DEPENDS_ON",
-    "APPLIES_TO", "CONSTRAINS", "ENABLES", "MAY_CAUSE", "DEFINES", "NEXT_STEP",
-    "BELONGS_TO", "PART_OF", "USES", "HANDSHAKES_WITH", "CONNECTS_TO",
-    "ASSERTED_BEFORE", "ASSERTED_AFTER", "TRANSITIONS_TO", "GENERATES",
+    "CONTAINS_COMPONENT", "HAS_INTERFACE", "EXPOSES_INTERFACE", "HAS_SIGNAL",
+    "HAS_REGISTER", "HAS_FIELD", "HAS_STATE", "INITIATES", "TARGETS",
+    "INVOLVES_SIGNAL", "USES_INTERFACE", "CLOCKS", "RESETS", "DRIVES", "FEEDS",
+    "IMPLEMENTS_FSM", "TRANSITIONS_TO", "CONSTRAINS", "HAS_TIMING_RULE",
+    "INVOLVES_COMPONENT", "INVOLVES_INTERFACE", "MAPS_TO", "CONNECTS_TO",
+    "HAS_CHANNEL", "USES_CHANNEL", "USES_SIGNAL", "INITIATED_BY",
+    "REQUIRES", "PRODUCES", "FOLLOWED_BY", "CONTROLLED_BY", "DEPENDS_ON",
+    "APPLIES_TO", "ENABLES", "MAY_CAUSE", "DEFINES", "NEXT_STEP",
+    "BELONGS_TO", "PART_OF", "USES", "HANDSHAKES_WITH",
+    "ASSERTED_BEFORE", "ASSERTED_AFTER", "GENERATES",
     "CONFIGURES", "READS_FROM", "WRITES_TO", "REFERENCES", "DEFINED_IN",
 ]
 

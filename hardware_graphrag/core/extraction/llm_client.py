@@ -163,6 +163,7 @@ class LLMClient:
         )
         self._client = None
         self._provider = self.cfg.provider.lower()
+        self.last_usage: Dict[str, Any] = {}
         self._init_client()
 
     @property
@@ -240,21 +241,30 @@ class LLMClient:
                 kwargs["max_tokens"] = min(current_max, 3072)
 
         kwargs.setdefault("timeout", 15.0)
-        for attempt in range(2):
+        max_retries = getattr(CONFIG, "max_extraction_retries", 3)
+        base_delay = getattr(CONFIG, "retry_base_delay", 1.0)
+        import random
+
+        last_exception = None
+        for attempt in range(max_retries):
             try:
                 return self._client.chat.completions.create(**kwargs)
             except Exception as ex:
+                last_exception = ex
                 err_str = str(ex)
 
                 # 1. Immediate credit/payment check - disable LLM API calls instantly
                 if any(k in err_str.lower() for k in ["402", "insufficient credits", "credits", "payment_required", "openrouter_credits"]):
                     logger.warning(f"LLM API key has insufficient credits ({err_str[:120]}). Falling back to specification-agnostic heuristic engine.")
-                    self.available = False
+                    self._client = None
                     raise ex
+
+                # Exponential backoff delay with jitter
+                sleep_s = base_delay * (2 ** attempt) + random.uniform(0.1, 0.5)
 
                 # 2. Token limit / payload size check
                 if "413" in err_str or "request too large" in err_str.lower() or "context_length_exceeded" in err_str.lower() or "tpm limit" in err_str.lower():
-                    logger.warning(f"Request too large (413/TPM limit). Retrying with fallback model... Error: {err_str[:120]}")
+                    logger.warning(f"Request too large (413/TPM limit, attempt {attempt+1}/{max_retries}). Retrying with fallback model... Error: {err_str[:120]}")
                     kwargs["max_tokens"] = min(kwargs.get("max_tokens", 3072), 2048)
                     kwargs.pop("response_format", None)
                     for alt_model in fallback_models:
@@ -264,12 +274,12 @@ class LLMClient:
                                 return self._client.chat.completions.create(**kwargs)
                             except Exception:
                                 continue
-                    raise ex
+                    time.sleep(sleep_s)
 
                 # 3. Model rate limit / decommissioned error
                 elif any(k in err_str.lower() for k in ["429", "rate limit", "404", "400", "model_not_found", "model_decommissioned", "decommissioned"]):
                     kwargs.pop("response_format", None)
-                    logger.warning(f"Model error/limit hit on '{kwargs.get('model')}': {err_str[:120]}. Retrying provider fallback models...")
+                    logger.warning(f"Model error/limit hit on '{kwargs.get('model')}' (attempt {attempt+1}/{max_retries}): {err_str[:120]}. Retrying provider fallback models...")
                     for alt_model in fallback_models:
                         if kwargs.get("model") != alt_model:
                             kwargs["model"] = alt_model
@@ -278,10 +288,10 @@ class LLMClient:
                                 return self._client.chat.completions.create(**kwargs)
                             except Exception:
                                 continue
-                    raise ex
+                    time.sleep(sleep_s)
                 elif any(kw in err_str.lower() for kw in ["unreachable", "connection", "timeout", "503", "502", "500", "overloaded"]):
-                    logger.warning(f"Model unreachable / connection error ({err_str[:100]}). Retrying fallback models...")
-                    time.sleep(1.0)
+                    logger.warning(f"Model unreachable / connection error (attempt {attempt+1}/{max_retries}): ({err_str[:100]}). Retrying...")
+                    time.sleep(sleep_s)
                     for alt_model in fallback_models:
                         if kwargs.get("model") != alt_model:
                             kwargs["model"] = alt_model
@@ -289,9 +299,11 @@ class LLMClient:
                                 return self._client.chat.completions.create(**kwargs)
                             except Exception:
                                 continue
-                    raise ex
                 else:
-                    raise ex
+                    time.sleep(sleep_s)
+
+        if last_exception:
+            raise last_exception
         return self._client.chat.completions.create(**kwargs)
 
     def complete_json(self, system_prompt: str, user_prompt: str, model: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -320,6 +332,20 @@ class LLMClient:
                 except Exception:
                     kwargs.pop("response_format", None)
                     resp = self._call_openai_with_retry(**kwargs)
+
+                if resp and getattr(resp, "usage", None):
+                    usage = resp.usage
+                    self.last_usage = {
+                        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+                        "completion_tokens": getattr(usage, "completion_tokens", None),
+                        "total_tokens": getattr(usage, "total_tokens", None)
+                    }
+                    logger.info(
+                        f"[LLM Call Boundary] provider={self._provider} model={target_model} | "
+                        f"provider_prompt_tokens={self.last_usage.get('prompt_tokens')} | "
+                        f"provider_completion_tokens={self.last_usage.get('completion_tokens')} | "
+                        f"total_tokens={self.last_usage.get('total_tokens')}"
+                    )
 
                 choices = getattr(resp, "choices", None) if resp else None
                 if not choices:
@@ -394,6 +420,20 @@ class LLMClient:
                     temperature=self.cfg.temperature,
                     max_tokens=self.cfg.max_tokens,
                 )
+                if resp and getattr(resp, "usage", None):
+                    usage = resp.usage
+                    self.last_usage = {
+                        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+                        "completion_tokens": getattr(usage, "completion_tokens", None),
+                        "total_tokens": getattr(usage, "total_tokens", None)
+                    }
+                    logger.info(
+                        f"[LLM Call Boundary] provider={self._provider} model={target_model} | "
+                        f"provider_prompt_tokens={self.last_usage.get('prompt_tokens')} | "
+                        f"provider_completion_tokens={self.last_usage.get('completion_tokens')} | "
+                        f"total_tokens={self.last_usage.get('total_tokens')}"
+                    )
+
                 choices = getattr(resp, "choices", None) if resp else None
                 if not choices:
                     logger.warning("LLM text completion returned response with no choices.")
@@ -423,6 +463,10 @@ class LLMClient:
         except Exception as e:
             logger.error(f"LLM text completion failed: {e}")
         return None
+
+    def complete(self, system_prompt: str, user_prompt: str, model: Optional[str] = None) -> Optional[str]:
+        """Alias for complete_text for compatibility across generation agents."""
+        return self.complete_text(system_prompt, user_prompt, model=model)
 
 
 _singleton: Optional[LLMClient] = None

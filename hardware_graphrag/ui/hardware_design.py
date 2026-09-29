@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import os
+import json
 import streamlit as st
-
 from config import CONFIG
 from core.agents.orchestrator import run_design_flow
+from core.efs_ir.models import EFSConflict, EFSResolution
 from utils.protocol_manager import get_library_data, select_protocol
 from utils.logger import get_logger
 
@@ -42,6 +43,8 @@ def render() -> None:
     max_repair = st.sidebar.slider("Max Repair Iterations", min_value=0, max_value=5, value=0)
     score_threshold = st.sidebar.slider("Compliance Target Score (%)", min_value=50, max_value=100, value=95)
     bypass_conflicts = st.sidebar.checkbox("Bypass Critical Conflicts / Override Block", value=False)
+    if bypass_conflicts:
+        st.sidebar.warning("⚠️ Override enabled: The pipeline will continue without resolving critical conflicts. Generated RTL may not conform to the specification requirements.")
 
     st.sidebar.markdown("### Refinement Prompt")
     refinement_instruction = st.sidebar.text_area("Guidance for regeneration/refinement:", height=80)
@@ -117,10 +120,21 @@ def render() -> None:
             st.info("💡 To ingest a new protocol, navigate to the **Protocol Library** page, upload it under the respective name block, and process it into the reusable knowledge base.")
 
     st.markdown("### STEP 3: Enter Targeted Generation Query")
+    active_target_default = "Target_Module"
+    try:
+        ir_file = os.path.join(CONFIG.data_dir, "efs_ir", "active_design_ir.json")
+        if os.path.exists(ir_file):
+            with open(ir_file, "r", encoding="utf-8") as f:
+                ir_data = json.load(f)
+                active_target_default = ir_data.get("metadata", {}).get("display_name") or ir_data.get("metadata", {}).get("design_name") or active_target_default
+    except Exception:
+        pass
+
+    default_query_text = f"Generate synthesizable Verilog RTL for {active_target_default}."
     user_query = st.text_input(
         "Targeted Generation Query:",
-        value="Generate synthesizable Verilog RTL for MatrixAdder.",
-        help="Specify the target component, language, or format requested (e.g., 'Generate synthesizable Verilog RTL for MatrixAdder', 'Generate SVA assertions for AXI interface of MatrixAdder', 'Generate UVM testbench for MatrixMultiplier')."
+        value=default_query_text,
+        help="Specify the target component, language, or format requested (e.g., 'Generate synthesizable Verilog RTL for Custom Acceleration Controller', 'Generate SVA assertions for AXI interface', 'Generate UVM testbench')."
     )
 
     st.markdown("### STEP 4: Review Target Outputs & Trigger Generation")
@@ -196,10 +210,12 @@ def render() -> None:
                 st.session_state["design_results"] = results
                 if results.get("status") in ("TARGET_NOT_FOUND", "AMBIGUOUS_TARGET"):
                     st.error(f"❌ Target Resolution Failed: {results.get('error_message')}")
+                elif results.get("status") in ("AWAITING_HUMAN_DECISION", "BLOCKED_CONFLICT"):
+                    st.warning("⚠️ Human Decision Required: Specification conflicts or ambiguities detected. The pipeline is safely paused at this decision point.")
                 elif results.get("status") == "BLOCKED":
-                    st.error("❌ Generation BLOCKED due to critical spec conflicts or validation errors. Resolve them or check 'Bypass Critical Conflicts / Override Block' in the sidebar.")
+                    st.error("❌ Generation BLOCKED due to critical builder errors.")
                 elif results.get("status") == "INSUFFICIENT_SPEC":
-                    st.error("❌ Generation STOPPED: Incomplete or ambiguous specification details.")
+                    st.warning("⚠️ Human Decision Required: Incomplete specification details require clarification.")
                 else:
                     st.success("✅ Design flow execution complete!")
                     st.balloons()
@@ -212,7 +228,7 @@ def render() -> None:
         results = st.session_state["design_results"]
         
         if results.get("status") == "SUCCESS":
-            st.success("✅ RTL Generated Successfully")
+            st.success("✅ RTL and PlantUML Diagrams Generated Successfully")
             outputs = results.get("outputs", {})
             primary_target = results.get("performance_metrics", {}).get("primary_target", "Verilog")
             if primary_target in outputs:
@@ -221,17 +237,77 @@ def render() -> None:
                     with st.expander(f"📄 Generated {primary_target} RTL Code", expanded=True):
                         st.code(code_text, language="systemverilog" if "Verilog" in primary_target else "vhdl")
 
+            for tgt, out_data in outputs.items():
+                if tgt != primary_target and isinstance(out_data, dict):
+                    sec_code = out_data.get("final_code", "")
+                    if sec_code:
+                        with st.expander(f"📄 Generated {tgt} RTL Code", expanded=False):
+                            st.code(sec_code, language="systemverilog" if "Verilog" in tgt else "vhdl")
+
+            diagrams = results.get("diagrams", {})
+            diagram_urls = results.get("diagram_urls", {})
+            if diagrams or diagram_urls:
+                with st.expander("📊 Generated PlantUML Architecture & Sequence Diagrams", expanded=True):
+                    for k, u in diagram_urls.items():
+                        if u:
+                            st.image(u, caption=f"Generated {k.capitalize()} Diagram")
+                    for k, code in diagrams.items():
+                        st.markdown(f"**PlantUML ({k.capitalize()}):**")
+                        st.code(code, language="plantuml")
+
+        if results.get("status") == "RTL_GENERATION_ERROR":
+            st.error(f"❌ RTL Generation Error: {results.get('error_message', 'RTL generation could not produce complete code.')}")
+            outputs = results.get("outputs", {})
+            for tgt, out_data in outputs.items():
+                if isinstance(out_data, dict):
+                    report = out_data.get("report", {})
+                    failed = report.get("failed_checks", [])
+                    if failed:
+                        st.markdown("#### RTL Validation Issues:")
+                        for fc in failed:
+                            st.warning(f"• **{fc.get('check_name', 'Check')}**: {fc.get('violation', '')}")
+                    code_text = out_data.get("final_code", "")
+                    if code_text:
+                        with st.expander(f"📄 Partial / Diagnostic {tgt} Output", expanded=False):
+                            st.code(code_text)
+
+            diagrams = results.get("diagrams", {})
+            diagram_urls = results.get("diagram_urls", {})
+            if diagrams or diagram_urls:
+                with st.expander("📊 Generated PlantUML Architecture & Sequence Diagrams", expanded=True):
+                    for k, u in diagram_urls.items():
+                        if u:
+                            st.image(u, caption=f"Generated {k.capitalize()} Diagram")
+                    for k, code in diagrams.items():
+                        st.markdown(f"**PlantUML ({k.capitalize()}):**")
+                        st.code(code, language="plantuml")
+
         if results.get("status") in ("TARGET_NOT_FOUND", "AMBIGUOUS_TARGET"):
             st.error(f"⚠️ TARGET RESOLUTION FAILED: {results.get('error_message')}")
-            if st.button("❌ Clear State", use_container_width=True):
+            if st.button("🔄 Reset Pipeline Session", use_container_width=True):
                 del st.session_state["design_results"]
                 st.rerun()
             return
 
-        if results.get("status") in ("BLOCKED", "BLOCKED_CONFLICT", "INSUFFICIENT_SPEC"):
-            st.warning("⚠️ Conflict detected")
-            st.info("The design pipeline detected hardware specification conflicts or missing requirements that require human decision to proceed.")
-            
+        if results.get("status") in ("AWAITING_HUMAN_DECISION", "BLOCKED", "BLOCKED_CONFLICT", "INSUFFICIENT_SPEC"):
+            # Live Pipeline Stage Tracker
+            st.markdown("""
+            <div style="background-color: #1e293b; padding: 12px 18px; border-radius: 8px; margin-bottom: 18px; border-left: 5px solid #f59e0b;">
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #fbbf24;">
+                Pipeline State: <code>AWAITING_HUMAN_DECISION</code>
+              </div>
+              <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+                <span style="color: #10b981; font-weight: 600;">✓ Parse Specification</span> &nbsp;→&nbsp;
+                <span style="color: #10b981; font-weight: 600;">✓ Canonical EFS IR</span> &nbsp;→&nbsp;
+                <span style="color: #10b981; font-weight: 600;">✓ Validate Spec</span> &nbsp;→&nbsp;
+                <span style="color: #fbbf24; font-weight: 700; background: #78350f; padding: 2px 8px; border-radius: 4px;">⚠️ Awaiting Human Decision</span> &nbsp;→&nbsp;
+                <span style="color: #94a3b8;">○ Revalidate</span> &nbsp;→&nbsp;
+                <span style="color: #94a3b8;">○ PlantUML</span> &nbsp;→&nbsp;
+                <span style="color: #94a3b8;">○ RTL Generation</span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
             conflicts = results.get("conflicts", [])
             proposals_map = results.get("proposals", {})
             efs_ir = results.get("efs_ir")
@@ -239,130 +315,320 @@ def render() -> None:
             
             if not conflicts and efs_ir:
                 from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-                conflicts = ConflictResolutionEngine.detect_conflicts(efs_ir, req_model)
-                
-            unresolved_conflicts = [c for c in conflicts if c.blocking and getattr(c, "resolution_status", "UNRESOLVED") == "UNRESOLVED"]
-            
-            if unresolved_conflicts:
-                st.markdown("### ⚠️ Specification Conflict Detected")
-                for conf in unresolved_conflicts:
-                    with st.container(border=True):
-                        st.markdown(f"#### ⚠️ Conflict: `{conf.type}` ({conf.severity})")
-                        st.markdown(f"**Description:** {conf.description or conf.evidence}")
-                        if conf.impact:
-                            st.markdown(f"**Impact:** {conf.impact}")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.markdown("**Conflicting Target Entities:**")
-                            st.code(", ".join(conf.entities) if conf.entities else "Unspecified")
-                        with col2:
-                            st.markdown("**Conflicting Values / Evidence:**")
-                            st.code(", ".join(conf.conflicting_values) if conf.conflicting_values else "N/A")
+                conflicts = ConflictResolutionEngine.detect_conflicts(
+                    efs_ir, req_model, validation_issues=results.get("efs_ir_validation_issues")
+                )
 
-                        st.markdown("#### 🛠️ Choose Resolution Option:")
+            # Build resolved conflict lookup from approved resolutions and efs_ir
+            approved_res_list = st.session_state.get("approved_resolutions", [])
+            approved_cids = {getattr(r, "conflict_id", None) for r in approved_res_list if getattr(r, "conflict_id", None)}
+            if efs_ir and hasattr(efs_ir, "resolutions"):
+                for r in efs_ir.resolutions:
+                    if getattr(r, "approval_status", "") == "APPROVED" and getattr(r, "conflict_id", None):
+                        approved_cids.add(r.conflict_id)
+
+            approved_entity_props = set()
+            for r in approved_res_list:
+                r_prop = (getattr(r, "field_name", "") or getattr(r, "property", "") or "").lower()
+                for req in getattr(r, "affected_requirements", []):
+                    approved_entity_props.add((req.lower(), r_prop))
+            if efs_ir and hasattr(efs_ir, "resolutions"):
+                for r in efs_ir.resolutions:
+                    if getattr(r, "approval_status", "") == "APPROVED":
+                        r_prop = (getattr(r, "field_name", "") or getattr(r, "property", "") or "").lower()
+                        for req in getattr(r, "affected_requirements", []):
+                            approved_entity_props.add((req.lower(), r_prop))
+
+            def is_conflict_resolved(c) -> bool:
+                if getattr(c, "status", "") == "RESOLVED":
+                    return True
+                if getattr(c, "resolution_status", "UNRESOLVED") == "RESOLVED":
+                    return True
+                if getattr(c, "status", "") == "APPROVED":
+                    return True
+                if not getattr(c, "blocking", True) or not getattr(c, "requires_human_decision", True):
+                    return True
+                if getattr(c, "conflict_id", None) in approved_cids:
+                    return True
+                c_prop = (getattr(c, "property", "") or "").lower()
+                for ent in (getattr(c, "affected_entities", []) or getattr(c, "entities", []) or []):
+                    if c_prop and (ent.lower(), c_prop) in approved_entity_props:
+                        return True
+                return False
+
+            unresolved_conflicts = [c for c in conflicts if not is_conflict_resolved(c)]
+
+            if unresolved_conflicts:
+                st.warning(f"### ⚠️ Human Decision Required ({len(unresolved_conflicts)} decision{'s' if len(unresolved_conflicts) != 1 else ''} pending)")
+                st.info("The design pipeline identified hardware specification conflicts or ambiguities that require a design decision. The pipeline is safely paused at this decision point.")
+            else:
+                st.success("### ✓ All specification issues and conflicts resolved.")
+                if st.button("▶ Resume Design & RTL Generation", type="primary", key="btn_resume_generation"):
+                    with st.spinner("Resuming PlantUML and RTL generation..."):
+                        from core.agents.orchestrator import resume_design_flow_with_resolutions
+                        res_results = resume_design_flow_with_resolutions(
+                            results,
+                            st.session_state.get("approved_resolutions", []),
+                            target_outputs=targets
+                        )
+                        st.session_state["design_results"] = res_results
+                        if "outputs" in res_results:
+                            st.session_state["generated_rtl"] = res_results["outputs"]
+                        if "efs_ir" in res_results and res_results["efs_ir"]:
+                            st.session_state["resolved_efsir"] = res_results["efs_ir"]
+                        if "plan" in res_results:
+                            st.session_state["design_plan"] = res_results["plan"]
+                        st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                        st.rerun()
+
+            if unresolved_conflicts:
+                for conf_idx, conf in enumerate(unresolved_conflicts, 1):
+                    with st.container(border=True):
+                        st.markdown(f"### 🔴 Conflict #{conf_idx}: `{conf.title or conf.type}`")
+                        col_meta1, col_meta2, col_meta3 = st.columns(3)
+                        with col_meta1:
+                            st.caption(f"**Severity:** `{conf.severity}`")
+                        with col_meta2:
+                            st.caption(f"**Conflict ID:** `{conf.conflict_id}`")
+                        with col_meta3:
+                            st.caption(f"**Property:** `{conf.property or 'General'}`")
+
+                        # 1. WHAT is wrong
+                        st.markdown("#### 1. What is Wrong")
+                        st.markdown(f"**Problem:** {conf.description or conf.evidence}")
+
+                        # 2. WHY it is a problem
+                        st.markdown("#### 2. Why This Matters")
+                        st.markdown(f"**Impact:** {conf.explanation or conf.impact or 'Contradictory or missing parameters prevent unambiguous hardware synthesis.'}")
+
+                        # 3. WHICH entities are affected & WHERE the conflicting info came from
+                        st.markdown("#### 3. Affected Entities & Source Evidence")
+                        entities = conf.affected_entities or conf.entities or ["General"]
+                        
+                        source_refs = getattr(conf, "source_references", [])
+                        if source_refs:
+                            ref_rows = []
+                            for ref in source_refs:
+                                ref_rows.append({
+                                    "Entity": ref.get("entity", "-"),
+                                    "Source Document": ref.get("source", "Specification"),
+                                    "Section / Context": ref.get("section", "Hardware Definition"),
+                                    "Conflicting Value": str(ref.get("value", "-"))
+                                })
+                            st.table(ref_rows)
+                        else:
+                            col_e1, col_e2 = st.columns(2)
+                            with col_e1:
+                                st.markdown(f"**Affected Entities:** `{', '.join(entities)}`")
+                            with col_e2:
+                                st.markdown(f"**Conflicting Values:** `{', '.join(str(v) for v in conf.conflicting_values) if conf.conflicting_values else 'N/A'}`")
+                            st.caption("Evidence Source: Extracted from Active Hardware Requirement Model.")
+
+                        st.divider()
+
+                        # 4. AI Recommendation & Rationale
+                        st.markdown("#### 4. AI Recommendation & Proposed Resolution")
+                        props = proposals_map.get(conf.conflict_id, [])
+                        if not props and efs_ir:
+                            from core.verification.conflict_resolution_engine import ConflictResolutionEngine
+                            props = ConflictResolutionEngine.generate_resolution_proposals(conf, efs_ir)
+
+                        ai_props = [p for p in props if p.resolution_type in ("ALLOW_AI", "ACCEPT_PROPOSAL", "PROPOSED", "AI_RECOMMENDED")]
+                        if not ai_props:
+                            ai_props = props
+
+                        top_ai_proposal = ai_props[0] if ai_props else None
+
+                        if top_ai_proposal:
+                            target_ent = top_ai_proposal.affected_requirements[0] if top_ai_proposal.affected_requirements else (entities[0] if entities else "Entity")
+                            orig_val = top_ai_proposal.original_value or conf.current_values.get(target_ent) or (conf.conflicting_values[0] if conf.conflicting_values else "N/A")
+                            with st.container(border=True):
+                                st.markdown(f"**Target Entity:** `{target_ent}`")
+                                st.markdown(f"**Proposed Change:** `{target_ent}.{conf.property or 'value'} : {orig_val} → {top_ai_proposal.proposed_value}`")
+                                st.markdown(f"**Reason / Rationale:** {top_ai_proposal.rationale}")
+                        else:
+                            st.info("⚠️ AI proposal unavailable for this conflict type. Please provide your custom solution below.")
+
+                        st.divider()
+
+                        # 5. HUMAN DECISION PATHS: OPTION 1 OR OPTION 2
+                        st.markdown("#### 5. Human Decision Required")
                         strategy_key = f"strat_{conf.conflict_id}"
-                        strategy_choice = st.radio(
-                            "Select how to resolve this blocking issue:",
-                            options=[
-                                "OPTION 1: Allow AI to make changes",
-                                "OPTION 2: Add a custom requirement"
-                            ],
+                        strategy_options = []
+                        if top_ai_proposal:
+                            strategy_options.append("OPTION 1: Accept AI Proposal")
+                        strategy_options.append("OPTION 2: Provide My Own Solution")
+
+                        chosen_strategy = st.radio(
+                            "Choose your resolution path for this conflict:",
+                            options=strategy_options,
                             key=strategy_key
                         )
 
-                        if strategy_choice == "OPTION 1: Allow AI to make changes":
-                            st.markdown("##### 💡 AI Proposed Resolution:")
-                            props = proposals_map.get(conf.conflict_id, [])
-                            if not props:
-                                from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-                                props = ConflictResolutionEngine.generate_resolution_proposals(conf, efs_ir)
+                        if chosen_strategy == "OPTION 1: Accept AI Proposal" and top_ai_proposal:
+                            st.markdown(f"Applying AI proposal: `{top_ai_proposal.proposed_change}`")
+                            if st.button("✓ Accept AI Proposal", key=f"btn_accept_ai_{conf.conflict_id}", type="primary"):
+                                if "approved_resolutions" not in st.session_state:
+                                    st.session_state["approved_resolutions"] = []
+                                top_ai_proposal.approval_status = "APPROVED"
+                                if not any(getattr(r, "conflict_id", "") == top_ai_proposal.conflict_id or getattr(r, "resolution_id", "") == top_ai_proposal.resolution_id for r in st.session_state["approved_resolutions"]):
+                                    st.session_state["approved_resolutions"].append(top_ai_proposal)
 
-                            ai_props = [p for p in props if p.resolution_type in ("ALLOW_AI", "ACCEPT_PROPOSAL", "PROPOSED", "AI_RECOMMENDED")]
-                            if not ai_props:
-                                ai_props = props
+                                # Apply to efs_ir in memory using deterministic pipeline
+                                if efs_ir:
+                                    try:
+                                        from core.verification.conflict_resolution_engine import ConflictResolutionEngine
+                                        efs_ir = ConflictResolutionEngine.apply_approved_resolution(efs_ir, top_ai_proposal)
+                                        results["efs_ir"] = efs_ir
+                                        results["conflicts"] = efs_ir.conflicts
+                                        st.session_state["resolved_efsir"] = efs_ir
+                                    except Exception:
+                                        pass
 
-                            for idx, p in enumerate(ai_props, 1):
-                                target_entity = p.affected_requirements[0] if p.affected_requirements else (conf.entities[0] if conf.entities else "Entity")
-                                with st.container(border=True):
-                                    st.markdown(f"**AI Proposed Value:** `{target_entity} → {p.proposed_value}`")
-                                    st.markdown(f"**Proposed Change:** `{p.proposed_change}`")
-                                    st.markdown(f"**Reason:** {p.rationale}")
-                                    
-                                    col_app, col_rej = st.columns(2)
-                                    with col_app:
-                                        if st.button("Approve AI Resolution", key=f"app_prop_{conf.conflict_id}_{idx}", type="primary"):
-                                            if "approved_resolutions" not in st.session_state:
-                                                st.session_state["approved_resolutions"] = []
-                                            st.session_state["approved_resolutions"].append(p)
-                                            
-                                            from core.agents.orchestrator import resume_design_flow_with_resolutions
-                                            res_results = resume_design_flow_with_resolutions(
-                                                results,
-                                                st.session_state["approved_resolutions"],
-                                                target_outputs=targets
-                                            )
-                                            st.session_state["design_results"] = res_results
-                                            if "outputs" in res_results:
-                                                st.session_state["generated_rtl"] = res_results["outputs"]
-                                            if "efs_ir" in res_results and res_results["efs_ir"]:
-                                                st.session_state["resolved_efsir"] = res_results["efs_ir"]
-                                            if "plan" in res_results:
-                                                st.session_state["design_plan"] = res_results["plan"]
-                                            st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
-                                            st.rerun()
+                                # Check remaining active unresolved conflicts from authoritative EFS IR
+                                current_conf_pool = getattr(efs_ir, "conflicts", []) if efs_ir else unresolved_conflicts
+                                remaining = [c for c in current_conf_pool if not is_conflict_resolved(c)]
 
-                                    with col_rej:
-                                        if st.button("Reject", key=f"rej_prop_{conf.conflict_id}_{idx}"):
-                                            st.warning(f"Proposal rejected by user. Please select Option 2 or enter a custom requirement.")
-                                            st.rerun()
-
-                        elif strategy_choice == "OPTION 2: Add a custom requirement":
-                            st.markdown("##### 📝 Add Custom Requirement / Specification Override:")
-                            custom_input = st.text_area(
-                                f"Enter custom requirement description for {conf.property}:",
-                                placeholder="Describe explicit hardware requirement or specification override...",
-                                key=f"cust_req_{conf.conflict_id}"
-                            )
-                            if st.button("Confirm Custom Requirement", key=f"sub_cust_{conf.conflict_id}", type="primary"):
-                                if custom_input and custom_input.strip():
-                                    from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-                                    from core.agents.orchestrator import resume_design_flow_with_resolutions
-
-                                    custom_res = ConflictResolutionEngine.create_custom_resolution(
-                                        conf,
-                                        custom_input.strip(),
-                                        user_name="user"
-                                    )
-                                    if "approved_resolutions" not in st.session_state:
-                                        st.session_state["approved_resolutions"] = []
-                                    st.session_state["approved_resolutions"].append(custom_res)
-
-                                    res_results = resume_design_flow_with_resolutions(
-                                        results,
-                                        st.session_state["approved_resolutions"],
-                                        target_outputs=targets
-                                    )
-                                    st.session_state["design_results"] = res_results
-                                    if "outputs" in res_results:
-                                        st.session_state["generated_rtl"] = res_results["outputs"]
-                                    if "efs_ir" in res_results and res_results["efs_ir"]:
-                                        st.session_state["resolved_efsir"] = res_results["efs_ir"]
-                                    if "plan" in res_results:
-                                        st.session_state["design_plan"] = res_results["plan"]
-                                    st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                                if remaining:
+                                    results["conflicts"] = remaining
+                                    st.session_state["design_results"] = results
+                                    st.success(f"✓ Conflict '{conf.title or conf.conflict_id}' resolved. ({len(remaining)} pending)")
                                     st.rerun()
+                                else:
+                                    with st.spinner("All conflicts resolved! Resuming PlantUML and RTL generation..."):
+                                        from core.agents.orchestrator import resume_design_flow_with_resolutions
+                                        res_results = resume_design_flow_with_resolutions(
+                                            results,
+                                            st.session_state["approved_resolutions"],
+                                            target_outputs=targets
+                                        )
+                                        st.session_state["design_results"] = res_results
+                                        if "outputs" in res_results:
+                                            st.session_state["generated_rtl"] = res_results["outputs"]
+                                        if "efs_ir" in res_results and res_results["efs_ir"]:
+                                            st.session_state["resolved_efsir"] = res_results["efs_ir"]
+                                        if "plan" in res_results:
+                                            st.session_state["design_plan"] = res_results["plan"]
+                                        st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                                        st.rerun()
 
-            else:
-                st.info("Check **EFS IR Review** page for detailed validation report, or select **Bypass Critical Conflicts / Override Block** in the sidebar to bypass.")
-                st.markdown("#### Blocking Reasons:")
-                issues = results.get("efs_ir_validation_issues", [])
-                for iss in issues:
-                    if iss.get("severity") in ("ERROR", "CRITICAL"):
-                        st.error(f"- **[{iss['category']}]** {iss['message']}")
-            
-            if st.button("❌ Clear Blocked State", use_container_width=True):
-                del st.session_state["design_results"]
+                        elif chosen_strategy == "OPTION 2: Provide My Own Solution":
+                            st.markdown("##### ✎ Provide My Own Solution")
+                            col_sel_ent, col_sel_field = st.columns(2)
+                            with col_sel_ent:
+                                target_entity_choice = st.selectbox(
+                                    "Select entity to modify:",
+                                    options=entities,
+                                    key=f"custom_ent_{conf.conflict_id}"
+                                )
+                            with col_sel_field:
+                                current_val_show = conf.current_values.get(target_entity_choice) or (conf.conflicting_values[0] if conf.conflicting_values else "N/A")
+                                st.text_input("Current Value:", value=str(current_val_show), disabled=True, key=f"curr_val_{conf.conflict_id}")
+
+                            prop_placeholder = f"e.g. 1011 (for opcode), 0x08 (for offset), 32 (for width)..."
+                            custom_new_val = st.text_input(
+                                f"Enter new value for {conf.property or 'property'}:",
+                                placeholder=prop_placeholder,
+                                key=f"custom_val_{conf.conflict_id}"
+                            )
+                            custom_reason = st.text_area(
+                                "Design rationale / reason for this change (optional):",
+                                placeholder="Explain why this resolution conforms to the specification...",
+                                key=f"custom_reason_{conf.conflict_id}",
+                                height=70
+                            )
+
+                            if st.button("Apply My Solution", key=f"btn_custom_sol_{conf.conflict_id}", type="primary"):
+                                if not custom_new_val or not custom_new_val.strip():
+                                    st.error("❌ Resolution value cannot be empty. Please enter a valid value.")
+                                else:
+                                    from core.verification.conflict_resolution_engine import ConflictResolutionEngine
+                                    # Deterministic Server-Side Validation
+                                    is_valid, val_err = ConflictResolutionEngine.validate_resolution(
+                                        conf,
+                                        custom_new_val.strip(),
+                                        efs_ir,
+                                        target_entity=target_entity_choice
+                                    )
+                                    if not is_valid:
+                                        st.error(f"❌ Resolution Rejected by Validator: {val_err}")
+                                        st.info("Please adjust the value or select an alternative to avoid colliding with other hardware entities.")
+                                    else:
+                                        # Valid resolution - apply and resume
+                                        custom_res = ConflictResolutionEngine.create_custom_resolution(
+                                            conf,
+                                            f"{target_entity_choice}.{conf.property} = {custom_new_val.strip()}",
+                                            user_name="human_designer",
+                                            target_entity=target_entity_choice
+                                        )
+                                        if custom_reason and custom_reason.strip():
+                                            custom_res.rationale = custom_reason.strip()
+
+                                        if "approved_resolutions" not in st.session_state:
+                                            st.session_state["approved_resolutions"] = []
+                                        if not any(getattr(r, "conflict_id", "") == custom_res.conflict_id or getattr(r, "resolution_id", "") == custom_res.resolution_id for r in st.session_state["approved_resolutions"]):
+                                            st.session_state["approved_resolutions"].append(custom_res)
+
+                                        # Apply to efs_ir in memory using deterministic pipeline
+                                        if efs_ir:
+                                            try:
+                                                from core.verification.conflict_resolution_engine import ConflictResolutionEngine
+                                                efs_ir = ConflictResolutionEngine.apply_approved_resolution(efs_ir, custom_res)
+                                                results["efs_ir"] = efs_ir
+                                                results["conflicts"] = efs_ir.conflicts
+                                                st.session_state["resolved_efsir"] = efs_ir
+                                            except Exception:
+                                                pass
+
+                                        # Check remaining active unresolved conflicts from authoritative EFS IR
+                                        current_conf_pool = getattr(efs_ir, "conflicts", []) if efs_ir else unresolved_conflicts
+                                        remaining = [c for c in current_conf_pool if not is_conflict_resolved(c)]
+
+                                        if remaining:
+                                            results["conflicts"] = remaining
+                                            st.session_state["design_results"] = results
+                                            st.success(f"✓ Conflict '{conf.title or conf.conflict_id}' resolved. ({len(remaining)} pending)")
+                                            st.rerun()
+                                        else:
+                                            with st.spinner("All conflicts resolved! Resuming PlantUML and RTL generation..."):
+                                                from core.agents.orchestrator import resume_design_flow_with_resolutions
+                                                res_results = resume_design_flow_with_resolutions(
+                                                    results,
+                                                    st.session_state["approved_resolutions"],
+                                                    target_outputs=targets
+                                                )
+                                                st.session_state["design_results"] = res_results
+                                                if "outputs" in res_results:
+                                                    st.session_state["generated_rtl"] = res_results["outputs"]
+                                                if "efs_ir" in res_results and res_results["efs_ir"]:
+                                                    st.session_state["resolved_efsir"] = res_results["efs_ir"]
+                                                if "plan" in res_results:
+                                                    st.session_state["design_plan"] = res_results["plan"]
+                                                st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                                                st.rerun()
+
+            # Resolution Provenance & Audit Log
+            if st.session_state.get("approved_resolutions"):
+                with st.expander("📜 Resolution Audit Log & Provenance", expanded=False):
+                    hist_rows = []
+                    for res in st.session_state["approved_resolutions"]:
+                        hist_rows.append({
+                            "Resolution ID": getattr(res, "resolution_id", "-"),
+                            "Conflict ID": getattr(res, "conflict_id", "-"),
+                            "Entity": ", ".join(res.affected_requirements) if getattr(res, "affected_requirements", None) else "-",
+                            "Original Value": str(getattr(res, "original_value", "-")),
+                            "Resolved Value": str(getattr(res, "proposed_value", "-")),
+                            "Resolved By": getattr(res, "approved_by", "-"),
+                            "Validation": getattr(res, "validation_status", "PASSED"),
+                            "Reason": getattr(res, "rationale", "-")[:60]
+                        })
+                    st.dataframe(hist_rows, use_container_width=True, hide_index=True)
+
+            if st.button("🔄 Reset Pipeline Session", use_container_width=True):
+                if "design_results" in st.session_state:
+                    del st.session_state["design_results"]
+                if "approved_resolutions" in st.session_state:
+                    del st.session_state["approved_resolutions"]
                 st.rerun()
             return
 

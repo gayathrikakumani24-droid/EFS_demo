@@ -102,6 +102,7 @@ class InMemoryGraphStore:
             existing["aliases"] = sorted(set(existing["aliases"] + props.get("aliases", [])))
         else:
             node = {"name": name, "type": entity_type, **props}
+            self.nodes[key] = node
         if auto_persist:
             self._persist()
 
@@ -112,10 +113,15 @@ class InMemoryGraphStore:
         keys_to_remove = [k for k, node in self.nodes.items() if node.get("doc_id") == document_id or node.get("document_id") == document_id]
         for k in keys_to_remove:
             del self.nodes[k]
-        self.edges = [e for e in self.edges if e.get("doc_id") != document_id and e.get("document_id") != document_id]
+        valid_node_names = {n["name"] for n in self.nodes.values()}
+        self.edges = [
+            e for e in self.edges
+            if e.get("doc_id") != document_id and e.get("document_id") != document_id
+            and e["source"] in valid_node_names and e["target"] in valid_node_names
+        ]
         self.edge_index = {(e["source"], e["relation"], e["target"]): e for e in self.edges}
         self._persist()
-        logger.info(f"Cleared graph nodes for document '{document_id}'.")
+        logger.info(f"Cleared graph nodes and orphan edges for document '{document_id}'.")
 
     def merge_edge(self, source: str, source_type: str, relation: str, target: str, target_type: str, props: Dict[str, Any], auto_persist: bool = True) -> None:
         edge_key = (source, relation, target)
@@ -445,184 +451,598 @@ def build_graph(entities: List[Entity], relationships: List[Relationship], efs_i
             n_lower = name_val.lower()
             if n_lower in raw_names_lower:
                 raw_name, raw_type = raw_names_lower[n_lower]
-                store.merge_edge(
-                    source=raw_name, source_type=raw_type,
-                    relation="MAPS_TO",
-                    target=canonical_id, target_type=canonical_type,
-                    props={"evidence": ["Matches canonical EFS IR object name"]}
-                )
+                if raw_name != canonical_id or raw_type != canonical_type:
+                    store.merge_edge(
+                        source=raw_name, source_type=raw_type,
+                        relation="MAPS_TO",
+                        target=canonical_id, target_type=canonical_type,
+                        props={"evidence": ["Matches canonical EFS IR object name"], "doc_id": active_doc_id or ""}
+                    )
 
-        # 1. Merge EFS IR components and sub-objects as nodes using name as primary key
+        # ------------------------------------------------------------------
+        # 0. Design Node (Root of the hardware system)
+        # ------------------------------------------------------------------
+        design_name = (
+            (efs_ir.metadata.display_name if efs_ir.metadata else None) or 
+            (efs_ir.metadata.design_name if efs_ir.metadata else None) or 
+            (efs_ir.metadata.top_module if efs_ir.metadata else None) or 
+            "TopDesign"
+        )
+        design_id = (efs_ir.metadata.design_id if efs_ir.metadata else None) or "DSN_TOP"
+        store.merge_node(design_name, "Design", {
+            "name": design_name,
+            "efs_id": design_id,
+            "top_module": efs_ir.metadata.top_module if efs_ir.metadata else "",
+            "protocol": efs_ir.metadata.protocol if efs_ir.metadata else "",
+            "protocol_version": efs_ir.metadata.protocol_version if efs_ir.metadata else "",
+            "description": efs_ir.metadata.description if efs_ir.metadata else "",
+            "doc_id": active_doc_id or "",
+            "aliases": efs_ir.metadata.aliases if efs_ir.metadata else [],
+        })
+        link_raw_to_canonical(design_name, design_name, "Design")
+        if efs_ir.metadata:
+            for alias in efs_ir.metadata.aliases:
+                link_raw_to_canonical(alias, design_name, "Design")
+
+        # ------------------------------------------------------------------
+        # 1. Components
+        # ------------------------------------------------------------------
+        comp_id_to_name: Dict[str, str] = {}
         for comp in efs_ir.components:
-            store.merge_node(comp.name, "Component", {
-                "name": comp.name,
+            comp_name = comp.name or comp.component_id
+            comp_id_to_name[comp.component_id] = comp_name
+            comp_id_to_name[comp.name] = comp_name
+
+            store.merge_node(comp_name, "Component", {
+                "name": comp_name,
                 "efs_id": comp.component_id,
                 "component_type": comp.type,
                 "description": comp.description,
-                "doc_id": comp.traceability.doc_id or "",
+                "clock_domain": comp.clock_domain or "",
+                "reset_domain": comp.reset_domain or "",
+                "doc_id": comp.traceability.doc_id or active_doc_id or "",
                 "chunk_id": comp.traceability.chunk_id or "",
                 "original_text": comp.traceability.original_text or "",
             })
-            link_raw_to_canonical(comp.name, comp.name, "Component")
-            
+            link_raw_to_canonical(comp.name, comp_name, "Component")
+            if comp.component_id != comp.name:
+                link_raw_to_canonical(comp.component_id, comp_name, "Component")
+
+            # Design -> CONTAINS_COMPONENT -> Component
+            if comp_name != design_name:
+                store.merge_edge(
+                    design_name, "Design", "CONTAINS_COMPONENT",
+                    comp_name, "Component",
+                    {"evidence": ["Top-level architectural component"]}
+                )
+
+        # Identify top-level subsystem/component if one exists
+        top_comp = None
+        for comp in efs_ir.components:
+            c_name_l = comp.name.lower()
+            if any(k in c_name_l for k in ["unit", "subsystem", "system", "top", "core"]) and not any(k in c_name_l for k in ["alu", "file", "scheduler", "engine", "queue", "fpu"]):
+                top_comp = comp
+                break
+        if not top_comp and efs_ir.components:
+            top_comp = efs_ir.components[0]
+        top_comp_name = comp_id_to_name.get(top_comp.component_id, top_comp.name) if top_comp else None
+
+        if top_comp_name:
+            for comp in efs_ir.components:
+                c_name = comp_id_to_name.get(comp.component_id, comp.name)
+                if c_name != top_comp_name:
+                    store.merge_edge(
+                        top_comp_name, "Component", "CONTAINS_COMPONENT",
+                        c_name, "Component",
+                        {"evidence": ["Subsystem submodule component"]}
+                    )
+
+        # ------------------------------------------------------------------
+        # 2. Interfaces
+        # ------------------------------------------------------------------
+        iface_id_to_name: Dict[str, str] = {}
         for iface in efs_ir.interfaces:
-            store.merge_node(iface.name, "Interface", {
-                "name": iface.name,
+            iface_name = iface.name or iface.interface_id
+            iface_id_to_name[iface.interface_id] = iface_name
+            iface_id_to_name[iface.name] = iface_name
+
+            store.merge_node(iface_name, "Interface", {
+                "name": iface_name,
                 "efs_id": iface.interface_id,
                 "protocol": iface.protocol,
                 "role": iface.role,
-                "doc_id": iface.traceability.doc_id or "",
+                "description": iface.description,
+                "doc_id": iface.traceability.doc_id or active_doc_id or "",
                 "chunk_id": iface.traceability.chunk_id or "",
             })
-            link_raw_to_canonical(iface.name, iface.name, "Interface")
-            
-        for sig in efs_ir.signals:
-            store.merge_node(sig.name, "Signal", {
-                "name": sig.name,
+            link_raw_to_canonical(iface.name, iface_name, "Interface")
+            if iface.interface_id != iface.name:
+                link_raw_to_canonical(iface.interface_id, iface_name, "Interface")
+
+        # Connect Components to Interfaces
+        for comp in efs_ir.components:
+            comp_name = comp_id_to_name.get(comp.component_id, comp.name or comp.component_id)
+            for if_ref in comp.interfaces:
+                if_name = iface_id_to_name.get(if_ref)
+                if not if_name:
+                    iface_obj = next((i for i in efs_ir.interfaces if i.interface_id == if_ref or i.name == if_ref), None)
+                    if iface_obj:
+                        if_name = iface_obj.name or iface_obj.interface_id
+                if if_name:
+                    store.merge_edge(
+                        comp_name, "Component", "HAS_INTERFACE",
+                        if_name, "Interface",
+                        {"evidence": ["Component interface declaration"]}
+                    )
+
+        for iface in efs_ir.interfaces:
+            iface_name = iface_id_to_name.get(iface.interface_id, iface.name or iface.interface_id)
+            if iface.source_component:
+                src_name = comp_id_to_name.get(iface.source_component)
+                if src_name:
+                    store.merge_edge(
+                        src_name, "Component", "EXPOSES_INTERFACE",
+                        iface_name, "Interface",
+                        {"evidence": ["Interface source component"]}
+                    )
+            if iface.destination_component:
+                dst_name = comp_id_to_name.get(iface.destination_component)
+                if dst_name:
+                    store.merge_edge(
+                        iface_name, "Interface", "CONNECTS_TO",
+                        dst_name, "Component",
+                        {"evidence": ["Interface destination component"]}
+                    )
+
+        # ------------------------------------------------------------------
+        # 3. Signals (including Clocks and Resets)
+        # ------------------------------------------------------------------
+        all_signals_map: Dict[str, Any] = {}
+        for s in efs_ir.signals:
+            all_signals_map[s.signal_id] = s
+        for s in getattr(efs_ir, "clocks", []):
+            if s.signal_id not in all_signals_map:
+                all_signals_map[s.signal_id] = s
+        for s in getattr(efs_ir, "resets", []):
+            if s.signal_id not in all_signals_map:
+                all_signals_map[s.signal_id] = s
+
+        sig_id_to_name: Dict[str, str] = {}
+        for sig in all_signals_map.values():
+            sig_name = sig.name or sig.signal_id
+            sig_id_to_name[sig.signal_id] = sig_name
+            sig_id_to_name[sig.name] = sig_name
+
+            store.merge_node(sig_name, "Signal", {
+                "name": sig_name,
                 "efs_id": sig.signal_id,
                 "width": sig.width,
                 "direction": sig.direction,
+                "datatype": sig.datatype,
                 "semantic_role": sig.semantic_role,
-                "doc_id": sig.traceability.doc_id or "",
+                "protocol_role": sig.protocol_role or "",
+                "doc_id": sig.traceability.doc_id or active_doc_id or "",
                 "chunk_id": sig.traceability.chunk_id or "",
             })
-            link_raw_to_canonical(sig.name, sig.name, "Signal")
-            
+            link_raw_to_canonical(sig.name, sig_name, "Signal")
+            if sig.signal_id != sig.name:
+                link_raw_to_canonical(sig.signal_id, sig_name, "Signal")
+
+            # Interface association
+            if sig.interface:
+                if_name = iface_id_to_name.get(sig.interface)
+                if if_name:
+                    store.merge_edge(
+                        if_name, "Interface", "HAS_SIGNAL",
+                        sig_name, "Signal",
+                        {"evidence": ["Signal belongs to interface"]}
+                    )
+
+            # Driver (owner) and Consumer
+            if sig.owner:
+                owner_name = comp_id_to_name.get(sig.owner)
+                if owner_name:
+                    store.merge_edge(
+                        owner_name, "Component", "DRIVES",
+                        sig_name, "Signal",
+                        {"evidence": ["Component drives signal"]}
+                    )
+                    store.merge_edge(
+                        owner_name, "Component", "HAS_SIGNAL",
+                        sig_name, "Signal",
+                        {"evidence": ["Component port/signal"]}
+                    )
+            elif top_comp_name:
+                store.merge_edge(
+                    top_comp_name, "Component", "HAS_SIGNAL",
+                    sig_name, "Signal",
+                    {"evidence": ["Subsystem port/signal"]}
+                )
+            if sig.consumer:
+                consumer_name = comp_id_to_name.get(sig.consumer)
+                if consumer_name:
+                    store.merge_edge(
+                        sig_name, "Signal", "FEEDS",
+                        consumer_name, "Component",
+                        {"evidence": ["Signal feeds component"]}
+                    )
+
+        # Interface -> HAS_SIGNAL edges from iface.signals
+        for iface in efs_ir.interfaces:
+            iface_name = iface_id_to_name.get(iface.interface_id, iface.name or iface.interface_id)
+            for sig_ref in iface.signals:
+                sig_name = sig_id_to_name.get(sig_ref)
+                if sig_name:
+                    store.merge_edge(
+                        iface_name, "Interface", "HAS_SIGNAL",
+                        sig_name, "Signal",
+                        {"evidence": ["Interface signal declaration"]}
+                    )
+
+        # Clock & Reset wiring to components
+        for sig in all_signals_map.values():
+            sig_name = sig_id_to_name.get(sig.signal_id, sig.name or sig.signal_id)
+            is_clk = (
+                sig.semantic_role == "clock" or 
+                "clk" in sig_name.lower() or 
+                any(c.name == sig.name for c in getattr(efs_ir, "clocks", []))
+            )
+            is_rst = (
+                sig.semantic_role == "reset" or 
+                "rst" in sig_name.lower() or 
+                any(r.name == sig.name for r in getattr(efs_ir, "resets", []))
+            )
+
+            if is_clk:
+                for comp in efs_ir.components:
+                    comp_name = comp_id_to_name.get(comp.component_id, comp.name or comp.component_id)
+                    if not comp.clock_domain or comp.clock_domain == sig_name or comp.clock_domain == sig.signal_id:
+                        store.merge_edge(
+                            sig_name, "Signal", "CLOCKS",
+                            comp_name, "Component",
+                            {"evidence": ["Clock feeds component"]}
+                        )
+            if is_rst:
+                for comp in efs_ir.components:
+                    comp_name = comp_id_to_name.get(comp.component_id, comp.name or comp.component_id)
+                    if not comp.reset_domain or comp.reset_domain == sig_name or comp.reset_domain == sig.signal_id:
+                        store.merge_edge(
+                            sig_name, "Signal", "RESETS",
+                            comp_name, "Component",
+                            {"evidence": ["Reset resets component"]}
+                        )
+
+        # ------------------------------------------------------------------
+        # 4. Registers and Fields
+        # ------------------------------------------------------------------
+        reg_id_to_name: Dict[str, str] = {}
         for reg in efs_ir.registers:
-            store.merge_node(reg.name, "Register", {
-                "name": reg.name,
+            reg_name = reg.name or reg.register_id
+            reg_id_to_name[reg.register_id] = reg_name
+            reg_id_to_name[reg.name] = reg_name
+
+            store.merge_node(reg_name, "Register", {
+                "name": reg_name,
                 "efs_id": reg.register_id,
+                "address": reg.address,
                 "offset": reg.offset,
                 "width": reg.width,
                 "access_type": reg.access_type,
                 "reset_value": reg.reset_value,
-                "doc_id": reg.traceability.doc_id or "",
+                "description": reg.description,
+                "doc_id": reg.traceability.doc_id or active_doc_id or "",
                 "chunk_id": reg.traceability.chunk_id or "",
             })
-            link_raw_to_canonical(reg.name, reg.name, "Register")
-            
+            link_raw_to_canonical(reg.name, reg_name, "Register")
+            if reg.register_id != reg.name:
+                link_raw_to_canonical(reg.register_id, reg_name, "Register")
+
+            # Owner component / Design edge
+            if reg.owner and comp_id_to_name.get(reg.owner):
+                owner_name = comp_id_to_name[reg.owner]
+                store.merge_edge(
+                    owner_name, "Component", "HAS_REGISTER",
+                    reg_name, "Register",
+                    {"evidence": ["Register owner component"]}
+                )
+            elif top_comp_name:
+                store.merge_edge(
+                    top_comp_name, "Component", "HAS_REGISTER",
+                    reg_name, "Register",
+                    {"evidence": ["Subsystem register"]}
+                )
+            else:
+                rf_comp = next((c for c in efs_ir.components if "reg" in c.type.lower() or "reg" in c.name.lower() or "ctrl" in c.name.lower() or "controller" in c.name.lower()), None)
+                parent_target = (comp_id_to_name.get(rf_comp.component_id, rf_comp.name)) if rf_comp else design_name
+                parent_type = "Component" if rf_comp else "Design"
+                store.merge_edge(
+                    parent_target, parent_type, "HAS_REGISTER",
+                    reg_name, "Register",
+                    {"evidence": ["Register mapping"]}
+                )
+
+            if top_comp_name:
+                store.merge_edge(
+                    top_comp_name, "Component", "HAS_REGISTER",
+                    reg_name, "Register",
+                    {"evidence": ["Subsystem register"]}
+                )
+
+            # Bitfields
             for f in reg.fields:
-                f_id = f"{reg.name}_{f.name}"
-                store.merge_node(f_id, "Field", {
-                    "name": f.name,
+                f_name = f.name or f"field_{f.msb}_{f.lsb}"
+                f_node_name = f"{reg_name}_{f_name}"
+                store.merge_node(f_node_name, "Field", {
+                    "name": f_node_name,
+                    "field_name": f_name,
+                    "parent_register": reg_name,
                     "msb": f.msb,
                     "lsb": f.lsb,
+                    "width": f.width,
                     "access": f.access,
                     "reset_value": f.reset_value,
+                    "description": f.description,
                 })
-                store.merge_edge(reg.name, "Register", "HAS_FIELD", f_id, "Field", {"evidence": ["Derived from register field definition"]})
-                
+                store.merge_edge(
+                    reg_name, "Register", "HAS_FIELD",
+                    f_node_name, "Field",
+                    {"evidence": ["Derived from register field definition"]}
+                )
+
+        # ------------------------------------------------------------------
+        # 5. Transactions
+        # ------------------------------------------------------------------
+        for tx in getattr(efs_ir, "transactions", []):
+            tx_name = tx.name or tx.transaction_id
+            store.merge_node(tx_name, "Transaction", {
+                "name": tx_name,
+                "efs_id": tx.transaction_id,
+                "transaction_type": tx.type,
+                "protocol": tx.protocol,
+                "description": tx.description,
+                "completion_condition": tx.completion_condition,
+                "timing": tx.timing,
+                "ordering": tx.ordering,
+                "doc_id": tx.traceability.doc_id or active_doc_id or "",
+                "chunk_id": tx.traceability.chunk_id or "",
+            })
+            link_raw_to_canonical(tx.name, tx_name, "Transaction")
+            if tx.transaction_id != tx.name:
+                link_raw_to_canonical(tx.transaction_id, tx_name, "Transaction")
+
+            # Initiator
+            if tx.initiator:
+                init_comp_name = comp_id_to_name.get(tx.initiator)
+                if init_comp_name:
+                    store.merge_edge(
+                        init_comp_name, "Component", "INITIATES",
+                        tx_name, "Transaction",
+                        {"evidence": ["Transaction initiator component"]}
+                    )
+                else:
+                    init_if_name = iface_id_to_name.get(tx.initiator)
+                    if init_if_name:
+                        store.merge_edge(
+                            init_if_name, "Interface", "INITIATES",
+                            tx_name, "Transaction",
+                            {"evidence": ["Transaction initiator interface"]}
+                        )
+
+            # Target
+            if tx.target:
+                tgt_comp_name = comp_id_to_name.get(tx.target)
+                if tgt_comp_name:
+                    store.merge_edge(
+                        tx_name, "Transaction", "TARGETS",
+                        tgt_comp_name, "Component",
+                        {"evidence": ["Transaction target component"]}
+                    )
+                else:
+                    tgt_if_name = iface_id_to_name.get(tx.target)
+                    if tgt_if_name:
+                        store.merge_edge(
+                            tx_name, "Transaction", "TARGETS",
+                            tgt_if_name, "Interface",
+                            {"evidence": ["Transaction target interface"]}
+                        )
+
+            # Involved Signals
+            for s_ref in tx.signals:
+                s_name = sig_id_to_name.get(s_ref)
+                if s_name:
+                    store.merge_edge(
+                        tx_name, "Transaction", "INVOLVES_SIGNAL",
+                        s_name, "Signal",
+                        {"evidence": ["Transaction involves signal"]}
+                    )
+
+            # Participating Interfaces
+            for i_ref in tx.participating_interfaces:
+                i_name = iface_id_to_name.get(i_ref)
+                if i_name:
+                    store.merge_edge(
+                        tx_name, "Transaction", "USES_INTERFACE",
+                        i_name, "Interface",
+                        {"evidence": ["Transaction participating interface"]}
+                    )
+
+        # ------------------------------------------------------------------
+        # 6. FSMs and States
+        # ------------------------------------------------------------------
         for fsm in efs_ir.fsms:
-            store.merge_node(fsm.fsm_id, "FSM", {
-                "name": fsm.name,
+            fsm_name = fsm.name or fsm.fsm_id
+            store.merge_node(fsm_name, "FSM", {
+                "name": fsm_name,
                 "efs_id": fsm.fsm_id,
                 "initial_state": fsm.initial_state,
-                "doc_id": fsm.traceability.doc_id or "",
+                "encoding": fsm.encoding,
+                "doc_id": fsm.traceability.doc_id or active_doc_id or "",
                 "chunk_id": fsm.traceability.chunk_id or "",
             })
-            link_raw_to_canonical(fsm.name, fsm.fsm_id, "FSM")
-            
+            link_raw_to_canonical(fsm.name, fsm_name, "FSM")
+            if fsm.fsm_id != fsm.name:
+                link_raw_to_canonical(fsm.fsm_id, fsm_name, "FSM")
+
+            # Link to owner component if name overlaps
+            fsm_comp = next((c for c in efs_ir.components if c.name.lower() in fsm_name.lower() or fsm_name.lower() in c.name.lower()), None)
+            if fsm_comp:
+                store.merge_edge(
+                    comp_id_to_name.get(fsm_comp.component_id, fsm_comp.name), "Component", "IMPLEMENTS_FSM",
+                    fsm_name, "FSM",
+                    {"evidence": ["Component implements FSM"]}
+                )
+
+            # States
+            state_node_map: Dict[str, str] = {}
             for s in fsm.states:
-                store.merge_node(s.state_id, "State", {
-                    "name": s.name,
-                    "efs_id": s.state_id
+                s_node_name = f"{fsm_name}_{s.name}" if s.name else s.state_id
+                state_node_map[s.name] = s_node_name
+                state_node_map[s.state_id] = s_node_name
+
+                store.merge_node(s_node_name, "State", {
+                    "name": s_node_name,
+                    "state_name": s.name,
+                    "fsm": fsm_name,
+                    "efs_id": s.state_id,
+                    "encoding": s.encoding,
                 })
-                store.merge_edge(fsm.fsm_id, "FSM", "HAS_STATE", s.state_id, "State", {"evidence": ["FSM state list"]})
-                
+                store.merge_edge(
+                    fsm_name, "FSM", "HAS_STATE",
+                    s_node_name, "State",
+                    {"evidence": ["FSM state list"]}
+                )
+
+            # Transitions
             for t in fsm.transitions:
-                # Find state IDs based on names
-                src_state_obj = next((s for s in fsm.states if s.name == t.source_state), None)
-                tgt_state_obj = next((s for s in fsm.states if s.name == t.target_state), None)
-                if src_state_obj and tgt_state_obj:
+                src_node = state_node_map.get(t.source_state)
+                tgt_node = state_node_map.get(t.target_state)
+                if src_node and tgt_node:
                     store.merge_edge(
-                        src_state_obj.state_id, "State", "TRANSITIONS_TO",
-                        tgt_state_obj.state_id, "State", {
+                        src_node, "State", "TRANSITIONS_TO",
+                        tgt_node, "State", {
                             "evidence": [t.condition or "unconditional"],
-                            "efs_id": t.transition_id
+                            "efs_id": t.transition_id,
+                            "action": t.action,
                         }
                     )
-                
+
+        # ------------------------------------------------------------------
+        # 7. Constraints, Timing Rules, Protocol Rules, Flows
+        # ------------------------------------------------------------------
         for const in efs_ir.constraints:
-            store.merge_node(const.constraint_id, "Constraint", {
-                "name": f"Constraint_{const.constraint_id}",
+            const_name = f"Constraint_{const.constraint_id}"
+            store.merge_node(const_name, "Constraint", {
+                "name": const_name,
                 "efs_id": const.constraint_id,
                 "constraint_type": const.type,
+                "severity": const.severity,
                 "condition": const.condition,
                 "expected_behavior": const.expected_behavior,
-                "doc_id": const.traceability.doc_id or "",
+                "doc_id": const.traceability.doc_id or active_doc_id or "",
                 "chunk_id": const.traceability.chunk_id or "",
             })
-            
-            # Link constraint to target signals/components if we can resolve them
-            for target_obj in const.source_objects:
-                # check signals by name
-                sig_obj = next((s for s in efs_ir.signals if s.name == target_obj), None)
-                if sig_obj:
-                    store.merge_edge(const.constraint_id, "Constraint", "CONSTRAINS", sig_obj.signal_id, "Signal", {"evidence": ["Constraint mapping signal"]})
-                else:
-                    # check components by name
-                    comp_obj = next((c for c in efs_ir.components if c.name == target_obj), None)
-                    if comp_obj:
-                        store.merge_edge(const.constraint_id, "Constraint", "CONSTRAINS", comp_obj.component_id, "Component", {"evidence": ["Constraint mapping component"]})
+            for target_obj in (const.source_objects + const.target_objects):
+                target_sig_name = sig_id_to_name.get(target_obj)
+                if target_sig_name:
+                    store.merge_edge(const_name, "Constraint", "CONSTRAINS", target_sig_name, "Signal", {"evidence": ["Constraint mapping signal"]})
+                target_comp_name = comp_id_to_name.get(target_obj)
+                if target_comp_name:
+                    store.merge_edge(const_name, "Constraint", "CONSTRAINS", target_comp_name, "Component", {"evidence": ["Constraint mapping component"]})
 
-        # Extended models: instructions, opcodes, memory regions
+        for tr in getattr(efs_ir, "timing_rules", []):
+            tr_name = f"Timing_{tr.rule_id}"
+            store.merge_node(tr_name, "TimingConstraint", {
+                "name": tr_name,
+                "efs_id": tr.rule_id,
+                "timing_type": tr.type,
+                "min_delay": tr.minimum_delay,
+                "max_delay": tr.maximum_delay,
+                "ordering": tr.ordering,
+                "doc_id": tr.traceability.doc_id or active_doc_id or "",
+                "chunk_id": tr.traceability.chunk_id or "",
+            })
+            store.merge_edge(design_name, "Design", "HAS_TIMING_RULE", tr_name, "TimingConstraint", {"evidence": ["Design timing rule"]})
+
+        for flow in getattr(efs_ir, "flows", []):
+            flow_name = flow.name or flow.flow_id
+            store.merge_node(flow_name, "Flow", {
+                "name": flow_name,
+                "efs_id": flow.flow_id,
+                "conditions": flow.conditions,
+                "doc_id": flow.traceability.doc_id or active_doc_id or "",
+                "chunk_id": flow.traceability.chunk_id or "",
+            })
+            for c_ref in flow.components:
+                c_name = comp_id_to_name.get(c_ref)
+                if c_name:
+                    store.merge_edge(flow_name, "Flow", "INVOLVES_COMPONENT", c_name, "Component", {"evidence": ["Flow component participation"]})
+            for i_ref in flow.interfaces:
+                i_name = iface_id_to_name.get(i_ref)
+                if i_name:
+                    store.merge_edge(flow_name, "Flow", "INVOLVES_INTERFACE", i_name, "Interface", {"evidence": ["Flow interface participation"]})
+
+        # ------------------------------------------------------------------
+        # 8. Extended Canonical Models: Instructions, Opcodes, Memory Regions
+        # ------------------------------------------------------------------
         for instr in getattr(efs_ir, "instructions", []):
-            store.merge_node(instr.instruction_id, "Instruction", {
-                "name": instr.name,
+            instr_name = instr.name or instr.instruction_id
+            chunk = instr.traceability.chunk_id or ""
+            store.merge_node(instr_name, "Instruction", {
+                "name": instr_name,
                 "efs_id": instr.instruction_id,
                 "width": instr.width,
                 "description": instr.description,
-                "doc_id": instr.traceability.doc_id or "",
-                "chunk_id": instr.traceability.chunk_id or "",
+                "doc_id": instr.traceability.doc_id or active_doc_id or "",
+                "chunk_id": chunk,
+                "chunk_ids": [chunk] if chunk else [],
             })
-            link_raw_to_canonical(instr.name, instr.instruction_id, "Instruction")
+            link_raw_to_canonical(instr.name, instr_name, "Instruction")
+            if top_comp_name:
+                store.merge_edge(
+                    top_comp_name, "Component", "EXECUTES_INSTRUCTION",
+                    instr_name, "Instruction",
+                    {"evidence": ["Subsystem instruction set"]}
+                )
             
         for opc in getattr(efs_ir, "opcodes", []):
-            store.merge_node(opc.opcode_id, "Opcode", {
-                "name": opc.mnemonic,
+            opc_name = opc.mnemonic or opc.opcode_id
+            chunk = opc.traceability.chunk_id or ""
+            store.merge_node(opc_name, "Opcode", {
+                "name": opc_name,
                 "efs_id": opc.opcode_id,
                 "binary_encoding": opc.binary_encoding,
                 "operation": opc.operation,
-                "doc_id": opc.traceability.doc_id or "",
-                "chunk_id": opc.traceability.chunk_id or "",
+                "doc_id": opc.traceability.doc_id or active_doc_id or "",
+                "chunk_id": chunk,
+                "chunk_ids": [chunk] if chunk else [],
             })
-            link_raw_to_canonical(opc.mnemonic, opc.opcode_id, "Opcode")
+            link_raw_to_canonical(opc.mnemonic, opc_name, "Opcode")
+            if top_comp_name:
+                store.merge_edge(
+                    top_comp_name, "Component", "SUPPORTS_OPCODE",
+                    opc_name, "Opcode",
+                    {"evidence": ["Subsystem opcode"]}
+                )
             
         for mr in getattr(efs_ir, "memory_regions", []):
-            store.merge_node(mr.region_id, "MemoryRegion", {
-                "name": mr.name,
+            mr_name = mr.name or mr.region_id
+            store.merge_node(mr_name, "MemoryRegion", {
+                "name": mr_name,
                 "efs_id": mr.region_id,
                 "type": mr.type,
                 "size": mr.size,
                 "depth": mr.depth,
                 "width": mr.width,
-                "doc_id": mr.traceability.doc_id or "",
+                "doc_id": mr.traceability.doc_id or active_doc_id or "",
                 "chunk_id": mr.traceability.chunk_id or "",
             })
-            link_raw_to_canonical(mr.name, mr.region_id, "MemoryRegion")
-
-        # 2. Merge EFS structural relationships using EFS IDs
-        for comp in efs_ir.components:
-            for if_id in comp.interfaces:
-                iface = next((i for i in efs_ir.interfaces if i.interface_id == if_id), None)
-                if iface:
-                    store.merge_edge(
-                        comp.component_id, "Component",
-                        "HAS_INTERFACE",
-                        iface.interface_id, "Interface",
-                        {"evidence": ["Component interface declaration"]}
-                    )
-                    
-        for iface in efs_ir.interfaces:
-            for sig_id in iface.signals:
-                sig = next((s for s in efs_ir.signals if s.signal_id == sig_id), None)
-                if sig:
-                    store.merge_edge(
-                        iface.interface_id, "Interface",
-                        "HAS_SIGNAL",
-                        sig.signal_id, "Signal",
-                        {"evidence": ["Interface signal declaration"]}
-                    )
+            link_raw_to_canonical(mr.name, mr_name, "MemoryRegion")
+            if top_comp_name:
+                store.merge_edge(
+                    top_comp_name, "Component", "HAS_MEMORY_REGION",
+                    mr_name, "MemoryRegion",
+                    {"evidence": ["Subsystem memory resource"]}
+                )
 
     if hasattr(store, "_persist"):
         store._persist()

@@ -167,23 +167,31 @@ def _clean_code_output(text: str) -> str:
 
 
 def plan_rtl(design_spec: str, target: str, efs_ir: Optional[EFSIR] = None, context_pack: Optional[Any] = None) -> Dict[str, Any]:
-    """Stage 1: Generate a Structured RTL Plan (JSON) from EFS IR and design specification."""
+    """Stage 1: Generate a Structured RTL Plan (JSON) from query-scoped ContextPack or EFS IR."""
     logger.info("Generating Structured RTL Implementation Plan (Stage 1)...")
     llm = get_llm_client()
     
-    efs_ir_summary = ""
-    if efs_ir:
-        try:
-            efs_ir_summary = json.dumps({
-                "metadata": efs_ir.metadata.to_dict(),
-                "components": [c.to_dict() for c in efs_ir.components],
-                "interfaces": [i.to_dict() for i in efs_ir.interfaces],
-                "signals": [s.to_dict() for s in efs_ir.signals],
-                "registers": [r.to_dict() for r in efs_ir.registers],
-                "fsms": [f.to_dict() for f in efs_ir.fsms],
-            }, indent=2)
-        except Exception:
-            pass
+    from core.context_compiler import compile_context
+    from core.context_compiler.generation_context import GenerationContext
+
+    # Compile target-scoped RTL context using RTLContextCompiler
+    compiled_rtl = compile_context(
+        "rtl",
+        efs_ir=efs_ir,
+        target_component=target,
+        design_spec=design_spec,
+        context_pack=context_pack
+    )
+    gen_ctx = GenerationContext.from_compiled_rtl(compiled_rtl, token_budget=8000)
+    gen_ctx.artifact_type = "rtl_plan"
+
+    target_module_name = compiled_rtl.get("module", {}).get("name") or (
+        getattr(efs_ir.metadata, "design_name", "target_module") if efs_ir and hasattr(efs_ir, "metadata") else "target_module"
+    )
+    scoped_signals = compiled_rtl.get("signals", compiled_rtl.get("ports", []))
+    scoped_registers = compiled_rtl.get("registers", [])
+    scoped_fsm = compiled_rtl.get("fsm", {})
+    efs_ir_summary = gen_ctx.to_prompt_json(indent=2)
 
     plan_prompt = f"""You are a senior hardware architect. Output a JSON Structured RTL Implementation Plan.
 Do NOT generate SystemVerilog code yet. Output ONLY valid JSON according to this schema:
@@ -268,107 +276,131 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
    - Signal direction, width, or polarity conflicts exist across sources.
 3. Do NOT invent signal names or expressions for missing behavior. Set "expression": null and "is_fully_defined": false for incomplete conditions.
 
-=== EFS IR HARDWARE CONTEXT ===
-{efs_ir_summary if efs_ir_summary else "Not Available"}
-
-=== SPECIFICATION ===
-{design_spec[:6000]}
+=== COMPILED GENERATION CONTEXT ===
+{efs_ir_summary}
 """
+    gen_ctx.calculate_metrics(plan_prompt, system_prompt="You are an expert RTL architect.")
     if llm.available:
         plan_res = llm.complete_json("You are an expert RTL architect.", plan_prompt, model=CONFIG.llm.model)
+        provider_tokens = llm.last_usage.get("prompt_tokens") if hasattr(llm, "last_usage") else None
+        output_tokens = llm.last_usage.get("completion_tokens", 0) if hasattr(llm, "last_usage") else 0
+        gen_ctx.log_telemetry(
+            generation_name="rtl_agent_plan_rtl",
+            model=CONFIG.llm.model,
+            provider_tokens=provider_tokens,
+            output_tokens=output_tokens
+        )
         if plan_res and isinstance(plan_res, dict) and plan_res.get("ports"):
-            if efs_ir and efs_ir.signals:
-                for s in efs_ir.signals:
-                    if s.name.lower() in ("name", "signal", "port", "signal name", "port name", "signal_name", "port_name", "pin", "width", "direction", "description", "protocol/description"):
-                        continue
-                    matching_p = next((p for p in plan_res.get("ports", []) if isinstance(p, dict) and str(p.get("name", "")).lower() == s.name.lower()), None)
-                    # Check if conflict on this signal has been resolved by human approval
-                    is_resolved = False
-                    if efs_ir and hasattr(efs_ir, "resolutions"):
-                        for res in efs_ir.resolutions:
-                            if getattr(res, "approval_status", "") == "APPROVED" and (s.name in res.affected_requirements or s.signal_id in res.affected_requirements):
-                                is_resolved = True
-                                break
-                    if efs_ir and hasattr(efs_ir, "conflicts"):
-                        for c in efs_ir.conflicts:
-                            if s.name in c.entities and getattr(c, "resolution_status", "") == "RESOLVED":
-                                is_resolved = True
-                                break
+            # Validate signal directions against the scoped signals
+            validation_signals = scoped_signals if scoped_signals else (efs_ir.signals if efs_ir else [])
+            for s in validation_signals:
+                s_name = s.get("name", "") if isinstance(s, dict) else s.name
+                s_dir = s.get("direction", "") if isinstance(s, dict) else s.direction
+                s_id = s.get("signal_id", "") if isinstance(s, dict) else s.signal_id
+                if s_name.lower() in ("name", "signal", "port", "signal name", "port name", "signal_name", "port_name", "pin", "width", "direction", "description", "protocol/description"):
+                    continue
+                matching_p = next((p for p in plan_res.get("ports", []) if isinstance(p, dict) and str(p.get("name", "")).lower() == s_name.lower()), None)
+                # Check if conflict on this signal has been resolved by human approval
+                is_resolved = False
+                if efs_ir and hasattr(efs_ir, "resolutions"):
+                    for res in efs_ir.resolutions:
+                        if getattr(res, "approval_status", "") == "APPROVED" and (s_name in res.affected_requirements or s_id in res.affected_requirements):
+                            is_resolved = True
+                            break
+                if efs_ir and hasattr(efs_ir, "conflicts"):
+                    for c in efs_ir.conflicts:
+                        if s_name in c.entities and getattr(c, "resolution_status", "") == "RESOLVED":
+                            is_resolved = True
+                            break
 
-                    if matching_p and matching_p.get("direction") and matching_p.get("direction").lower() != s.direction.lower() and not is_resolved:
-                        if not isinstance(plan_res.get("specification_status"), dict):
-                            plan_res["specification_status"] = {"status": "CONTRADICTORY", "blocking_issues": []}
-                        plan_res["specification_status"]["status"] = "CONTRADICTORY"
-                        plan_res["specification_status"].setdefault("blocking_issues", []).append({
-                            "category": "INTERFACE",
-                            "issue": f"Signal direction conflict: {s.name} is specified as {s.direction} in EFS IR but {matching_p.get('direction')} in protocol contract/spec.",
-                            "required_information": f"Clarify the correct direction for port '{s.name}'.",
-                            "evidence": f"EFS IR: {s.direction}, Spec/Plan: {matching_p.get('direction')}"
-                        })
-            val = validate_rtl_plan(plan_res, efs_ir=efs_ir)
+                if matching_p and matching_p.get("direction") and matching_p.get("direction").lower() != s_dir.lower() and not is_resolved:
+                    if not isinstance(plan_res.get("specification_status"), dict):
+                        plan_res["specification_status"] = {"status": "CONTRADICTORY", "blocking_issues": []}
+                    plan_res["specification_status"]["status"] = "CONTRADICTORY"
+                    plan_res["specification_status"].setdefault("blocking_issues", []).append({
+                        "category": "INTERFACE",
+                        "issue": f"Signal direction conflict: {s_name} is specified as {s_dir} in EFS IR but {matching_p.get('direction')} in protocol contract/spec.",
+                        "required_information": f"Clarify the correct direction for port '{s_name}'.",
+                        "evidence": f"EFS IR: {s_dir}, Spec/Plan: {matching_p.get('direction')}"
+                    })
+            val = validate_rtl_plan(plan_res, efs_ir=efs_ir, context_pack=context_pack)
             plan_res["specification_status"] = {
                 "status": val["status"],
                 "blocking_issues": val["issues"]
             }
             return plan_res
 
-    # Grounded fallback plan from efs_ir or design_spec
+    # Grounded fallback plan from scoped context or efs_ir or design_spec
     spec_parsed = parse_markdown_spec(design_spec)
     ports = []
-    if efs_ir and efs_ir.signals:
-        for s in efs_ir.signals:
-            if s.name.lower() in ("name", "signal", "port", "signal name", "port name", "signal_name", "port_name", "pin", "width", "direction", "description", "protocol/description"):
+    
+    if scoped_signals:
+        for s in scoped_signals:
+            s_name = s.get("name", "") if isinstance(s, dict) else s.name
+            s_dir = s.get("direction", "input") if isinstance(s, dict) else s.direction
+            s_width = str(s.get("width", "1")) if isinstance(s, dict) else str(s.width)
+            s_desc = s.get("description", "") if isinstance(s, dict) else s.description
+            s_role = s.get("semantic_role", "data") if isinstance(s, dict) else (s.semantic_role or "data")
+            s_id = s.get("signal_id", "") if isinstance(s, dict) else s.signal_id
+
+            if s_name.lower() in ("name", "signal", "port", "signal name", "port name", "signal_name", "port_name", "pin", "width", "direction", "description", "protocol/description"):
                 continue
             parsed_ports = spec_parsed.get("interfaces", [])
-            matching_p = next((p for p in parsed_ports if p.get("name", "").lower() == s.name.lower()), None)
-            source_dir = s.direction
+            matching_p = next((p for p in parsed_ports if p.get("name", "").lower() == s_name.lower()), None)
+            source_dir = s_dir
             is_resolved = False
             if efs_ir and hasattr(efs_ir, "resolutions"):
                 for res in efs_ir.resolutions:
-                    if getattr(res, "approval_status", "") == "APPROVED" and (s.name in res.affected_requirements or s.signal_id in res.affected_requirements):
+                    if getattr(res, "approval_status", "") == "APPROVED" and (s_name in res.affected_requirements or s_id in res.affected_requirements):
                         is_resolved = True
                         break
             if efs_ir and hasattr(efs_ir, "conflicts"):
                 for c in efs_ir.conflicts:
-                    if s.name in c.entities and getattr(c, "resolution_status", "") == "RESOLVED":
+                    if s_name in c.entities and getattr(c, "resolution_status", "") == "RESOLVED":
                         is_resolved = True
                         break
 
-            if matching_p and matching_p.get("direction") and matching_p.get("direction").lower() not in ("direction", "dir") and matching_p.get("direction").lower() != s.direction.lower() and not is_resolved:
+            if matching_p and matching_p.get("direction") and matching_p.get("direction").lower() not in ("direction", "dir") and matching_p.get("direction").lower() != s_dir.lower() and not is_resolved:
                 spec_parsed["specification_status"]["status"] = "CONTRADICTORY"
                 spec_parsed["specification_status"]["blocking_issues"].append({
                     "category": "INTERFACE",
-                    "issue": f"Signal direction conflict: {s.name} is specified as {s.direction} in EFS IR but {matching_p.get('direction')} in protocol contract/spec.",
-                    "required_information": f"Clarify the correct direction for port '{s.name}'.",
-                    "evidence": f"EFS IR: {s.direction}, Spec: {matching_p.get('direction')}"
+                    "issue": f"Signal direction conflict: {s_name} is specified as {s_dir} in EFS IR but {matching_p.get('direction')} in protocol contract/spec.",
+                    "required_information": f"Clarify the correct direction for port '{s_name}'.",
+                    "evidence": f"EFS IR: {s_dir}, Spec: {matching_p.get('direction')}"
                 })
             ports.append({
-                "name": s.name,
+                "name": s_name,
                 "direction": source_dir,
-                "width": s.width,
-                "description": s.description,
-                "semantic_role": s.semantic_role or "data",
-                "source": "EFS"
+                "width": s_width,
+                "description": s_desc,
+                "semantic_role": s_role,
+                "source": "ContextPack" if context_pack else "EFS"
             })
     else:
         ports = spec_parsed.get("interfaces", [])
 
     internal_regs = []
-    if efs_ir and efs_ir.registers:
-        for r in efs_ir.registers:
+    if scoped_registers:
+        for r in scoped_registers:
+            r_name = r.get("name", "") if isinstance(r, dict) else r.name
+            r_width = str(r.get("width", "32")) if isinstance(r, dict) else str(getattr(r, "width", "32"))
+            r_reset = r.get("reset_value", r.get("reset_val", "32'h0")) if isinstance(r, dict) else str(getattr(r, "reset_value", "32'h0"))
+            r_desc = r.get("description", "Internal Register") if isinstance(r, dict) else (r.description or "Internal Register")
+            raw_fields = r.get("fields", []) if isinstance(r, dict) else getattr(r, "fields", [])
             fields = []
-            if hasattr(r, "fields") and r.fields:
-                for f in r.fields:
-                    fields.append({
-                        "bits": getattr(f, "bits", getattr(f, "bit_range", "31:0")),
-                        "meaning": getattr(f, "meaning", getattr(f, "description", "")),
-                        "source": "EFS"
-                    })
+            for f in raw_fields:
+                f_bits = f.get("bits", f"{f.get('msb', 0)}:{f.get('lsb', 0)}") if isinstance(f, dict) else f"{getattr(f, 'msb', 0)}:{getattr(f, 'lsb', 0)}"
+                f_meaning = f.get("meaning", f.get("name", "")) if isinstance(f, dict) else (getattr(f, "name", "") or getattr(f, "description", ""))
+                fields.append({
+                    "bits": f_bits,
+                    "meaning": f_meaning,
+                    "source": "ContextPack" if context_pack else "EFS"
+                })
             internal_regs.append({
-                "name": r.name,
-                "width": getattr(r, "width", "32"),
-                "reset_val": getattr(r, "reset_val", getattr(r, "reset_value", "32'h0")),
-                "purpose": r.description or "Internal Register",
+                "name": r_name,
+                "width": r_width,
+                "reset_val": r_reset,
+                "purpose": r_desc,
                 "fields": fields
             })
     else:
@@ -376,31 +408,83 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
 
     fsm_states = spec_parsed.get("states", ["IDLE", "RUN", "DONE"])
     fsm_transitions = spec_parsed.get("transitions", [])
-    if efs_ir and efs_ir.fsms:
+    if scoped_fsm and isinstance(scoped_fsm, dict) and scoped_fsm.get("states"):
+        fsm_states = [st.get("name", "") if isinstance(st, dict) else st for st in scoped_fsm.get("states", [])]
+        if scoped_fsm.get("transitions"):
+            fsm_transitions = []
+            for tr in scoped_fsm.get("transitions", []):
+                from_st = tr.get("source_state", tr.get("from", "IDLE")) if isinstance(tr, dict) else getattr(tr, "source_state", getattr(tr, "from", "IDLE"))
+                to_st = tr.get("target_state", tr.get("to", "RUN")) if isinstance(tr, dict) else getattr(tr, "target_state", getattr(tr, "to", "RUN"))
+                raw_cond = tr.get("condition", "undefined") if isinstance(tr, dict) else getattr(tr, "condition", "undefined")
+                cond_expr = raw_cond.get("expression", "undefined") if isinstance(raw_cond, dict) else str(raw_cond)
+
+                # Check if this transition condition has been resolved in EFS IR resolutions
+                is_resolved = False
+                if efs_ir and hasattr(efs_ir, "resolutions"):
+                    for res in efs_ir.resolutions:
+                        if getattr(res, "approval_status", "") == "APPROVED":
+                            aff = [str(x).lower() for x in (getattr(res, "affected_requirements", []) or [])]
+                            t_ent = str(getattr(res, "target_entity", "")).lower()
+                            c_id = str(getattr(res, "conflict_id", "")).lower()
+                            if t_ent in ("fsm", "state", "transition") or any(st.lower() in aff for st in [from_st, to_st]) or "fsm" in c_id:
+                                is_resolved = True
+                                break
+
+                is_vague = (not is_resolved) and any(vk in cond_expr.lower() for vk in ["control start", "operation completes", "acknowledged", "undefined", "tbd"])
+                fsm_transitions.append({
+                    "from": from_st,
+                    "to": to_st,
+                    "condition": {
+                        "expression": cond_expr if (not is_vague or is_resolved) else None,
+                        "signals": [],
+                        "registers": [],
+                        "protocol_events": [],
+                        "source": "ContextPack",
+                        "source_evidence": cond_expr,
+                        "is_fully_defined": not is_vague
+                    }
+                })
+    elif efs_ir and efs_ir.fsms:
         for f in efs_ir.fsms:
             if hasattr(f, "states") and f.states:
                 fsm_states = [st.name for st in f.states]
             if hasattr(f, "transitions") and f.transitions:
                 fsm_transitions = []
                 for tr in f.transitions:
+                    from_st = tr.from_state if hasattr(tr, "from_state") else getattr(tr, "from", getattr(tr, "source_state", "IDLE"))
+                    to_st = tr.to_state if hasattr(tr, "to_state") else getattr(tr, "to", getattr(tr, "target_state", "RUN"))
                     raw_cond = tr.condition if hasattr(tr, "condition") else "undefined"
-                    is_vague = any(vk in str(raw_cond).lower() for vk in ["control start", "operation completes", "acknowledged", "undefined", "tbd"])
+                    cond_expr = raw_cond.get("expression", "undefined") if isinstance(raw_cond, dict) else str(raw_cond)
+
+                    # Check if resolved
+                    is_resolved = False
+                    if efs_ir and hasattr(efs_ir, "resolutions"):
+                        for res in efs_ir.resolutions:
+                            if getattr(res, "approval_status", "") == "APPROVED":
+                                aff = [str(x).lower() for x in (getattr(res, "affected_requirements", []) or [])]
+                                t_ent = str(getattr(res, "target_entity", "")).lower()
+                                c_id = str(getattr(res, "conflict_id", "")).lower()
+                                if t_ent in ("fsm", "state", "transition") or any(st.lower() in aff for st in [from_st, to_st]) or "fsm" in c_id:
+                                    is_resolved = True
+                                    break
+
+                    is_vague = (not is_resolved) and any(vk in cond_expr.lower() for vk in ["control start", "operation completes", "acknowledged", "undefined", "tbd"])
                     fsm_transitions.append({
-                        "from": tr.from_state if hasattr(tr, "from_state") else getattr(tr, "from", "IDLE"),
-                        "to": tr.to_state if hasattr(tr, "to_state") else getattr(tr, "to", "RUN"),
+                        "from": from_st,
+                        "to": to_st,
                         "condition": {
-                            "expression": None if is_vague else str(raw_cond),
+                            "expression": cond_expr if (not is_vague or is_resolved) else None,
                             "signals": [],
                             "registers": [],
                             "protocol_events": [],
                             "source": "EFS",
-                            "source_evidence": str(raw_cond),
+                            "source_evidence": cond_expr,
                             "is_fully_defined": not is_vague
                         }
                     })
 
     plan = {
-        "module_name": spec_parsed.get("module_name", getattr(efs_ir.metadata, "design_name", "target_module") if efs_ir and hasattr(efs_ir, "metadata") else "target_module"),
+        "module_name": target_module_name if target_module_name != "target_module" else spec_parsed.get("module_name", "target_module"),
         "specification_status": spec_parsed.get("specification_status", {
             "status": "COMPLETE",
             "blocking_issues": []
@@ -417,7 +501,7 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
         "reset_polarity": "active_low"
     }
 
-    val = validate_rtl_plan(plan)
+    val = validate_rtl_plan(plan, efs_ir=efs_ir, context_pack=context_pack)
     plan["specification_status"] = {
         "status": val["status"],
         "blocking_issues": val["issues"]
@@ -425,14 +509,27 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
     return plan
 
 
-def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None) -> Dict[str, Any]:
+def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None, context_pack: Optional[Any] = None) -> Dict[str, Any]:
     """
-    Stage B Validation: Verifies that the generated RTL plan faithfully implements the extracted EFSIR.
-    Compares: RTL Plan <-> EFSIR (NOT against generic assumed hardware templates).
+    Stage B Validation: Verifies that the generated RTL plan faithfully implements the extracted EFSIR or scoped ContextPack.
+    Compares: RTL Plan <-> EFSIR / ContextPack (NOT against generic assumed hardware templates).
     """
-    logger.info("Validating RTL plan against authoritative EFS IR...")
+    logger.info("Validating RTL plan against authoritative EFS IR or scoped ContextPack...")
     all_issues = []
-    
+
+    # Version and Source Consistency Logging
+    model_ver = getattr(efs_ir.metadata, "model_version", 1) if (efs_ir and hasattr(efs_ir, "metadata")) else 1
+    res_ver = getattr(efs_ir.metadata, "resolution_version", 0) if (efs_ir and hasattr(efs_ir, "metadata")) else 0
+    ctx_ver = getattr(context_pack, "context_version", model_ver) if context_pack else model_ver
+    val_source = "resolved_efs_ir" if res_ver > 0 else ("context_pack" if context_pack else "efs_ir")
+
+    logger.info(
+        f"MODEL_VERSION={model_ver} "
+        f"EFS_IR_VERSION={model_ver} "
+        f"GENERATION_CONTEXT_VERSION={ctx_ver} "
+        f"RTL_VALIDATION_SOURCE={val_source}"
+    )
+
     if not isinstance(rtl_plan, dict):
         return {
             "valid": False,
@@ -448,10 +545,61 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None) 
             }]
         }
 
-    # 1. Report unresolved source conflicts from EFS IR
-    if efs_ir and hasattr(efs_ir, "conflicts"):
+    c_dict = None
+    scoped_signals = []
+    scoped_fsm = {}
+    scoped_conflicts = []
+    target_comp_name = ""
+
+    if context_pack:
+        c_dict = context_pack.to_dict() if hasattr(context_pack, "to_dict") else context_pack
+        if isinstance(c_dict, dict):
+            t_comp = c_dict.get("target_component", {})
+            target_comp_name = t_comp.get("name") or getattr(getattr(context_pack, "task", None), "target", "") or ""
+            scoped_signals = c_dict.get("target_signals", c_dict.get("signals", []))
+            scoped_fsm = c_dict.get("target_fsm", c_dict.get("fsm", {}))
+            scoped_conflicts = c_dict.get("conflicts", [])
+
+    # 1. Report unresolved source conflicts from ContextPack or EFS IR
+    if scoped_conflicts:
+        for conf in scoped_conflicts:
+            c_type = conf.get("type", "CONFLICT") if isinstance(conf, dict) else getattr(conf, "type", "CONFLICT")
+            c_diag_type = conf.get("diagnostic_type", "") if isinstance(conf, dict) else getattr(conf, "diagnostic_type", "")
+            if c_type in ("TARGET_RESOLUTION_FAILED", "PLANNER_ERROR") or c_diag_type in ("TARGET_RESOLUTION_FAILED", "PLANNER_ERROR"):
+                continue
+            c_status = conf.get("resolution_status", "UNRESOLVED") if isinstance(conf, dict) else getattr(conf, "resolution_status", "UNRESOLVED")
+            if c_status == "UNRESOLVED":
+                c_cat = conf.get("category", "GENERAL") if isinstance(conf, dict) else getattr(conf, "category", "GENERAL")
+                c_evid = conf.get("evidence", conf.get("description", "")) if isinstance(conf, dict) else (getattr(conf, "evidence", "") or getattr(conf, "description", ""))
+                c_desc = conf.get("description", "") if isinstance(conf, dict) else getattr(conf, "description", "")
+                all_issues.append({
+                    "category": c_cat or "GENERAL",
+                    "classification": "SOURCE_CONFLICT",
+                    "badge": "🟠 [SOURCE_CONFLICT]",
+                    "is_blocking": True,
+                    "issue": f"Unresolved specification conflict [{c_type}]: {c_evid or c_desc}",
+                    "required_information": c_desc,
+                    "evidence": c_evid or "Source text"
+                })
+    elif efs_ir and hasattr(efs_ir, "conflicts"):
         for conf in efs_ir.conflicts:
+            c_type = getattr(conf, "type", "CONFLICT")
+            c_diag_type = getattr(conf, "diagnostic_type", "SPEC_CONFLICT")
+            if c_type in ("TARGET_RESOLUTION_FAILED", "PLANNER_ERROR") or c_diag_type in ("TARGET_RESOLUTION_FAILED", "PLANNER_ERROR"):
+                continue
             if getattr(conf, "resolution_status", "UNRESOLVED") == "UNRESOLVED":
+                if target_comp_name:
+                    sig_names = {s.get("name", "").lower() if isinstance(s, dict) else s.name.lower() for s in scoped_signals}
+                    conf_entities = [e.lower() for e in getattr(conf, "entities", [])]
+                    conf_comp = getattr(conf, "target_component", "")
+                    is_relevant = (
+                        (conf_comp and conf_comp.lower() == target_comp_name.lower()) or
+                        target_comp_name.lower() in conf_entities or
+                        any(sn in conf_entities for sn in sig_names if sn)
+                    )
+                    if not is_relevant:
+                        continue
+
                 all_issues.append({
                     "category": getattr(conf, "category", "GENERAL") or "GENERAL",
                     "classification": "SOURCE_CONFLICT",
@@ -487,7 +635,32 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None) 
         to_st = trans.get("to", f"NEXT_STATE_{idx}")
         cond = trans.get("condition")
 
-        if cond is None:
+        # Check if this transition condition has been resolved in EFS IR resolutions
+        is_trans_resolved = False
+        if efs_ir and hasattr(efs_ir, "resolutions"):
+            for res in efs_ir.resolutions:
+                if getattr(res, "approval_status", "") == "APPROVED":
+                    aff = [str(x).lower() for x in (getattr(res, "affected_requirements", []) or [])]
+                    t_ent = str(getattr(res, "target_entity", "")).lower()
+                    c_id = str(getattr(res, "conflict_id", "")).lower()
+                    if (
+                        t_ent in ("fsm", "state", "transition")
+                        or from_st.lower() in aff
+                        or to_st.lower() in aff
+                        or any(from_st.lower() in x or to_st.lower() in x for x in aff)
+                        or (c_id and ("fsm" in c_id or "trans" in c_id))
+                    ):
+                        is_trans_resolved = True
+                        break
+        if efs_ir and hasattr(efs_ir, "conflicts"):
+            for c in efs_ir.conflicts:
+                if getattr(c, "resolution_status", "") == "RESOLVED":
+                    c_ents = [str(e).lower() for e in getattr(c, "entities", [])]
+                    if from_st.lower() in c_ents or to_st.lower() in c_ents or any("fsm" in e for e in c_ents):
+                        is_trans_resolved = True
+                        break
+
+        if cond is None and not is_trans_resolved:
             all_issues.append({
                 "category": "FSM",
                 "classification": "PLAN_MISSING",
@@ -497,20 +670,58 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None) 
                 "required_information": f"Specify condition triggering transition '{from_st}' -> '{to_st}'.",
                 "evidence": f"Transition '{from_st}' -> '{to_st}' has null condition."
             })
-        else:
+        elif cond is not None:
             cond_str = str(cond.get("expression") if isinstance(cond, dict) else cond).strip()
-            if any(vp in cond_str.lower() for vp in vague_patterns):
+            if any(vp in cond_str.lower() for vp in vague_patterns) and not is_trans_resolved:
                 all_issues.append({
                     "category": "FSM",
-                    "classification": "PLAN_AMBIGUOUS",
-                    "badge": "🟡 [PLAN_AMBIGUOUS]",
+                    "classification": "AMBIGUOUS",
+                    "badge": "🟡 [AMBIGUOUS]",
                     "is_blocking": True,
                     "issue": f"{from_st} -> {to_st} transition condition is ambiguous ('{cond_str}').",
                     "required_information": f"Specify explicit signal/register condition for transition '{from_st}' -> '{to_st}'.",
                     "evidence": cond_str
                 })
 
-    if efs_ir and efs_ir.fsms:
+            # Check for unspecified register bit references in this transition condition
+            internal_regs = rtl_plan.get("internal_registers", rtl_plan.get("registers", []))
+            reg_map = {str(r.get("name", "")).lower(): r for r in internal_regs if isinstance(r, dict)}
+            reg_bit_refs = re.findall(r"([a-zA-Z0-9_]+)\[(\d+)\]", cond_str)
+            for r_name, bit_idx in reg_bit_refs:
+                r_obj = reg_map.get(r_name.lower())
+                if r_obj:
+                    r_fields = r_obj.get("fields", [])
+                    has_explicit_field = any(
+                        (f.get("classification") == "EXPLICIT" or f.get("source") in ("ContextPack", "EFS"))
+                        and (str(f.get("bits", "")) in (f"{bit_idx}:{bit_idx}", bit_idx, f"[{bit_idx}]")
+                             or (f.get("msb") == int(bit_idx) and f.get("lsb") == int(bit_idx)))
+                        for f in r_fields if isinstance(f, dict)
+                    )
+                    if not has_explicit_field:
+                        all_issues.append({
+                            "category": "REGISTER",
+                            "classification": "PLAN_MISSING",
+                            "badge": "🔴 [PLAN_MISSING]",
+                            "is_blocking": True,
+                            "issue": f"Register bit '{r_name}[{bit_idx}]' is referenced in transition condition but has no explicit field definition.",
+                            "required_information": f"Define explicit field semantics for bit {bit_idx} of register '{r_name}'.",
+                            "evidence": cond_str
+                        })
+
+    if scoped_fsm and isinstance(scoped_fsm, dict) and scoped_fsm.get("states"):
+        for st in scoped_fsm.get("states", []):
+            st_name = st.get("name") if isinstance(st, dict) else (getattr(st, "name", str(st)))
+            if st_name and st_name not in plan_states and plan_states:
+                all_issues.append({
+                    "category": "FSM",
+                    "classification": "PLAN_MISSING",
+                    "badge": "🔴 [PLAN_MISSING]",
+                    "is_blocking": True,
+                    "issue": f"FSM state '{st_name}' declared in scoped context is missing from RTL plan states.",
+                    "required_information": f"Include state '{st_name}' in RTL plan FSM.",
+                    "evidence": f"Scoped FSM state '{st_name}'"
+                })
+    elif not context_pack and efs_ir and efs_ir.fsms:
         for fsm in efs_ir.fsms:
             for st in fsm.states:
                 if st.name and st.name not in plan_states and plan_states:
@@ -524,40 +735,60 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None) 
                         "evidence": f"EFS IR state '{st.name}'"
                     })
 
-    # 3. Check interface signals from EFS IR
-    if efs_ir and efs_ir.signals:
+    # 3. Check interface signals from ContextPack (scoped) or EFS IR (global)
+    validation_signals = []
+    if scoped_signals:
+        validation_signals = scoped_signals
+    elif not context_pack and efs_ir and efs_ir.signals:
+        validation_signals = efs_ir.signals
+
+    if validation_signals:
         plan_ports = rtl_plan.get("ports", [])
         plan_port_map = {str(p.get("name", "")).strip().lower(): p for p in plan_ports if isinstance(p, dict)}
         
-        for sig in efs_ir.signals:
-            s_name_lower = sig.name.lower()
+        for sig in validation_signals:
+            s_name = sig.get("name", "") if isinstance(sig, dict) else sig.name
+            s_dir = sig.get("direction", "") if isinstance(sig, dict) else sig.direction
+            s_id = sig.get("signal_id", "") if isinstance(sig, dict) else getattr(sig, "signal_id", "")
+            s_name_lower = s_name.lower()
             if s_name_lower in ("name", "signal", "port", "pin", "width", "direction"):
                 continue
             if s_name_lower not in plan_port_map and plan_ports:
-                # EFS IR signal missing from plan ports
                 all_issues.append({
                     "category": "INTERFACE",
                     "classification": "PLAN_MISSING",
                     "badge": "🔴 [PLAN_MISSING]",
                     "is_blocking": True,
-                    "issue": f"Signal '{sig.name}' declared in EFS IR is missing from RTL plan ports.",
-                    "required_information": f"Add port '{sig.name}' to RTL plan.",
-                    "evidence": f"EFS IR signal '{sig.name}' ({sig.direction})"
+                    "issue": f"Signal '{s_name}' declared in specification is missing from RTL plan ports.",
+                    "required_information": f"Add port '{s_name}' to RTL plan.",
+                    "evidence": f"Specification signal '{s_name}' ({s_dir})"
                 })
             elif s_name_lower in plan_port_map:
                 p_obj = plan_port_map[s_name_lower]
                 p_dir = str(p_obj.get("direction", "")).lower()
-                e_dir = str(sig.direction).lower()
+                e_dir = str(s_dir).lower()
                 if p_dir and e_dir and p_dir != e_dir and not ("in" in p_dir and "in" in e_dir) and not ("out" in p_dir and "out" in e_dir):
-                    all_issues.append({
-                        "category": "INTERFACE",
-                        "classification": "PLAN_CONFLICT",
-                        "badge": "🟠 [PLAN_CONFLICT]",
-                        "is_blocking": True,
-                        "issue": f"Signal direction conflict on '{sig.name}': RTL plan specifies '{p_dir}', but EFS IR specifies '{e_dir}'.",
-                        "required_information": f"Align port '{sig.name}' direction with EFS IR ('{e_dir}').",
-                        "evidence": f"Plan: {p_dir}, EFS IR: {e_dir}"
-                    })
+                    is_resolved = False
+                    if efs_ir and hasattr(efs_ir, "resolutions"):
+                        for res in efs_ir.resolutions:
+                            if getattr(res, "approval_status", "") == "APPROVED" and (s_name in res.affected_requirements or s_id in res.affected_requirements):
+                                is_resolved = True
+                                break
+                    if efs_ir and hasattr(efs_ir, "conflicts"):
+                        for c in efs_ir.conflicts:
+                            if s_name in c.entities and getattr(c, "resolution_status", "") == "RESOLVED":
+                                is_resolved = True
+                                break
+                    if not is_resolved:
+                        all_issues.append({
+                            "category": "INTERFACE",
+                            "classification": "PLAN_CONFLICT",
+                            "badge": "🟠 [PLAN_CONFLICT]",
+                            "is_blocking": True,
+                            "issue": f"Signal direction conflict on '{s_name}': RTL plan specifies '{p_dir}', but specification specifies '{e_dir}'.",
+                            "required_information": f"Align port '{s_name}' direction with specification ('{e_dir}').",
+                            "evidence": f"Plan: {p_dir}, Spec: {e_dir}"
+                        })
 
     # 4. Check reported issues from plan specification status
     spec_status = rtl_plan.get("specification_status", {})
@@ -591,8 +822,8 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None) 
                     elif "unsupported" in iss_txt:
                         cls = "UNSUPPORTED"
                         is_block = True
-                    elif "ambiguous" in iss_txt or "vague" in iss_txt:
-                        cls = "SOURCE_AMBIGUOUS"
+                    elif "ambiguous" in iss_txt or "vague" in iss_txt or "described only as" in iss_txt or ("transition condition" in iss_txt and "undefined" not in iss_txt):
+                        cls = "AMBIGUOUS"
                         is_block = True if not is_issue_resolved else False
                     elif "extraction" in iss_txt or "gap" in iss_txt:
                         cls = "EFSIR_EXTRACTION_GAP"
@@ -628,7 +859,7 @@ def generate_code(design_spec: str, target: str, efs_ir: Optional[EFSIR] = None,
     rtl_plan = plan_rtl(design_spec, target, efs_ir=efs_ir, context_pack=context_pack)
     
     # Deterministic Completeness Validation (Must run AFTER Stage 1 and BEFORE Stage 2)
-    validation = validate_rtl_plan(rtl_plan, efs_ir=efs_ir)
+    validation = validate_rtl_plan(rtl_plan, efs_ir=efs_ir, context_pack=context_pack)
     
     if not validation.get("valid", False):
         logger.warning(f"RTL Generation BLOCKED: Specification is incomplete or contradictory for target '{target}'.")
@@ -673,6 +904,71 @@ def generate_code(design_spec: str, target: str, efs_ir: Optional[EFSIR] = None,
     
     module_name = rtl_plan.get("module_name", "custom_module")
     ports = rtl_plan.get("ports", [])
+
+    # Stage 2 LLM generation using validated Stage 1 RTL plan and scoped protocol rules
+    llm = get_llm_client()
+    if llm.available:
+        rules_to_use = protocol_rules or []
+        if not rules_to_use and context_pack:
+            if hasattr(context_pack, "protocol_rules"):
+                rules_to_use = context_pack.protocol_rules
+            elif isinstance(context_pack, dict):
+                rules_to_use = context_pack.get("relevant_protocol_rules", [])
+
+        stage2_prompt = f"""Generate synthesizable SystemVerilog module code based on this approved RTL plan:
+{json.dumps(rtl_plan, indent=2)}
+
+Relevant protocol rules:
+{json.dumps(rules_to_use, indent=2)}
+
+Target module name: {module_name}
+
+Output ONLY raw synthesizable SystemVerilog code with `module {module_name} ... endmodule` without conversational markdown or explanations.
+"""
+        try:
+            code = llm.complete(SYSTEM_PROMPT, stage2_prompt, model=CONFIG.llm.model)
+            cleaned = clean_generated_code(code)
+            if cleaned and "module " in cleaned and "endmodule" in cleaned:
+                try:
+                    from core.context_compiler import CompilationMetrics, record_generation_telemetry, estimate_tokens
+                    sys_tokens = estimate_tokens(SYSTEM_PROMPT)
+                    in_tokens = sys_tokens + estimate_tokens(stage2_prompt)
+                    provider_tokens = llm.last_usage.get("prompt_tokens") if hasattr(llm, "last_usage") else None
+                    out_tokens = llm.last_usage.get("completion_tokens") if (hasattr(llm, "last_usage") and llm.last_usage.get("completion_tokens")) else estimate_tokens(cleaned)
+                    orig_tokens = estimate_tokens(design_spec) + (estimate_tokens(efs_ir) if efs_ir else 0)
+                    compiled_tokens = estimate_tokens(rtl_plan) + estimate_tokens(rules_to_use)
+                    
+                    actual_input = provider_tokens or in_tokens
+                    orig = max(orig_tokens, 1)
+                    reduction = round(max(0.0, (orig - actual_input) / orig) * 100, 2)
+                    end_to_end = round(max(0.0, (orig - in_tokens) / orig) * 100, 2)
+                    logger.info(
+                        f"[GenerationContext] artifact=rtl_stage2 | "
+                        f"original_tokens={orig_tokens} | "
+                        f"compiled_tokens={compiled_tokens} | "
+                        f"final_prompt_tokens={estimate_tokens(stage2_prompt)} | "
+                        f"final_input_tokens={in_tokens} | "
+                        f"provider_input_tokens={provider_tokens or 'N/A'} | "
+                        f"output_tokens={out_tokens} | "
+                        f"context_reduction={reduction}% | "
+                        f"end_to_end_reduction={end_to_end}%"
+                    )
+                    metrics = CompilationMetrics(
+                        artifact_type="rtl",
+                        compiler_used="RTLContextCompiler",
+                        original_context_tokens=orig_tokens,
+                        compiled_context_tokens=compiled_tokens,
+                        system_prompt_tokens=sys_tokens,
+                        final_input_tokens=in_tokens,
+                        output_tokens=out_tokens,
+                        extra_details={"provider_input_tokens": provider_tokens}
+                    )
+                    record_generation_telemetry(metrics, generation_name=f"rtl_stage2_{module_name}", model=CONFIG.llm.model)
+                except Exception as ex_tel:
+                    logger.debug(f"Stage 2 telemetry error: {ex_tel}")
+                return cleaned
+        except Exception as e:
+            logger.warning(f"Stage 2 LLM generation failed, falling back to structural template: {e}")
     
     # Port list formatting
     port_lines = []

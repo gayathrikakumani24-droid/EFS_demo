@@ -194,9 +194,9 @@ def render() -> None:
                 opc_rows = []
                 for opc in efs_ir.opcodes:
                     opc_rows.append({
-                        "Mnemonic": opc.mnemonic,
-                        "Encoding": opc.encoding,
-                        "Description": opc.description
+                        "Mnemonic": getattr(opc, "mnemonic", ""),
+                        "Encoding": getattr(opc, "binary_encoding", getattr(opc, "encoding", "")),
+                        "Description": getattr(opc, "operation", getattr(opc, "description", ""))
                     })
                 st.dataframe(opc_rows, use_container_width=True, hide_index=True)
 
@@ -281,20 +281,39 @@ def render() -> None:
         if not conflicts and not resolutions:
             st.success("✓ Zero specification conflicts or contradictions detected.")
         else:
-            if conflicts:
-                st.markdown("#### Specification Conflicts:")
-                for conf in conflicts:
-                    status_badge = "🔴 Unresolved" if conf.resolution_status == "UNRESOLVED" else "🟢 Resolved"
-                    with st.expander(f"⚠️ Conflict: {conf.type} ({conf.severity}) - {status_badge}"):
+            approved_cids = {getattr(r, "conflict_id", None) for r in resolutions if getattr(r, "approval_status", "") == "APPROVED" and getattr(r, "conflict_id", None)}
+            approved_entity_props = set()
+            for r in resolutions:
+                if getattr(r, "approval_status", "") == "APPROVED":
+                    r_prop = (getattr(r, "field_name", "") or getattr(r, "property", "") or "").lower()
+                    for req in getattr(r, "affected_requirements", []):
+                        approved_entity_props.add((req.lower(), r_prop))
+                        approved_entity_props.add((req.lower(), ""))
+
+            unresolved_conflicts = [
+                c for c in conflicts
+                if getattr(c, "resolution_status", "UNRESOLVED") == "UNRESOLVED"
+                and getattr(c, "status", "") not in ("APPROVED", "RESOLVED")
+                and getattr(c, "blocking", True)
+                and getattr(c, "conflict_id", None) not in approved_cids
+                and not any(
+                    (ent.lower(), (getattr(c, "property", "") or "").lower()) in approved_entity_props
+                    or (ent.lower(), "") in approved_entity_props
+                    for ent in (getattr(c, "affected_entities", []) or getattr(c, "entities", []) or [])
+                )
+            ]
+            if unresolved_conflicts:
+                st.markdown(f"#### Active Unresolved Specification Conflicts ({len(unresolved_conflicts)}):")
+                for conf in unresolved_conflicts:
+                    with st.expander(f"⚠️ Conflict: {conf.type} ({conf.severity}) - 🔴 Unresolved"):
                         st.markdown(f"**Entities:** `{', '.join(conf.entities) if conf.entities else 'N/A'}`")
                         st.markdown(f"**Property:** `{conf.property}`")
                         st.markdown(f"**Description:** {conf.description}")
                         st.markdown(f"**Impact:** {conf.impact}")
                         st.markdown(f"**Conflicting Values:** `{', '.join(conf.conflicting_values) if conf.conflicting_values else 'N/A'}`")
-                        if conf.resolution:
-                            r = conf.resolution
-                            st.success(f"**Approved Resolution:** `{r.proposed_change}` (Approved by: {r.approved_by})")
                         _render_traceability(conf.traceability)
+            elif conflicts or resolutions:
+                st.success("✓ All detected specification conflicts have been resolved! Zero active conflicts remaining.")
                         
             if resolutions:
                 st.markdown("#### Resolution Override Layer:")
@@ -334,16 +353,20 @@ def render() -> None:
 
 def _render_traceability(trace) -> None:
     """Helper to display traceability data in a clean box."""
-    if not trace or not (trace.chunk_id or trace.original_text):
+    if not trace or not (trace.chunk_id or trace.original_text or getattr(trace, "source_text", None)):
         st.caption("🔍 No source document traceability context available.")
         return
+    
+    conf_str = f"{trace.confidence:.2f}" if trace.confidence is not None else "N/A"
+    doc_display = getattr(trace, "source_document", None) or trace.doc_id or "N/A"
+    snippet = trace.original_text or getattr(trace, "source_text", "")
     
     st.markdown(
         f"<div style='background-color:#0e1117; padding:10px; border-radius:5px; border-left:4px solid #1a8cff; margin:10px 0;'>"
         f"<p style='margin:0; font-size:12px; color:#a3a8b4;'><b>SOURCE TRACEABILITY:</b> "
-        f"Doc: {trace.doc_id or 'N/A'} | Chapter: {trace.chapter or 'N/A'} | Page: {trace.page or 'N/A'} | "
-        f"Confidence: {trace.confidence:.2f} | Method: {trace.extraction_method}</p>"
-        f"<p style='margin:5px 0 0 0; font-family:monospace; font-size:12px; color:#d1d5db;'>{trace.original_text}</p>"
+        f"Doc: {doc_display} | Chapter: {trace.chapter or 'N/A'} | Page: {trace.page or 'N/A'} | "
+        f"Confidence: {conf_str} | Method: {trace.extraction_method}</p>"
+        f"<p style='margin:5px 0 0 0; font-family:monospace; font-size:12px; color:#d1d5db;'>{snippet}</p>"
         f"</div>",
         unsafe_allow_html=True
     )

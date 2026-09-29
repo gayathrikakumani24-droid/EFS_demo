@@ -23,6 +23,7 @@ class TaskIntent:
     interface: Optional[str] = None
     language: str = "Verilog"
     raw_query: str = ""
+    query_category: str = "fact"  # fact | relationship | multi-hop | comparison | full-flow
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -55,6 +56,7 @@ class ContextPack:
     protocol_source_evidence: List[Dict[str, Any]] = field(default_factory=list)
     relevant_protocol_chunks: List[Dict[str, Any]] = field(default_factory=list)
     conflicts: List[Dict[str, Any]] = field(default_factory=list)
+    diagnostics: List[Dict[str, Any]] = field(default_factory=list)
 
     # Context Statistics
     total_full_efs_objects: int = 0
@@ -64,10 +66,12 @@ class ContextPack:
     total_protocol_rules: int = 0
     selected_protocol_rules: int = 0
     estimated_tokens: int = 0
+    context_version: int = 1
 
     def to_dict(self) -> Dict[str, Any]:
         d = {
             "task": self.task.to_dict() if isinstance(self.task, TaskIntent) else self.task,
+            "context_version": self.context_version,
             "target_component": self.target_component,
             "user_requirements": self.functional_requirements,
             "target_interfaces": self.interfaces,
@@ -82,6 +86,7 @@ class ContextPack:
             "user_source_evidence": self.source_evidence,
             "protocol_source_evidence": self.protocol_source_evidence,
             "conflicts": self.conflicts,
+            "diagnostics": self.diagnostics,
             "stats": {
                 "total_full_efs_objects": self.total_full_efs_objects,
                 "selected_efs_objects": self.selected_efs_objects,
@@ -116,6 +121,7 @@ class ContextPack:
             protocol_source_evidence=data.get("protocol_source_evidence", []),
             relevant_protocol_chunks=data.get("relevant_protocol_chunks", []),
             conflicts=data.get("conflicts", []),
+            diagnostics=data.get("diagnostics", []),
             total_full_efs_objects=stats.get("total_full_efs_objects", 0),
             selected_efs_objects=stats.get("selected_efs_objects", 0),
             total_source_chunks=stats.get("total_source_chunks", 0),
@@ -123,6 +129,7 @@ class ContextPack:
             total_protocol_rules=stats.get("total_protocol_rules", 0),
             selected_protocol_rules=stats.get("selected_protocol_rules", 0),
             estimated_tokens=stats.get("estimated_tokens", 0),
+            context_version=data.get("context_version", stats.get("context_version", 1)),
         )
 
     def estimate_token_count(self) -> int:

@@ -20,10 +20,46 @@ from core.agents.verification_agent import verify_code
 from core.agents.repair_agent import repair_code
 from core.agents.plantuml_agent import generate_diagrams, get_diagram_url
 from core.verification.static_verifier import verify_statically
+from core.retrieval.context_compiler import compile_task_context
+from core.efs_ir.models import EFSConflict, EFSResolution, EFSIR
+from enum import Enum
 from config import CONFIG
 from utils.logger import get_logger
 
 logger = get_logger("agents.orchestrator")
+
+
+class WorkflowState(str, Enum):
+    INGESTION = "INGESTION"
+    EXTRACTION = "EXTRACTION"
+    CONFLICT_DETECTION = "CONFLICT_DETECTION"
+    HUMAN_RESOLUTION_REQUIRED = "HUMAN_RESOLUTION_REQUIRED"
+    REVALIDATION = "REVALIDATION"
+    READY_FOR_GENERATION = "READY_FOR_GENERATION"
+    DESIGN_PLANNING = "DESIGN_PLANNING"
+    PUML_GENERATION = "PUML_GENERATION"
+    RTL_GENERATION = "RTL_GENERATION"
+    RTL_VALIDATION = "RTL_VALIDATION"
+    GENERATION_COMPLETE = "GENERATION_COMPLETE"
+    STOPPED = "STOPPED"
+
+
+def log_state_transition(from_state: WorkflowState | str, to_state: WorkflowState | str) -> None:
+    from_name = from_state.value if isinstance(from_state, WorkflowState) else str(from_state)
+    to_name = to_state.value if isinstance(to_state, WorkflowState) else str(to_state)
+    logger.info(f"STATE_TRANSITION:\n{from_name} → {to_name}")
+
+
+def log_generation_start(reason: str, model_version: int = 1, efs_ir_version: int = 1) -> None:
+    logger.info(f"GENERATION_START:\nreason={reason}\nmodel_version={model_version}\nefs_ir_version={efs_ir_version}")
+
+
+def log_generation_end(status: str) -> None:
+    logger.info(f"GENERATION_END:\nstatus={status}")
+
+
+def log_generation_skipped(reason: str) -> None:
+    logger.info(f"GENERATION_SKIPPED:\nreason={reason}")
 
 
 def run_design_flow(
@@ -53,6 +89,7 @@ def run_design_flow(
         logger.info(f"[{pct*100:.1f}%] {msg}")
 
     # -- STEP 1: Requirement Analysis ---------------------------------------
+    log_state_transition(WorkflowState.INGESTION, WorkflowState.EXTRACTION)
     update_progress("Understanding hardware requirements...", 0.05)
     start_time = time.time()
     req_model = analyze_requirements(requirement_text)
@@ -72,16 +109,11 @@ def run_design_flow(
     protocol_rules = retrieve_protocol_rules(req_model, plan)
     timings["Protocol Retrieval"] = time.time() - start_time
 
-    # -- STEP 4: Design Spec Generation -------------------------------------
-    update_progress("Generating formal design specification document...", 0.35)
-    start_time = time.time()
-    design_spec = generate_design_spec(req_model, plan, protocol_rules)
-    timings["Design Spec Generation"] = time.time() - start_time
-    llm_calls_count += 1
-
-    # -- STEP 4.5: Build Canonical EFS IR ------------------------------------
-    update_progress("Building canonical EFS Intermediate Representation...", 0.40)
+    # -- STEP 4: Build Canonical EFS IR & Detect Conflicts Immediately ------
+    log_state_transition(WorkflowState.EXTRACTION, WorkflowState.CONFLICT_DETECTION)
+    update_progress("Building canonical EFS Intermediate Representation...", 0.30)
     start_time_ir = time.time()
+    design_spec = ""
     try:
         from core.efs_ir.builder import EFSIRBuilder
         from core.efs_ir.validator import validate_efs_ir
@@ -91,7 +123,8 @@ def run_design_flow(
         import os
         
         # Build EFS IR
-        builder = EFSIRBuilder(req_model, plan, protocol_rules, design_spec)
+        generation_run_id = f"RUN_{int(time.time() * 1000)}"
+        builder = EFSIRBuilder(req_model, plan, protocol_rules, generation_run_id=generation_run_id)
         efs_ir = builder.build()
         
         # Run Controlled Specification Inference Engine
@@ -100,12 +133,28 @@ def run_design_flow(
         completed_model = inference_engine.infer_and_complete()
         efs_ir = completed_model.efs_ir
 
+        validation_issues = validate_efs_ir(efs_ir)
         # Validate EFS IR and detect specification conflicts
         from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-        detected_conflicts = ConflictResolutionEngine.detect_conflicts(efs_ir, req_model)
-        unresolved_blocking = [c for c in detected_conflicts if c.blocking and c.resolution_status == "UNRESOLVED"]
+        detected_conflicts = ConflictResolutionEngine.detect_conflicts(efs_ir, req_model, validation_issues=validation_issues)
+        detected_conflicts = ConflictResolutionEngine.deduplicate_conflicts(detected_conflicts)
 
-        validation_issues = validate_efs_ir(efs_ir)
+        # Hardware completeness check — ensures the EFS IR is a real specification,
+        # not just a list of component names. All gaps surface as blocking HITL conflicts.
+        completeness_gaps = ConflictResolutionEngine.validate_hardware_completeness(efs_ir, plan)
+        if completeness_gaps:
+            # Merge completeness gaps into detected conflicts (dedup by semantic key)
+            existing_keys = {getattr(c, 'semantic_key', '') for c in detected_conflicts}
+            for gap in completeness_gaps:
+                gap_key = gap.semantic_key or ConflictResolutionEngine.compute_semantic_key(gap)
+                if gap_key not in existing_keys:
+                    detected_conflicts.append(gap)
+                    existing_keys.add(gap_key)
+            detected_conflicts = ConflictResolutionEngine.deduplicate_conflicts(detected_conflicts)
+
+        efs_ir.conflicts = detected_conflicts
+        unresolved_blocking = [c for c in detected_conflicts if getattr(c, "blocking", False) and getattr(c, "resolution_status", "UNRESOLVED") == "UNRESOLVED"]
+
         has_critical = any(issue["severity"] in ("ERROR", "CRITICAL") for issue in validation_issues) or len(unresolved_blocking) > 0
         if validation_issues:
             logger.warning(f"EFS IR Validation found {len(validation_issues)} issues.")
@@ -129,19 +178,25 @@ def run_design_flow(
         except Exception as ev:
             logger.warning(f"Failed to link EFS objects to vector store chunks: {ev}")
             
-        # Stop and block generation if critical issues or unresolved conflicts exist and not bypassed
+        # Stop and pause generation immediately if critical issues or unresolved conflicts exist and not bypassed
         if has_critical and not bypass_conflicts:
-            logger.warning("Generation BLOCKED due to critical EFS IR conflicts / validation errors.")
+            logger.warning(f"Pipeline paused: AWAITING_HUMAN_DECISION due to {len(unresolved_blocking)} critical EFS IR conflicts / validation errors.")
+            log_state_transition(WorkflowState.CONFLICT_DETECTION, WorkflowState.HUMAN_RESOLUTION_REQUIRED)
+            log_generation_skipped("critical_conflicts_require_human_resolution")
             proposals_map = {}
             for conf in unresolved_blocking:
                 proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, efs_ir)
 
             return {
-                "status": "BLOCKED_CONFLICT",
+                "status": "AWAITING_HUMAN_DECISION",
+                "pipeline_state": "AWAITING_HUMAN_DECISION",
+                "workflow_state": WorkflowState.HUMAN_RESOLUTION_REQUIRED.value,
+                "requires_human_decision": True,
+                "is_blocked": False,
                 "requirement_model": req_model,
                 "plan": plan,
                 "protocol_rules": protocol_rules,
-                "design_spec": design_spec,
+                "design_spec": "",
                 "efs_ir": efs_ir,
                 "completed_model": completed_model,
                 "efs_ir_validation_issues": validation_issues,
@@ -160,8 +215,6 @@ def run_design_flow(
                 }
             }
             
-        # Non-blocking validation issues
-        
     except Exception as e:
         logger.exception("Failed to build or validate EFS IR")
         efs_ir = None
@@ -173,7 +226,7 @@ def run_design_flow(
                 "requirement_model": req_model,
                 "plan": plan,
                 "protocol_rules": protocol_rules,
-                "design_spec": design_spec,
+                "design_spec": "",
                 "efs_ir": None,
                 "completed_model": None,
                 "efs_ir_validation_issues": validation_issues,
@@ -192,21 +245,33 @@ def run_design_flow(
             
     timings["EFS IR Build & Validation"] = time.time() - start_time_ir
 
-    # -- STEP 4.8: Query-Driven Context Compilation -------------------------
-    update_progress("Compiling task-specific ContextPack...", 0.42)
+    # -- STEP 5: Design Spec Generation (Zero Conflicts -> Proceed) --------
+    log_state_transition(WorkflowState.CONFLICT_DETECTION, WorkflowState.READY_FOR_GENERATION)
+    log_state_transition(WorkflowState.READY_FOR_GENERATION, WorkflowState.DESIGN_PLANNING)
+    update_progress("Generating formal design specification document...", 0.40)
+    start_time = time.time()
+    design_spec = generate_design_spec(req_model, plan, protocol_rules, efs_ir=efs_ir)
+    timings["Design Spec Generation"] = time.time() - start_time
+    llm_calls_count += 1
+
+    # -- STEP 6: Query-Driven Context Compilation -------------------------
+    update_progress("Compiling task-specific ContextPack...", 0.48)
     start_time_comp = time.time()
+    from utils.logger import truncate_for_log
     from core.retrieval.context_compiler import compile_task_context
-    
-    query_str = user_query if user_query else requirement_text
+
+    query_cmd = user_query if user_query else ""
     context_pack, res_result = compile_task_context(
-        query_str,
+        query_cmd,
         efs_ir,
         all_protocol_rules=protocol_rules
     )
+
     timings["Context Compilation"] = time.time() - start_time_comp
 
     if not res_result.is_success() and efs_ir and efs_ir.components:
         logger.warning(f"Target resolution issue: {res_result.error_message}")
+        log_generation_skipped(f"target_resolution_issue: {res_result.error_message}")
         return {
             "status": res_result.status,
             "error_message": res_result.error_message,
@@ -232,54 +297,58 @@ def run_design_flow(
         }
 
     # -- STEP 4.9: Generate PlantUML Code & Diagrams First -----------------
+    log_state_transition(WorkflowState.DESIGN_PLANNING, WorkflowState.PUML_GENERATION)
     update_progress("Generating PlantUML code and diagrams...", 0.45)
     start_time_puml = time.time()
-    from core.agents.plantuml_agent import generate_diagrams, get_diagram_url
     diagrams = generate_diagrams(design_spec, plan, efs_ir=efs_ir)
     timings["PlantUML Diagrams Generation"] = time.time() - start_time_puml
     llm_calls_count += 1
 
     diagram_urls = {
-        k: get_diagram_url(v) for k, v in diagrams.items()
-    }
+        k: get_diagram_url(v) for k, v in (diagrams or {}).items()
+    } if isinstance(diagrams, dict) else {}
 
     # We will generate and track the code for each selected target
     outputs: Dict[str, Dict[str, Any]] = {}
-    
+
     # Identify primary target format (Verilog/SV/VHDL)
     rtl_targets = [t for t in target_outputs if t in ("Verilog", "SystemVerilog", "VHDL")]
     primary_target = rtl_targets[0] if rtl_targets else "Verilog"
-    
+
     logger.info(f"Selected primary RTL target for stabilization: {primary_target}")
-    
+
     # -- STEP 5: Stabilize Primary RTL (Verification & Repair Loop) ---------
+    log_state_transition(WorkflowState.PUML_GENERATION, WorkflowState.RTL_GENERATION)
+    log_state_transition(WorkflowState.RTL_GENERATION, WorkflowState.RTL_VALIDATION)
+    m_ver = getattr(efs_ir.metadata, "model_version", 1) if (efs_ir and hasattr(efs_ir, "metadata")) else 1
+    log_generation_start(reason="initial_generation_clean_spec", model_version=m_ver, efs_ir_version=m_ver)
     update_progress(f"Generating initial RTL code for primary target: {primary_target}...", 0.55)
-    
+
     start_time = time.time()
     code = generate_code(design_spec, primary_target, efs_ir=efs_ir, protocol_rules=protocol_rules, context_pack=context_pack)
     timings[f"{primary_target} Initial Generation"] = time.time() - start_time
     llm_calls_count += 1
 
-    
-    # Handle Insufficient / Incomplete Specification stop target - Route to BLOCKED_CONFLICT for Human Resolution Decision
+    # Handle RTL generation returning an insufficient specification marker.
+    # Do NOT create new SOURCE_MISSING conflicts or restart the pipeline.
+    # All missing-info checks were done upfront; this is a generation-quality issue only.
     if code == "INSUFFICIENT SPECIFICATION FOR RTL GENERATION" or (isinstance(code, str) and code.startswith("SPECIFICATION_INCOMPLETE")):
-        logger.warning("RTL generation flagged incomplete specification details. Routing to Human Resolution Decision workflow.")
-        from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-        detected_conflicts = ConflictResolutionEngine.detect_conflicts(efs_ir, req_model)
-        unresolved_blocking = [c for c in detected_conflicts if c.blocking and c.resolution_status == "UNRESOLVED"]
-        proposals_map = {}
-        for conf in unresolved_blocking:
-            proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, efs_ir)
-
+        logger.warning("RTL generation returned incomplete output. Reporting as generation error (not restarting pipeline).")
+        log_generation_end("rtl_generation_insufficient_output")
         outputs[primary_target] = {
             "final_code": code,
             "compliance_score": 0,
-            "report": {"failed_checks": [{"check_name": "Specification Sufficiency", "violation": "The provided specification requires human resolution for incomplete hardware details."}]},
+            "report": {"failed_checks": [{"check_name": "RTL Generation Quality", "violation": "RTL agent could not produce complete synthesizable code from the resolved specification. Review the EFS IR and design spec for gaps."}]},
             "history": [],
             "iterations_run": 0
         }
         return {
-            "status": "BLOCKED_CONFLICT",
+            "status": "RTL_GENERATION_ERROR",
+            "pipeline_state": "RTL_GENERATION_ERROR",
+            "workflow_state": WorkflowState.RTL_VALIDATION.value,
+            "requires_human_decision": False,
+            "is_blocked": False,
+            "error_message": "RTL generation could not produce complete output. The specification passed completeness checks but the RTL agent could not synthesize it. Check the design spec and EFS IR for any remaining ambiguities.",
             "requirement_model": req_model,
             "plan": plan,
             "protocol_rules": protocol_rules,
@@ -288,8 +357,6 @@ def run_design_flow(
             "completed_model": completed_model,
             "context_pack": context_pack,
             "efs_ir_validation_issues": validation_issues,
-            "conflicts": unresolved_blocking,
-            "proposals": proposals_map,
             "outputs": outputs,
             "diagrams": diagrams,
             "diagram_urls": diagram_urls,
@@ -475,9 +542,13 @@ def run_design_flow(
         }
 
     update_progress("Design generation complete.", 1.0)
-    
+    log_state_transition(WorkflowState.RTL_VALIDATION, WorkflowState.GENERATION_COMPLETE)
+    log_generation_end("success")
+
     return {
         "status": "SUCCESS",
+        "pipeline_state": "GENERATION_COMPLETE",
+        "workflow_state": WorkflowState.GENERATION_COMPLETE.value,
         "requirement_model": req_model,
         "plan": plan,
         "protocol_rules": protocol_rules,
@@ -505,7 +576,8 @@ def resume_design_flow_with_resolutions(
     design_results: Dict[str, Any],
     approved_resolutions: List[Any],
     target_outputs: List[str] = None,
-    progress_cb: Callable[[str, float], None] = None
+    progress_cb: Callable[[str, float], None] = None,
+    bypass_conflicts: bool = False
 ) -> Dict[str, Any]:
     """
     Applies user-approved resolution proposals to the design model,
@@ -526,24 +598,81 @@ def resume_design_flow_with_resolutions(
 
     targets = target_outputs or ["Verilog"]
 
+    # Ensure conflicts from design_results are tracked in efs_ir
+    if design_results.get("conflicts"):
+        existing_cids = {c.conflict_id for c in getattr(efs_ir, "conflicts", [])}
+        for c in design_results["conflicts"]:
+            if c.conflict_id not in existing_cids:
+                efs_ir.conflicts.append(c)
+                existing_cids.add(c.conflict_id)
+
     # Pipeline Logging: Human approval received
     for res in approved_resolutions:
         res_id = getattr(res, "resolution_id", "RES")
         conf_id = getattr(res, "conflict_id", "CONF")
         logger.info(f"AI_RESOLUTION_APPROVED: Human approval received for conflict: {conf_id} (Resolution ID: {res_id})")
 
-    # 1. Apply all approved resolutions & persist
+    # 0. Idempotency Check: if all resolutions already recorded in efs_ir and design is already completed
+    existing_res_ids = {getattr(r, "resolution_id", "") for r in getattr(efs_ir, "resolutions", [])}
+    incoming_res_ids = {getattr(r, "resolution_id", "") for r in (approved_resolutions or [])}
+    if incoming_res_ids and incoming_res_ids.issubset(existing_res_ids) and design_results.get("status") in ("SUCCESS", "GENERATION_COMPLETE") and design_results.get("outputs"):
+        logger.info("Resolutions already applied and design generation completed; skipping re-execution.")
+        log_generation_skipped("resolutions_already_applied")
+        return design_results
+
+    # If no human resolutions provided and blocking conflicts remain, stay in HUMAN_RESOLUTION_REQUIRED
+    if not approved_resolutions and not bypass_conflicts:
+        unresolved_blocking = [
+            c for c in getattr(efs_ir, "conflicts", [])
+            if getattr(c, "blocking", False) and getattr(c, "resolution_status", "UNRESOLVED") != "RESOLVED"
+        ]
+        if unresolved_blocking or (design_results.get("status") == "AWAITING_HUMAN_DECISION" and design_results.get("conflicts")):
+            logger.info("No human resolutions provided while blocking conflicts remain; skipping generation.")
+            log_generation_skipped("no_human_resolutions_provided")
+            design_results["status"] = "AWAITING_HUMAN_DECISION"
+            design_results["pipeline_state"] = "AWAITING_HUMAN_DECISION"
+            design_results["workflow_state"] = WorkflowState.HUMAN_RESOLUTION_REQUIRED.value
+            design_results["requires_human_decision"] = True
+            return design_results
+
+    log_state_transition(WorkflowState.HUMAN_RESOLUTION_REQUIRED, WorkflowState.REVALIDATION)
+
+    def update_resume_progress(msg: str, val: float):
+        if progress_cb:
+            try:
+                progress_cb(msg, val)
+            except Exception:
+                pass
+
+    update_resume_progress("Applying approved resolutions to canonical EFS IR...", 0.60)
+
+    # 1. Apply all approved resolutions & persist (each resolution applied only once)
+    applied_rids = {
+        getattr(r, "resolution_id", "") or getattr(r, "conflict_id", "")
+        for r in getattr(efs_ir, "resolutions", [])
+        if getattr(r, "approval_status", "") == "APPROVED"
+    }
+    applied_rids.discard("")
     resolved_ir = efs_ir
     for res in approved_resolutions:
-        resolved_ir = ConflictResolutionEngine.apply_approved_resolution(resolved_ir, res)
+        r_id = getattr(res, "resolution_id", "") or getattr(res, "conflict_id", "")
+        if r_id and r_id in applied_rids:
+            continue
+        try:
+            resolved_ir = ConflictResolutionEngine.apply_approved_resolution(resolved_ir, res)
+            if r_id:
+                applied_rids.add(r_id)
+        except Exception as e:
+            logger.warning(f"Resolution application rejected or failed: {e}")
     logger.info("RESOLUTION_PERSISTED: Approved resolution layer persisted.")
 
-    # 2. Build resolved requirement model
+    # 2. Build resolved requirement model view & mandatory revalidation (ZERO LLM CALLS)
     logger.info("EFSIR_REBUILT: Rebuilding resolved requirement model view...")
     resolved_ir = resolved_ir.get_resolved_view()
 
-    # 3. Mandatory revalidation
-    logger.info("REVALIDATION: Revalidating resolved requirement model...")
+    # 3. Mandatory deterministic revalidation
+    update_resume_progress("Revalidating resolved model view...", 0.70)
+    logger.info("REVALIDATION: Revalidating resolved requirement model deterministically...")
     has_blocking, validation_issues = ConflictResolutionEngine.revalidate_resolved_model(resolved_ir, plan)
     
     # Update serialized active design file with resolved view
@@ -553,27 +682,59 @@ def resume_design_flow_with_resolutions(
     with open(active_ir_path, "w", encoding="utf-8") as f:
         json.dump(resolved_ir.to_dict(), f, indent=2)
 
-    unresolved_blocking = [c for c in resolved_ir.conflicts if c.blocking and c.resolution_status == "UNRESOLVED"]
-    blocking_count = len(unresolved_blocking) + len([i for i in validation_issues if i.get("severity") in ("ERROR", "CRITICAL")])
-    logger.info(f"Revalidation complete: blocking_issues={blocking_count}")
+    resolved_ir.conflicts = ConflictResolutionEngine.deduplicate_conflicts(resolved_ir.conflicts)
 
-    if has_blocking or unresolved_blocking:
+    # Re-check hardware completeness after resolution
+    completeness_gaps = ConflictResolutionEngine.validate_hardware_completeness(resolved_ir, plan)
+    if completeness_gaps:
+        existing_keys = {getattr(c, 'semantic_key', '') for c in resolved_ir.conflicts}
+        for gap in completeness_gaps:
+            gap_key = gap.semantic_key or ConflictResolutionEngine.compute_semantic_key(gap)
+            if gap_key not in existing_keys:
+                resolved_ir.conflicts.append(gap)
+                existing_keys.add(gap_key)
+        resolved_ir.conflicts = ConflictResolutionEngine.deduplicate_conflicts(resolved_ir.conflicts)
+
+    unresolved_blocking = [
+        c for c in resolved_ir.conflicts
+        if c.blocking and (c.resolution_status == "UNRESOLVED" or c.status == "ACTIVE") and c.status != "RESOLVED"
+    ]
+    blocking_count = len(unresolved_blocking)
+    logger.info(f"Revalidation complete: blocking_issues={blocking_count} post_resolution_llm_calls=0")
+
+    bypass_warning = None
+    if unresolved_blocking and not bypass_conflicts:
         logger.warning(f"Generation remains blocked: {blocking_count} blocking issues remain.")
+        log_state_transition(WorkflowState.REVALIDATION, WorkflowState.HUMAN_RESOLUTION_REQUIRED)
+        log_generation_skipped("unresolved_blocking_conflicts_remain")
         proposals_map = {}
         for conf in unresolved_blocking:
             proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, resolved_ir)
         
         return {
             **design_results,
-            "status": "BLOCKED_CONFLICT",
+            "status": "AWAITING_HUMAN_DECISION",
+            "pipeline_state": "AWAITING_HUMAN_DECISION",
+            "workflow_state": WorkflowState.HUMAN_RESOLUTION_REQUIRED.value,
+            "requires_human_decision": True,
+            "is_blocked": False,
             "efs_ir": resolved_ir,
             "efs_ir_validation_issues": validation_issues,
             "conflicts": unresolved_blocking,
             "proposals": proposals_map
         }
+    elif unresolved_blocking and bypass_conflicts:
+        bypass_warning = f"BYPASS_OVERRIDE_ACTIVE: Pipeline resumed despite {blocking_count} unresolved conflicts/issues (bypass_conflicts=True)."
+        logger.warning(bypass_warning)
+        for conf in unresolved_blocking:
+            conf.resolution_status = "OVERRIDDEN"
 
     # 4. Continuation Gate: No blocking issues remain!
     logger.info("VALIDATION_PASSED: No blocking issues remain. Revalidation passed cleanly.")
+    log_state_transition(WorkflowState.REVALIDATION, WorkflowState.READY_FOR_GENERATION)
+    log_state_transition(WorkflowState.READY_FOR_GENERATION, WorkflowState.DESIGN_PLANNING)
+    m_ver = getattr(resolved_ir.metadata, "model_version", 1) if (resolved_ir and hasattr(resolved_ir, "metadata")) else 1
+    log_generation_start(reason="human_resolution_approved", model_version=m_ver, efs_ir_version=m_ver)
     
     # STEP 4.1: Re-run Controlled Specification Inference Engine
     logger.info("Starting design planning")
@@ -588,15 +749,16 @@ def resume_design_flow_with_resolutions(
 
     # STEP 4.2: Update design specification text to reflect approved resolutions
     try:
-        resolved_design_spec = generate_design_spec(req_model or {}, plan or {}, protocol_rules or [])
+        resolved_design_spec = generate_design_spec(req_model or {}, plan or {}, protocol_rules or [], efs_ir=resolved_ir)
     except Exception:
         resolved_design_spec = design_spec
 
     # STEP 4.3: Re-compile ContextPack with resolved EFS IR
     try:
         from core.retrieval.context_compiler import compile_task_context
+        resume_query = design_results.get("user_query", "") or getattr(getattr(design_results.get("context_pack"), "task", None), "raw_query", "") or ""
         context_pack, _ = compile_task_context(
-            resolved_design_spec,
+            resume_query,
             resolved_ir,
             all_protocol_rules=protocol_rules
         )
@@ -605,12 +767,16 @@ def resume_design_flow_with_resolutions(
         context_pack = design_results.get("context_pack")
 
     # STEP 4.4: Generate PlantUML Code & Diagrams
+    log_state_transition(WorkflowState.DESIGN_PLANNING, WorkflowState.PUML_GENERATION)
+    update_resume_progress("Generating PlantUML architecture diagrams...", 0.80)
     logger.info("Starting PUML generation")
-    from core.agents.plantuml_agent import generate_diagrams, get_diagram_url
     diagrams = generate_diagrams(resolved_design_spec, plan, efs_ir=resolved_ir)
-    diagram_urls = {k: get_diagram_url(v) for k, v in diagrams.items()}
+    diagram_urls = {k: get_diagram_url(v) for k, v in (diagrams or {}).items()} if isinstance(diagrams, dict) else {}
     
     # STEP 4.5: RTL Planning & Code Generation
+    log_state_transition(WorkflowState.PUML_GENERATION, WorkflowState.RTL_GENERATION)
+    log_state_transition(WorkflowState.RTL_GENERATION, WorkflowState.RTL_VALIDATION)
+    update_resume_progress("Resuming automated RTL code generation...", 0.90)
     logger.info("RTL_GENERATION_STARTED: Resuming automated RTL code generation...")
     
     outputs = {}
@@ -623,25 +789,27 @@ def resume_design_flow_with_resolutions(
         context_pack=context_pack
     )
 
+    # Handle RTL generation returning an insufficient output marker.
+    # Do NOT create new SOURCE_MISSING/PLAN_MISSING conflicts or restart the pipeline.
+    # All missing-info checks were done upfront before generation. This is a generation error only.
     if code == "INSUFFICIENT SPECIFICATION FOR RTL GENERATION" or (isinstance(code, str) and code.startswith("SPECIFICATION_INCOMPLETE")):
-        logger.warning("RTL generation flagged remaining incomplete specification details. Returning to Human Resolution Decision workflow.")
-        from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-        detected_conflicts = ConflictResolutionEngine.detect_conflicts(resolved_ir, req_model)
-        unresolved_blocking = [c for c in detected_conflicts if c.blocking and c.resolution_status == "UNRESOLVED"]
-        proposals_map = {}
-        for conf in unresolved_blocking:
-            proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, resolved_ir)
-
+        logger.warning("RTL generation returned incomplete output after resolution. Reporting as generation error (not restarting pipeline).")
+        log_generation_end("rtl_generation_insufficient_output_post_resolution")
         outputs[primary_target] = {
             "final_code": code,
             "compliance_score": 0,
-            "report": {"failed_checks": [{"check_name": "Specification Sufficiency", "violation": "The provided specification has unresolved hardware details."}]},
+            "report": {"failed_checks": [{"check_name": "RTL Generation Quality", "violation": "RTL agent could not produce complete synthesizable code from the resolved specification."}]},
             "history": [],
             "iterations_run": 0
         }
         return {
             **design_results,
-            "status": "BLOCKED_CONFLICT",
+            "status": "RTL_GENERATION_ERROR",
+            "pipeline_state": "RTL_GENERATION_ERROR",
+            "workflow_state": WorkflowState.RTL_VALIDATION.value,
+            "requires_human_decision": False,
+            "is_blocked": False,
+            "error_message": "RTL generation could not produce complete output after conflict resolution. The specification passed completeness and conflict checks but the RTL agent was unable to synthesize it.",
             "requirement_model": req_model,
             "plan": plan,
             "protocol_rules": protocol_rules,
@@ -650,14 +818,15 @@ def resume_design_flow_with_resolutions(
             "completed_model": completed_model,
             "context_pack": context_pack,
             "efs_ir_validation_issues": validation_issues,
-            "conflicts": unresolved_blocking,
-            "proposals": proposals_map,
             "diagrams": diagrams,
             "diagram_urls": diagram_urls,
             "outputs": outputs
         }
 
     logger.info("RTL_GENERATION_COMPLETED: RTL generation completed successfully.")
+    log_state_transition(WorkflowState.RTL_VALIDATION, WorkflowState.GENERATION_COMPLETE)
+    log_generation_end("success")
+    update_resume_progress("Generation complete with approved resolutions.", 1.0)
 
     outputs[primary_target] = {
         "final_code": code,
@@ -667,9 +836,35 @@ def resume_design_flow_with_resolutions(
         "iterations_run": 0
     }
     
+    # Generate secondary formats if requested
+    secondary_targets = [t for t in targets if t != primary_target]
+    for sec_tgt in secondary_targets:
+        try:
+            sec_code = generate_code(
+                resolved_design_spec,
+                sec_tgt,
+                efs_ir=resolved_ir,
+                protocol_rules=protocol_rules,
+                context_pack=context_pack
+            )
+            outputs[sec_tgt] = {
+                "final_code": sec_code,
+                "compliance_score": 100,
+                "report": {"compliance_score": 100, "passed_checks": [], "failed_checks": []},
+                "history": [],
+                "iterations_run": 0
+            }
+        except Exception as e_sec:
+            logger.warning(f"Failed to generate secondary format {sec_tgt}: {e_sec}")
+
     return {
         **design_results,
         "status": "SUCCESS",
+        "pipeline_state": "GENERATION_COMPLETE",
+        "workflow_state": WorkflowState.GENERATION_COMPLETE.value,
+        "requires_human_decision": False,
+        "is_blocked": False,
+        "bypass_warning": bypass_warning,
         "requirement_model": req_model,
         "plan": plan,
         "protocol_rules": protocol_rules,

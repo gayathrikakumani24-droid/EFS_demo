@@ -136,6 +136,28 @@ def verify_code(
         llm_report = llm.complete_json(SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
         elapsed = time.time() - start_time
         logger.info(f"LLM Semantic Verification: {elapsed:.2f} seconds.")
+        provider_tokens = llm.last_usage.get("prompt_tokens") if hasattr(llm, "last_usage") else None
+        output_tokens = llm.last_usage.get("completion_tokens", 0) if hasattr(llm, "last_usage") else 0
+        from core.context_compiler.base import estimate_tokens
+        orig_tokens = estimate_tokens(design_spec) + (estimate_tokens(efs_ir) if efs_ir else 0) + estimate_tokens(generated_code)
+        compiled_tokens = estimate_tokens(user_prompt)
+        final_prompt_tokens = estimate_tokens(user_prompt)
+        final_input_tokens = estimate_tokens(SYSTEM_PROMPT) + final_prompt_tokens
+        actual_input = provider_tokens or final_input_tokens
+        orig = max(orig_tokens, 1)
+        reduction = round(max(0.0, (orig - actual_input) / orig) * 100, 2)
+        end_to_end = round(max(0.0, (orig - final_input_tokens) / orig) * 100, 2)
+        logger.info(
+            f"[GenerationContext] artifact=rtl_verification | "
+            f"original_tokens={orig_tokens} | "
+            f"compiled_tokens={compiled_tokens} | "
+            f"final_prompt_tokens={final_prompt_tokens} | "
+            f"final_input_tokens={final_input_tokens} | "
+            f"provider_input_tokens={provider_tokens or 'N/A'} | "
+            f"output_tokens={output_tokens} | "
+            f"context_reduction={reduction}% | "
+            f"end_to_end_reduction={end_to_end}%"
+        )
 
     if not llm_report:
         logger.warning("LLM failed to return a valid JSON verification report. Falling back to heuristic compliance check.")

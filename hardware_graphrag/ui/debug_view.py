@@ -41,7 +41,13 @@ def render() -> None:
     reqs_count = len(req_ir.requirements) if req_ir else 0
     entities_count = len(req_ir.entities) if req_ir else len(registry.all_entities())
     rels_count = len(req_ir.edges) if req_ir else len(registry.all_relationships())
-    conflicts_count = len(req_ir.conflicts) if req_ir else 0
+    active_conflicts = [
+        c for c in (req_ir.conflicts if req_ir else [])
+        if getattr(c, "resolution_status", "UNRESOLVED") == "UNRESOLVED"
+        and getattr(c, "status", "") not in ("APPROVED", "RESOLVED")
+        and getattr(c, "blocking", True)
+    ]
+    conflicts_count = len(active_conflicts)
     cov_pct = coverage.get("extraction_coverage_pct", 0.0)
 
     efs_constructs_count = 0
@@ -147,15 +153,24 @@ def render() -> None:
     with t_conf:
         st.subheader("Validation & Spec Conflicts")
         if req_ir and req_ir.conflicts:
-            for conf in req_ir.conflicts:
-                sev_color = "red" if conf.severity in ("CRITICAL", "HIGH") else "orange"
-                st.markdown(f":{sev_color}[**[{conf.severity}] {conf.type}** - {conf.conflict_id}]")
-                st.write(conf.description)
-                if conf.claims:
-                    st.write("**Claims:**", conf.claims)
-                if conf.conflicting_values:
-                    st.write("**Conflicting Values:**", conf.conflicting_values)
-                st.divider()
+            unresolved = [
+                c for c in req_ir.conflicts
+                if getattr(c, "resolution_status", "UNRESOLVED") == "UNRESOLVED"
+                and getattr(c, "status", "") not in ("APPROVED", "RESOLVED")
+                and getattr(c, "blocking", True)
+            ]
+            if unresolved:
+                for conf in unresolved:
+                    sev_color = "red" if conf.severity in ("CRITICAL", "HIGH") else "orange"
+                    st.markdown(f":{sev_color}[**[{conf.severity}] {conf.type}** - {conf.conflict_id}]")
+                    st.write(conf.description)
+                    if conf.claims:
+                        st.write("**Claims:**", conf.claims)
+                    if conf.conflicting_values:
+                        st.write("**Conflicting Values:**", conf.conflicting_values)
+                    st.divider()
+            else:
+                st.success("Zero specification conflicts detected. Validation passed cleanly!")
         else:
             st.success("Zero specification conflicts detected. Validation passed cleanly!")
 

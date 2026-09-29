@@ -66,6 +66,21 @@ _formatter = logging.Formatter(_FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
 _root_configured = False
 
 
+import sys
+import hashlib
+
+def truncate_for_log(value: Any, max_chars: int = 200) -> str:
+    """Safely format and truncate arbitrary values for clean log messages."""
+    if value is None:
+        return "None"
+    val_str = str(value).strip().replace("\n", " ").replace("\r", " ")
+    val_str = " ".join(val_str.split())
+    if len(val_str) <= max_chars:
+        return val_str
+    val_hash = hashlib.md5(val_str.encode("utf-8", errors="replace")).hexdigest()[:8]
+    return f"{val_str[:max_chars]}... [len={len(val_str)}, hash={val_hash}]"
+
+
 def _configure_root() -> None:
     global _root_configured
     root = logging.getLogger("graphrag")
@@ -76,11 +91,23 @@ def _configure_root() -> None:
         return
     root.setLevel(logging.DEBUG)
 
-    console = logging.StreamHandler()
+    # Force UTF-8 encoding on Windows console streams to prevent cp1252 charmap errors
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+    console = logging.StreamHandler(sys.stdout)
     console.setFormatter(_formatter)
     console.setLevel(logging.INFO)
 
-    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3)
+    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3, encoding="utf-8", errors="replace")
     file_handler.setFormatter(_formatter)
     file_handler.setLevel(logging.DEBUG)
 

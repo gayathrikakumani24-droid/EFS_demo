@@ -1,0 +1,73 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundCorner 10
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+skinparam rectangle {
+  BorderThickness 1.5
+  FontSize 11
+}
+
+title Hardware GraphRAG: Seven-Layer System Architecture
+
+' -------------------------------------------------------------------------
+' LAYER 7: UI & HITL
+' -------------------------------------------------------------------------
+rectangle "Layer 7: Interactive UI & Human-in-the-Loop Gate\n[ui/ (20 pages), app.py]" as L7 #E3F2FD {
+  rectangle "• Hardware Design Wizard & State Manager (hardware_design.py)\n• Human-in-the-Loop Conflict Approval Modal\n• Interactive PlantUML & Cytoscape Graph Explorers\n• RTL Code Viewer, Verification Dashboard & Collateral Exporter" as L7_desc #FFFFFF
+}
+
+' -------------------------------------------------------------------------
+' LAYER 6: MULTI-AGENT SYNTHESIS & VERIFICATION
+' -------------------------------------------------------------------------
+rectangle "Layer 6: Multi-Agent Generation, Verification & Context Compilation\n[core/agents/, core/context_compiler/, core/verification/]" as L6 #E8F5E9 {
+  rectangle "• 8 Specialized Agents: Requirement, Planning, Protocol Resolver, Spec, RTL, PlantUML, Verifier, Repair\n• Context Compilation Subsystem: Diagram (4K), RTL (8K), SVA (6K), UVM (8K) Budgets\n• Pre-Synthesis Conflict Resolution Engine: Opcode, Width & Address Collision Detection\n• Controlled Inference Engine: DERIVED vs IMPLEMENTATION_CHOICE Inference\n• Two-Level Verification: Static AST Syntax + Semantic EFS Compliance & Targeted Repair Loop" as L6_desc #FFFFFF
+}
+
+' -------------------------------------------------------------------------
+' LAYER 5: KNOWLEDGE STORAGE & PROTOCOL LIBRARY
+' -------------------------------------------------------------------------
+rectangle "Layer 5: Dual-Mode Knowledge Storage & Multi-Protocol Isolation\n[core/graph/, core/vectorstore/, utils/protocol_manager.py]" as L5 #FFF8E1 {
+  rectangle "• Knowledge Graph (Neo4j / InMemoryGraphStore): 10 Node Types, 16 Directed Edges\n• Vector Database (FAISS / numpy): 384-dim all-MiniLM-L6-v2, SHA-256 Embedding Cache\n• Multi-Protocol Manager: Per-protocol isolated workspaces (AXI4, APB, PCIe, USB, SPI, I2C)\n• Registry Persistence: Ingestion state and object catalog serialization" as L5_desc #FFFFFF
+}
+
+' -------------------------------------------------------------------------
+' LAYER 4: EFS IR CANONICAL COMPILATION
+' -------------------------------------------------------------------------
+rectangle "Layer 4: Executable Formal Specification IR (EFS IR) Canonical Compilation\n[core/efs_ir/]" as L4 #EDE7F6 {
+  rectangle "• Canonical EFS IR Data Model: 30+ Entity Classes (Components, Interfaces, Signals, Registers, FSMs)\n• Ingestion Compiler & Design Flow Builder: Path A (Automatic) vs Path B (Interactive)\n• Deterministic EFS Structural Validator: Offset/Width Normalization & Dangling Pointer Checks\n• Bidirectional Source Traceability: Direct linkage to document_id, page_number, and chunk_id" as L4_desc #FFFFFF
+}
+
+' -------------------------------------------------------------------------
+' LAYER 3: REQUIREMENT IR & VALIDATION
+' -------------------------------------------------------------------------
+rectangle "Layer 3: Requirement Intermediate Representation & Validation\n[core/requirement_ir/]" as L3 #FCE4EC {
+  rectangle "• RequirementIR Models: AtomicRequirements, Entities, and Semantic Edge Tuples\n• Cross-Reference Resolution Engine: Resolves pronouns and cross-table citations\n• Requirement Dependency Graph: In-memory adjacency list for N-hop topological traversal\n• 5 Formal Consistency Checks: Detects width mismatches, duplicate IDs, and broken references" as L3_desc #FFFFFF
+}
+
+' -------------------------------------------------------------------------
+' LAYER 2: ADAPTIVE SEMANTIC EXTRACTION
+' -------------------------------------------------------------------------
+rectangle "Layer 2: Adaptive Semantic Extraction Pipeline\n[core/extraction/]" as L2 #E0F2F1 {
+  rectangle "• Stage 1: Deterministic Pre-Classification (15 regex categories: handshakes, resets, clocks, registers)\n• Stage 2: Heuristic Extractor (6 hardware pattern families with confidence scoring)\n• Stage 3: LLM Escalation Decision Engine (Threshold-gated rule engine, saves 60-80% tokens)\n• Stage 4: Batched LLM Client (OpenRouter/Groq/OpenAI with COMPACT_EXTRACTION_PROMPT & Cache)" as L2_desc #FFFFFF
+}
+
+' -------------------------------------------------------------------------
+' LAYER 1: DOCUMENT INGESTION & STRUCTURAL PARSING
+' -------------------------------------------------------------------------
+rectangle "Layer 1: Document Ingestion & Hierarchical Structural Parsing\n[core/parsing/]" as L1 #F5F5F5 {
+  rectangle "• Multi-Format Ingestion: PDF (pdfplumber/PyPDF2), DOCX (python-docx), and Markdown\n• Hardware-Tuned HeadingClassifier: Preserves chapter, section, and subsection hierarchy\n• Tabular & Diagram Extraction: Preserves register maps, pinout tables, and callouts\n• ParsedDocument Tree: Emits hierarchical DocSection tree with structural pointers" as L1_desc #FFFFFF
+}
+
+' Layer interactions (Downward request / Upward data flow)
+L7 <--> L6 : "User Design Intent / Verified Code, Diagrams & Review Modals"
+L6 <--> L5 : "Target Queries / Resolved Protocol Rules & Sliced ContextPacks"
+L5 <--> L4 : "Canonical Hardware Entities & Relations / Graph & Vector Indexing"
+L4 <--> L3 : "Structured Requirements & Conflicts / Canonical EFS IR Objects"
+L3 <--> L2 : "Atomic Entities & Extraction Chunks / Validated RequirementIR"
+L2 <--> L1 : "Hierarchical DocSections & Tables / DocumentIR Blocks"
+
+@enduml

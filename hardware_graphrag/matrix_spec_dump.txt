@@ -1,0 +1,233 @@
+[4] Functional Specification for Multi Core Matrix Compute Unit.
+[6] Author: Godwin Maben
+[7] Date: 5/12/2025
+[10] 1. Overview
+[11] This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width
+[12] 2. Architecture
+[13] 2.1 Core Components Instruction Decoder : Parses assembly instructions and controls execution flow and matrix dimension information.
+[14] Register File : Stores matrix operands with variable dimensions
+[15] 64 Matrix ALU : Performs the actual matrix operations
+[16] Control Unit : Manages execution for and multi-cycle operations
+[17] Memory Interface : Handles loading/storing matrices from/to external memory
+[19] 2.2 Matrix Dimensions and Format
+[20] - Support for matrices from 1x1 upto 32x32
+[21] - Element Precision: 64-bit fixed point or IEEE-754 double precision floating point
+[22] - Matrix storage: Row-major order with dimension meta data.
+[25] Section 3
+[26] 3.1 Instruction Format
+[27] Each instruction is a 64-bit word with the following fields:
+[28] Opcode    (6 bits): Operation to perform
+[29] Destination Register    (4 bits): Target register (16 matrix registers)
+[30] Source Register 1    (4 bits): First operand register
+[31] Source Register 2    (4 bits): Second operand register
+[32] Dimension Control    (10 bits): Matrix dimension information
+[33] Rows Source 1 (5 bits): Number of rows in first source matrix
+[34] Cols Source 1/Rows Source 2 (5 bits): Number of columns in first source/rows in second source
+[35] Cols Source 2    (5 bits): Number of columns in second source matrix
+[36] Format    (3 bits): Data format control (fixed-point, floating-point, etc.)
+[37] Flags    (4 bits): Special operation modifiers
+[38] Reserved    (24 bits): For future extensions
+[39] ‘
+[41] 3.2 Opcodes
+[42] 000001  : MADD (Matrix Addition)
+[43] 000010  : MSUB (Matrix Subtraction)
+[44] 000011  : MMUL (Matrix Multiplication)
+[45] 000100  : MDIV (Matrix Element-wise Division)
+[46] 000101  : MLOAD (Load Matrix from Memory)
+[47] 000110  : MSTORE (Store Matrix to Memory)
+[48] 000111  : MTRANS (Matrix Transpose)
+[49] 001000  : MZERO (Initialize Matrix with Zeros)
+[50] 001001  : MIDENTITY (Initialize Matrix as Identity)
+[51] 000110    : MINV (Matrix Inversion)
+[52] 000111    : MDET (Matrix Determinant)
+[53] 001000    : MEIG (Matrix Eigenvalues)
+[54] 001001    : MSVD (Matrix Singular Value Decomposition)
+[55] 001010    : MSIZE (Set Matrix Dimensions)
+[56] 001011    : MSLICE (Extract Submatrix)
+[57] 001100    : MCONCAT (Concatenate Matrices)
+[58] 001101    : MTYPE (Change Matrix Element Type)
+[59] 3.3 Assembly Syntax
+[60] [OPCODE] [DEST_REG], [SRC_REG_1], [SRC_REG_2], [DIM_ROWS], [DIM_COLS]
+[61] Example:
+[62] MADD M0, M1, M2
+[63] MSUB M3, M4, M5
+[64] MMUL M6, M7, M8
+[65] MDIV M9, M10, M11
+[66] MLOAD M0, M1, M2
+[67] MSTORE M1, M2, M3
+[68] MTRANS M4
+[69] MINV M5
+[70] MDET M6
+[71] MEIG M7
+[72] MSVD M8
+[73] MSIZE M9, M10
+[74] MSLICE M11, M12
+[75] MCONCAT M13, M14
+[76] MTYPE M15, M0
+[77] MZERO M0
+[78] MIDENTITY M1
+[79] MREDUCE M2, M3
+[80] MDISTRIBUTE M4, M5
+[81] MPARTITION M1, STRATEGY_ID
+[82] MBARRIER
+[84] 4. Dynamic Memory Management
+[85] 4.1 Matrix Descriptor Format
+[86] Each matrix register contains:
+[87] Metadata Block:
+[88] Rows (5 bits): Number of rows (1-32)
+[89] Columns (5 bits): Number of columns (1-32)
+[90] Format (3 bits): Data format identifier
+[91] Memory Address (32 bits): Pointer to matrix data
+[92] Data Block: Actual matrix elements
+[94] 4.2 Memory Allocation Strategy
+[95] On-chip SRAM for small matrices (≤ 8×8)
+[96] External memory for larger matrices with DMA transfers
+[97] Intelligent caching of frequently accessed elements
+[98] Tiling approach for very large matrix operations
+[100] 5. Execution Model for Variable-Sized Operations
+[101] 5.1 Tiled Execution Engine
+[102] Matrix operations broken down into tiles (8×8 typical size)
+[103] Pipeline optimized for tile-based processing
+[104] Multiple parallel execution units for tile operations
+[105] Work-stealing scheduler for load balancing
+[106] 5.2 Execution Time Estimation
+[107] Addition/Subtraction: O(rows × cols) cycles
+[108] Multiplication: O(rows × inner_dim × cols) cycles
+[109] Division: O(rows × cols) cycles
+[110] Inversion: O(dim³) cycles
+[113] 5.1 External Interfaces
+[114] Clock : System clock input
+[115] Reset : Asynchronous system reset
+[116] Instruction Input : 32-bit instruction word
+[117] Data Memory Interface : For loading/storing matrices
+[118] Control Signals :
+[119] start  : Begin execution
+[120] busy  : Indicates operation in progress
+[121] done  : Indicates completion
+[122] AXI4 Memory Interface: For high-bandwidth matrix transfers
+[123] Configuration Registers: Control matrix engine parameters
+[124] Status Registers: Report operation progress and error conditions
+[125] Interrupt Controller: Signal operation completion or errors
+[126] 5.2 Register Addresses
+[127] Matrix Registers: M0-M7 (8 registers in total)
+[128] 6. Error Handling
+[129] Detection and reporting of singular matrices
+[130] Numerical stability monitoring
+[131] Dimension compatibility checking
+[132] Overflow/underflow detection
+[133] 7. Performance Goals
+[134] Maximum clock frequency: 1Ghz
+[135] Matrix multiplies throughput: 6.25 million elements per second
+[136] Power consumption: Less than 100mW
+[139] Matrix Extension for Multi-Core Operation and Implementation
+[141] 8. Multi-Core System Organization
+[142] 8.1 Core Components
+[143] Control Processor      : Orchestrates overall operation and task distribution
+[144] Matrix Processing Elements (MPEs)      : 4-16 individual compute cores optimized for matrix operations
+[145] Shared Memory Hierarchy      : Multi-level memory system with coherence protocol
+[146] Interconnect Network      : High-bandwidth communications fabric connecting cores
+[147] Global Scheduler      : Distributes matrix workloads across available cores
+[149] 8.2 Matrix Processing Element Design
+[150] Each MPE contains:
+[151] Local Register File      : 16 matrix registers with metadata
+[152] 64-bit FPU      : Dedicated floating-point unit with multiply-accumulate capability
+[153] Local Tiling Engine      : Manages processing of matrix subblocks
+[154] L1 Matrix Cache      : High-bandwidth local storage (512KB per core)
+[155] DMA Engine      : Autonomous data transfer with main memory
+[157] 9. Workload Distribution
+[158] 9.1 Matrix Partitioning Strategies
+[159] The system employs three main partitioning approaches:
+[160] Block Division      : Splits matrices into equal-sized blocks assigned to different cores
+[161] Row/Column Division      : Distributes complete rows or columns across cores
+[162] Cyclic Assignment      : Interleaves matrix elements for load balancing
+[164] 9.2 Automatic Partitioning Algorithm
+[165] Analyze matrix dimensions and sparsity pattern
+[166] Select optimal partitioning strategy based on operation type
+[167] Create work packages with dependencies tracked
+[168] Distribute packages to cores with load balancing
+[169] Manage synchronization points
+[172] 9.3 Dynamic Load Balancing
+[173] Work-stealing queue implementation
+[174] Runtime performance monitoring
+[175] Adaptive core assignment based on thermal and power constraints
+[176] 10 Inter-Core Communication
+[177] 10.1 Communication Patterns
+[178] Nearest-Neighbor      : For stencil operations on submatrices
+[179] Broadcast      : Common operand distribution
+[180] Reduction      : Gathering partial results
+[181] All-to-All      : For matrix transpose and similar operations
+[183] 10.2 Communication Infrastructure
+[184] Crossbar switch for low-latency direct connections
+[185] Multi-level NoC (Network-on-Chip) for scalability
+[186] DMA-driven block transfers with prefetching
+[188] 11. Memory Hierarchy
+[190] 11.1 Memory Organization
+[191] L1 Matrix Cache      : 512KB per core, highly banked for parallel access
+[192] L2 Shared Cache      : 4MB shared among 4 cores
+[193] L3 Global Cache      : 16-32MB with directory-based coherence
+[194] Main Memory Interface      : Multiple channels to high-bandwidth memory
+[196] 11.2 Coherence Protocol
+[197] Directory-based MESI protocol
+[198] Specialized for matrix block operations
+[199] Optimized for producer-consumer relationships between cores
+[201] 11.3 Memory Access Optimization
+[202] Predictive prefetching based on access patterns
+[203] Software-managed scratchpad for critical data
+[204] Conflict-free banking for simultaneous access
+[207] 12. Instruction Extension
+[208] 12.1 Multi-Core Instructions
+[209] MPARTITION     : Specify matrix partitioning strategy
+[210] MDISTRIBUTE     : Distribute computation across cores
+[211] MBARRIER     : Synchronize cores at critical points
+[212] MREDUCE     : Combine partial results from multiple cores
+[213] 12.2 Collective Operations
+[214] Hardware-accelerated collective operations:
+[215] MMUL_COLLECTIVE     : Distributed matrix multiplication
+[216] MINV_COLLECTIVE     : Parallel matrix inversion
+[217] MSVD_COLLECTIVE     : Distributed singular value decomposition
+[218] 13. Implementation Scalability
+[219] 13.1 Core Scaling
+[220] Base configuration: 4 cores
+[221] Medium configuration: 8 cores
+[222] High-performance configuration: 16 cores
+[223] Enterprise configuration: 32+ cores with multi-chip scaling
+[225] 13.2 Performance Scaling
+[226] Matrix Addition: Near-linear scaling to 16 cores
+[227] Matrix Multiplication: 85-95% efficiency scaling to 16 cores
+[228] Matrix Inversion: 75-85% efficiency scaling to 16 cores
+[229] SVD/Eigenvalues: 60-80% efficiency depending on matrix structure
+[231] Section 14
+[232] module multi_core_matrix_system (
+[233] input wire clk,               // System clock
+[234] input wire rst_n,             // Active low reset
+[235] input wire [63:0] instruction, // Instruction input
+[236] input wire start,             // Start execution signal
+[237] output wire busy,             // Execution in progress
+[238] output wire done,             // Execution complete
+[239] output wire error,            // Error indicator
+[241] // AXI4 Memory Interface
+[242] output wire [31:0] axi_araddr,
+[243] output wire axi_arvalid,
+[244] input wire axi_arready,
+[245] input wire [511:0] axi_rdata,
+[246] input wire [1:0] axi_rresp,
+[247] input wire axi_rlast,
+[248] input wire axi_rvalid,
+[249] output wire axi_rready,
+[251] output wire [31:0] axi_awaddr,
+[252] output wire axi_awvalid,
+[253] input wire axi_awready,
+[254] output wire [511:0] axi_wdata,
+[255] output wire [63:0] axi_wstrb,
+[256] output wire axi_wlast,
+[257] output wire axi_wvalid,
+[258] input wire axi_wready,
+[259] input wire [1:0] axi_bresp,
+[260] input wire axi_bvalid,
+[261] output wire axi_bready
+[262] );
+[264] // Number of matrix processing cores
+[265] parameter NUM_CORES = 4;
+[268] 15. Test scenarios
+[269] Execution trigger is all listed opcodes
+[270] Flow for errors

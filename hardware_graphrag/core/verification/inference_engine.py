@@ -70,6 +70,8 @@ class ControlledInferenceEngine:
                 description="Primary system clock signal."
             )
             self.efs_ir.signals.insert(0, clk_sig)
+            if not any(c.signal_id == clk_sig.signal_id for c in self.efs_ir.clocks):
+                self.efs_ir.clocks.insert(0, clk_sig)
             self.decisions.append(InferredDecision(
                 target_element="clk",
                 element_type="interface",
@@ -90,6 +92,8 @@ class ControlledInferenceEngine:
                 description="Primary active-low system reset signal."
             )
             self.efs_ir.signals.insert(1, rst_sig)
+            if not any(r.signal_id == rst_sig.signal_id for r in self.efs_ir.resets):
+                self.efs_ir.resets.insert(0, rst_sig)
             self.decisions.append(InferredDecision(
                 target_element="rst_n",
                 element_type="reset",
@@ -97,6 +101,12 @@ class ControlledInferenceEngine:
                 description="Added default active-low reset port 'rst_n'.",
                 rationale="Digital hardware modules require a primary reset port for initialization."
             ))
+
+        # Synchronize clocks and resets collections with signals
+        if not self.efs_ir.clocks:
+            self.efs_ir.clocks = [s for s in self.efs_ir.signals if s.semantic_role == "clock"]
+        if not self.efs_ir.resets:
+            self.efs_ir.resets = [s for s in self.efs_ir.signals if s.semantic_role == "reset"]
 
     def _infer_interface_signals(self) -> None:
         """Infer missing signal directions, widths, and semantic protocol roles from protocol contracts if declared."""
@@ -144,6 +154,7 @@ class ControlledInferenceEngine:
             # Assign sequential register offset if unspecified
             if not getattr(reg, "offset", None) or reg.offset in ("0x??", "TBD", "undefined", ""):
                 reg.offset = f"0x{next_offset:02X}"
+                reg.offset_source = "inferred"
                 self.decisions.append(InferredDecision(
                     target_element=reg.name,
                     element_type="register",

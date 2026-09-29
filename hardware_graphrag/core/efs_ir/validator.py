@@ -8,8 +8,9 @@ dangling references, invalid definitions, and missing traceability.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
-from core.efs_ir.models import EFSIR
+from typing import Any, Dict, List, Optional
+from core.efs_ir.models import EFSIR, EFSValidationResult, EFSValidationSummary
+from core.efs_ir.validation_rules import is_explicit_address, normalize_hardware_offset
 
 
 def make_validation_issue(
@@ -88,6 +89,27 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
             category="Metadata",
             message="Design metadata is missing a unique design_id",
             severity="ERROR",
+            classification="EFSIR_EXTRACTION_GAP"
+        ))
+    if not getattr(ir.metadata, "canonical_id", None):
+        issues.append(make_validation_issue(
+            category="Metadata",
+            message="Design metadata is missing a canonical_id",
+            severity="ERROR",
+            classification="EFSIR_EXTRACTION_GAP"
+        ))
+    if not getattr(ir.metadata, "display_name", None):
+        issues.append(make_validation_issue(
+            category="Metadata",
+            message="Design metadata is missing a display_name",
+            severity="WARNING",
+            classification="EFSIR_EXTRACTION_GAP"
+        ))
+    if not getattr(ir.metadata, "generation_run_id", None):
+        issues.append(make_validation_issue(
+            category="Metadata",
+            message="Design metadata is missing a generation_run_id",
+            severity="WARNING",
             classification="EFSIR_EXTRACTION_GAP"
         ))
 
@@ -234,7 +256,67 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
                 classification="EFSIR_EXTRACTION_GAP"
             ))
 
+    # 5b. Validate Clocks and Resets references
+    for clk in ir.clocks:
+        if not clk.signal_id:
+            issues.append(make_validation_issue(
+                category="Clocks",
+                message="Clock entry is missing a signal_id",
+                severity="ERROR",
+                classification="EFSIR_EXTRACTION_GAP"
+            ))
+        elif clk.signal_id not in signal_ids:
+            issues.append(make_validation_issue(
+                category="Clocks",
+                message=f"Clock references non-existent signal ID '{clk.signal_id}'",
+                object_id=clk.signal_id,
+                severity="ERROR",
+                classification="EFSIR_EXTRACTION_GAP",
+                evidence=f"Clock signal '{clk.name or clk.signal_id}' ({clk.signal_id}) is not present in design signals collection",
+                required_information="Ensure clock signal is declared in signals list."
+            ))
+        else:
+            target_sig = next((s for s in ir.signals if s.signal_id == clk.signal_id), None)
+            if target_sig and target_sig.semantic_role and target_sig.semantic_role.lower() not in ("clock", "clk", "gated_clock", "system_clock"):
+                issues.append(make_validation_issue(
+                    category="Clocks",
+                    message=f"Clock signal '{target_sig.name}' has non-clock semantic role '{target_sig.semantic_role}'",
+                    object_id=clk.signal_id,
+                    severity="WARNING",
+                    classification="SOURCE_AMBIGUOUS"
+                ))
+
+    for rst in ir.resets:
+        if not rst.signal_id:
+            issues.append(make_validation_issue(
+                category="Resets",
+                message="Reset entry is missing a signal_id",
+                severity="ERROR",
+                classification="EFSIR_EXTRACTION_GAP"
+            ))
+        elif rst.signal_id not in signal_ids:
+            issues.append(make_validation_issue(
+                category="Resets",
+                message=f"Reset references non-existent signal ID '{rst.signal_id}'",
+                object_id=rst.signal_id,
+                severity="ERROR",
+                classification="EFSIR_EXTRACTION_GAP",
+                evidence=f"Reset signal '{rst.name or rst.signal_id}' ({rst.signal_id}) is not present in design signals collection",
+                required_information="Ensure reset signal is declared in signals list."
+            ))
+        else:
+            target_sig = next((s for s in ir.signals if s.signal_id == rst.signal_id), None)
+            if target_sig and target_sig.semantic_role and target_sig.semantic_role.lower() not in ("reset", "rst", "preset", "clear", "async_reset", "sync_reset"):
+                issues.append(make_validation_issue(
+                    category="Resets",
+                    message=f"Reset signal '{target_sig.name}' has non-reset semantic role '{target_sig.semantic_role}'",
+                    object_id=rst.signal_id,
+                    severity="WARNING",
+                    classification="SOURCE_AMBIGUOUS"
+                ))
+
     # 6. Validate registers
+    reg_offsets: Dict[Any, Any] = {}
     for reg in ir.registers:
         check_id(reg.register_id, "Registers")
         if not reg.name:
@@ -245,7 +327,7 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
                 severity="ERROR",
                 classification="EFSIR_EXTRACTION_GAP"
             ))
-        if not reg.offset:
+        if not is_explicit_address(reg.offset):
             issues.append(make_validation_issue(
                 category="Registers",
                 message=f"Register '{reg.name}' has no defined address offset",
@@ -253,6 +335,31 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
                 severity="WARNING",
                 classification="SOURCE_AMBIGUOUS"
             ))
+        else:
+            norm_offset = normalize_hardware_offset(reg.offset)
+            try:
+                norm_val = int(norm_offset, 16) if norm_offset.startswith("0x") else int(norm_offset)
+            except Exception:
+                norm_val = norm_offset
+
+            if norm_val in reg_offsets:
+                prev_reg = reg_offsets[norm_val]
+                is_intentional = any(
+                    term in (reg.description or "").lower() or term in (prev_reg.description or "").lower()
+                    for term in ("alias", "shadow", "mirror", "banked", "alternate view", "register view")
+                )
+                if not is_intentional:
+                    issues.append(make_validation_issue(
+                        category="Registers",
+                        message=f"Duplicate register address offset detected: '{reg.offset}' shared by '{prev_reg.name}' and '{reg.name}'",
+                        object_id=reg.register_id,
+                        severity="ERROR",
+                        classification="SOURCE_CONFLICT",
+                        evidence=f"Registers '{prev_reg.name}' ({prev_reg.register_id}) and '{reg.name}' ({reg.register_id}) both assigned offset '{reg.offset}'",
+                        required_information="Resolve address collision by assigning unique offsets."
+                    ))
+            else:
+                reg_offsets[norm_val] = reg
             
         # Validate fields
         field_bits = set()
@@ -393,6 +500,7 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
                     f.msb = msb_val
 
     # 10. Validate Opcodes
+    seen_opcodes: Dict[str, Any] = {}
     for opc in getattr(ir, "opcodes", []):
         check_id(opc.opcode_id, "Opcodes")
         if not opc.mnemonic:
@@ -403,11 +511,78 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
                 severity="ERROR",
                 classification="EFSIR_EXTRACTION_GAP"
             ))
+        enc = (opc.binary_encoding or "").strip().lower()
+        if enc:
+            if enc in seen_opcodes:
+                prev_opc = seen_opcodes[enc]
+                if prev_opc.mnemonic != opc.mnemonic:
+                    issues.append(make_validation_issue(
+                        category="Opcodes",
+                        message=f"Duplicate opcode assignment detected: Encoding '{enc}' is shared by '{prev_opc.mnemonic}' and '{opc.mnemonic}'",
+                        object_id=opc.opcode_id,
+                        severity="ERROR",
+                        classification="SOURCE_CONFLICT",
+                        evidence=f"Opcode encoding '{enc}' assigned to both '{prev_opc.mnemonic}' ({prev_opc.opcode_id}) and '{opc.mnemonic}' ({opc.opcode_id})",
+                        required_information="Resolve opcode collision by assigning unique binary encodings."
+                    ))
+            else:
+                seen_opcodes[enc] = opc
 
-    # 11. Report Conflicts as validation issues
+    # 10b. Validate Parameters
+    for param in getattr(ir, "parameters", []):
+        check_id(param.parameter_id, "Parameters")
+        if not param.name:
+            issues.append(make_validation_issue(
+                category="Parameters",
+                message=f"Parameter '{param.parameter_id}' is missing a name",
+                object_id=param.parameter_id,
+                severity="WARNING",
+                classification="EFSIR_EXTRACTION_GAP"
+            ))
+
+    # 10c. Validate Functional Behaviors
+    for fb in getattr(ir, "functional_behavior", []):
+        check_id(fb.behavior_id, "FunctionalBehavior")
+        if not fb.name and not fb.description:
+            issues.append(make_validation_issue(
+                category="FunctionalBehavior",
+                message=f"Functional behavior '{fb.behavior_id}' has no name or description",
+                object_id=fb.behavior_id,
+                severity="WARNING",
+                classification="EFSIR_EXTRACTION_GAP"
+            ))
+
+    # 11. Validate Conflicts and Resolutions
+    known_entities = (
+        signal_names | {s.signal_id for s in ir.signals} |
+        {r.name for r in ir.registers} | register_ids |
+        {c.name for c in ir.components} | component_ids |
+        {i.name for i in ir.interfaces} | interface_ids |
+        {ins.name for ins in getattr(ir, "instructions", [])} |
+        {ins.mnemonic for ins in getattr(ir, "instructions", [])} |
+        {ins.instruction_id for ins in getattr(ir, "instructions", [])} |
+        {op.mnemonic for op in getattr(ir, "opcodes", [])} |
+        {op.opcode_id for op in getattr(ir, "opcodes", [])} |
+        {p.name for p in getattr(ir, "parameters", [])} |
+        {p.parameter_id for p in getattr(ir, "parameters", [])} |
+        {fb.name for fb in getattr(ir, "functional_behavior", [])} |
+        {fb.behavior_id for fb in getattr(ir, "functional_behavior", [])} |
+        {f.name for f in getattr(ir, "instruction_formats", [])} |
+        {f.format_id for f in getattr(ir, "instruction_formats", [])}
+    )
     for conf in getattr(ir, "conflicts", []):
         check_id(conf.conflict_id, "Conflicts")
-        if conf.resolution_status == "UNRESOLVED":
+        # Check affected entities resolve to existing entities
+        for ent in (conf.affected_entities or conf.entities):
+            if ent and ent not in known_entities and not any(k.lower() == ent.lower() for k in known_entities):
+                issues.append(make_validation_issue(
+                    category="Conflicts",
+                    message=f"Conflict '{conf.conflict_id}' references unknown entity '{ent}'",
+                    object_id=conf.conflict_id,
+                    severity="WARNING",
+                    classification="EFSIR_EXTRACTION_GAP"
+                ))
+        if conf.resolution_status != "RESOLVED":
             issues.append(make_validation_issue(
                 category="Conflicts",
                 message=f"Unresolved specification conflict [{conf.type}]: {conf.evidence or conf.description}",
@@ -418,30 +593,56 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
                 required_information=conf.explanation or conf.description
             ))
 
+    for res in getattr(ir, "resolutions", []):
+        check_id(res.resolution_id, "Resolutions")
+        if res.conflict_id and not any(c.conflict_id == res.conflict_id for c in getattr(ir, "conflicts", [])):
+            issues.append(make_validation_issue(
+                category="Resolutions",
+                message=f"Resolution '{res.resolution_id}' references unknown conflict '{res.conflict_id}'",
+                object_id=res.resolution_id,
+                severity="WARNING",
+                classification="EFSIR_EXTRACTION_GAP"
+            ))
+        if (
+            res.target_entity
+            and res.target_entity.lower() not in ("target entity", "target_entity", "requirement", "specification", "design", "global", "")
+            and res.target_entity not in known_entities
+            and not any(k.lower() == res.target_entity.lower() for k in known_entities)
+        ):
+            issues.append(make_validation_issue(
+                category="Resolutions",
+                message=f"Resolution '{res.resolution_id}' targets unknown entity '{res.target_entity}'",
+                object_id=res.resolution_id,
+                severity="WARNING",
+                classification="SOURCE_AMBIGUOUS"
+            ))
+
     # 12. Grounding & Hallucination Audit (Metadata Grounding Gap checks)
     for comp in ir.components:
         trace = getattr(comp, "traceability", None)
-        if not trace or (not trace.chunk_id and not trace.doc_id and trace.confidence < 0.5):
+        if not trace or (not trace.chunk_id and not trace.doc_id and (trace.confidence is not None and trace.confidence < 0.5)):
+            conf_display = f"{trace.confidence:.2f}" if (trace and trace.confidence is not None) else "N/A"
             issues.append(make_validation_issue(
                 category="Grounding",
                 message=f"Component '{comp.name}' is ungrounded (missing specification traceability)",
                 object_id=comp.component_id,
                 severity="WARNING",
                 classification="GROUNDING_GAP",
-                evidence=f"Component ID: {comp.component_id} | Traceability: chunk_id={getattr(trace, 'chunk_id', None)}, doc_id={getattr(trace, 'doc_id', None)}, confidence={getattr(trace, 'confidence', 0.0)}",
+                evidence=f"Component ID: {comp.component_id} | Traceability: chunk_id={getattr(trace, 'chunk_id', None)}, doc_id={getattr(trace, 'doc_id', None)}, confidence={conf_display}",
                 required_information=f"Verify source document origin for component '{comp.name}'."
             ))
             
     for sig in ir.signals:
         trace = getattr(sig, "traceability", None)
-        if not trace or (not trace.chunk_id and not trace.doc_id and trace.confidence < 0.5):
+        if not trace or (not trace.chunk_id and not trace.doc_id and (trace.confidence is not None and trace.confidence < 0.5)):
+            conf_display = f"{trace.confidence:.2f}" if (trace and trace.confidence is not None) else "N/A"
             issues.append(make_validation_issue(
                 category="Grounding",
                 message=f"Signal '{sig.name}' is ungrounded (missing specification traceability)",
                 object_id=sig.signal_id,
                 severity="WARNING",
                 classification="GROUNDING_GAP",
-                evidence=f"Signal ID: {sig.signal_id} | Traceability: chunk_id={getattr(trace, 'chunk_id', None)}, doc_id={getattr(trace, 'doc_id', None)}, confidence={getattr(trace, 'confidence', 0.0)}",
+                evidence=f"Signal ID: {sig.signal_id} | Traceability: chunk_id={getattr(trace, 'chunk_id', None)}, doc_id={getattr(trace, 'doc_id', None)}, confidence={conf_display}",
                 required_information=f"Verify source document origin for signal '{sig.name}'."
             ))
 
@@ -465,7 +666,58 @@ def validate_efs_ir(ir: EFSIR) -> List[Dict[str, Any]]:
             sanitized_issues.append(iss)
             seen_issue_keys.add(key)
 
-    return sanitized_issues
+    # Format structured findings and attach EFSValidationResult to ir
+    structured_findings = []
+    crit_count = 0
+    warn_count = 0
+    info_count = 0
+
+    for idx, iss in enumerate(sanitized_issues):
+        sev = iss.get("severity", "WARNING").upper()
+        if sev in ("ERROR", "CRITICAL"):
+            crit_count += 1
+        elif sev == "WARNING":
+            warn_count += 1
+        else:
+            info_count += 1
+
+        finding = {
+            "finding_id": f"VAL_{idx+1:03d}",
+            "category": iss.get("category", "General"),
+            "severity": sev,
+            "message": iss.get("message") or iss.get("issue", ""),
+            "object_id": iss.get("object_id", ""),
+            "evidence": iss.get("evidence", ""),
+            "remediation_action": iss.get("required_information", ""),
+            "classification": iss.get("classification", "EFSIR_EXTRACTION_GAP"),
+            "is_blocking": iss.get("is_blocking", sev in ("ERROR", "CRITICAL")),
+            "issue": iss.get("message") or iss.get("issue", "")
+        }
+        structured_findings.append(finding)
+
+    val_status = "PASSED"
+    if crit_count > 0:
+        val_status = "FAILED"
+    elif warn_count > 0:
+        val_status = "WARNINGS"
+
+    ir.validation = EFSValidationResult(
+        status=val_status,
+        summary=EFSValidationSummary(
+            total=len(structured_findings),
+            critical=crit_count,
+            warning=warn_count,
+            info=info_count
+        ),
+        findings=structured_findings,
+        design_id=ir.metadata.design_id,
+        canonical_id=ir.metadata.canonical_id,
+        generation_run_id=ir.metadata.generation_run_id,
+        document_id=ir.metadata.document_id,
+        ingestion_id=ir.metadata.ingestion_id
+    )
+
+    return structured_findings
 
 
 def get_efs_ir_quality(ir: EFSIR, validation_issues: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -499,7 +751,7 @@ def get_efs_ir_quality(ir: EFSIR, validation_issues: List[Dict[str, Any]]) -> Di
         for obj in lst:
             total_traceable += 1
             trace = getattr(obj, "traceability", None)
-            if trace and (trace.chunk_id or trace.original_text or trace.confidence > 0.5):
+            if trace and (trace.chunk_id or trace.original_text or (trace.confidence is not None and trace.confidence > 0.5)):
                 covered_traceable += 1
                 
     traceability_coverage = (covered_traceable / total_traceable * 100) if total_traceable > 0 else 100.0

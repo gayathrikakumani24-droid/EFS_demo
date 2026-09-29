@@ -16,8 +16,7 @@ from __future__ import annotations
 import os
 import pickle
 from dataclasses import dataclass, field
-from typing import Dict, List
-
+from typing import Dict, List,Optional,Any
 from config import CONFIG
 from utils.models import Chunk, Entity, ParsedDocument, Relationship
 from utils.logger import get_logger

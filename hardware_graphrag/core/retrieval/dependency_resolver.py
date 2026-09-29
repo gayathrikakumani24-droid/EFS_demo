@@ -65,41 +65,88 @@ def resolve_dependencies(
 
     # Gather signals owned by target component or its interfaces
     interface_ids = {iface.interface_id for iface in interfaces}
+    interface_signal_names = set()
+    for iface in interfaces:
+        for s in iface.signals:
+            interface_signal_names.add(s.lower())
+
     signals: List[EFSSignal] = []
     for sig in efs_ir.signals:
         if (sig.owner == target_comp.component_id or
+            sig.owner == target_comp.name or
             sig.consumer == target_comp.component_id or
+            sig.consumer == target_comp.name or
             (sig.interface and sig.interface in interface_ids) or
+            sig.name.lower() in interface_signal_names or
+            sig.signal_id.lower() in interface_signal_names or
             target_comp.name.lower() in sig.name.lower() or
             any(w in sig.name.lower() for w in target_comp.name.lower().split() if len(w) > 3)):
             signals.append(sig)
 
-    # Dynamic expansion: Fallback to top-level signals/interfaces if 0 signals specific to component found
-    if not signals and efs_ir.signals:
+    # Ensure clock and reset signals feeding the component are included
+    all_clk_rst_sigs = list(efs_ir.signals) + getattr(efs_ir, "clocks", []) + getattr(efs_ir, "resets", [])
+    clk_domain = (target_comp.clock_domain or "").lower()
+    rst_domain = (target_comp.reset_domain or "").lower()
+    for sig in all_clk_rst_sigs:
+        s_name_lower = sig.name.lower()
+        if any(s.name == sig.name for s in signals):
+            continue
+        if clk_domain and (sig.signal_id.lower() == clk_domain or s_name_lower == clk_domain):
+            signals.append(sig)
+        elif rst_domain and (sig.signal_id.lower() == rst_domain or s_name_lower == rst_domain):
+            signals.append(sig)
+        elif not clk_domain and sig.semantic_role == "clock" and not any(s.semantic_role == "clock" for s in signals):
+            signals.append(sig)
+        elif not rst_domain and sig.semantic_role == "reset" and not any(s.semantic_role == "reset" for s in signals):
+            signals.append(sig)
+
+    # Fallback to top-level signals/interfaces ONLY IF target is top-level or single component
+    is_top_level = (
+        len(efs_ir.components) <= 1 or
+        target_comp.type.lower() in ("top_level_design", "top", "system") or
+        (efs_ir.metadata and (
+            target_comp.name.lower() == (efs_ir.metadata.top_module or "").lower() or
+            target_comp.name.lower() == (efs_ir.metadata.design_name or "").lower()
+        ))
+    )
+    if not signals and is_top_level and efs_ir.signals:
         signals = list(efs_ir.signals)
-    if not interfaces and efs_ir.interfaces:
+    if not interfaces and is_top_level and efs_ir.interfaces:
         interfaces = list(efs_ir.interfaces)
 
     # Gather registers owned by target
     registers: List[EFSRegister] = []
     for reg in efs_ir.registers:
-        if reg.owner == target_comp.component_id or target_comp.name.lower() in reg.name.lower():
+        reg_owner = (reg.owner or "").lower()
+        if (reg.owner == target_comp.component_id or
+            reg.owner == target_comp.name or
+            reg_owner == target_comp.component_id.lower() or
+            reg_owner == target_comp.name.lower() or
+            target_comp.name.lower() in reg.name.lower()):
             registers.append(reg)
-    if not registers and efs_ir.registers:
+    if not registers and is_top_level and efs_ir.registers:
         registers = list(efs_ir.registers)
 
     # Gather state machines (FSMs) for target
     fsms: List[EFSFSM] = []
     for fsm in efs_ir.fsms:
-        if target_comp.name.lower() in fsm.name.lower():
+        fsm_owner = (getattr(fsm, "owner", "") or getattr(fsm, "component_id", "") or "").lower()
+        if (fsm_owner == target_comp.component_id.lower() or
+            fsm_owner == target_comp.name.lower() or
+            target_comp.name.lower() in fsm.name.lower() or
+            is_top_level or
+            not fsm_owner):
             fsms.append(fsm)
+    if not fsms and efs_ir.fsms and is_top_level:
+        fsms = list(efs_ir.fsms)
 
     # Gather transactions relevant to target
     transactions: List[EFSTransaction] = []
     for tx in efs_ir.transactions:
         if (tx.initiator == target_comp.component_id or
             tx.target == target_comp.component_id or
-            target_comp.name.lower() in tx.name.lower()):
+            target_comp.name.lower() in tx.name.lower() or
+            is_top_level):
             transactions.append(tx)
 
     # Gather timing rules, constraints, and protocol rules
@@ -117,7 +164,7 @@ def resolve_dependencies(
             resolved_comp_ids.add(comp.component_id)
             resolved_comp_names.add(comp.name.lower())
 
-    # 3. Neo4j Graph Traversal (if available)
+    # 3. Neo4j / Knowledge Graph Traversal
     try:
         store = get_graph_store()
         neighbors, edges = store.get_neighbors(target_comp.name, hops=max_depth)
@@ -127,8 +174,17 @@ def resolve_dependencies(
                 if comp.name.lower() == n_name.lower() and comp.component_id not in resolved_comp_ids:
                     direct_submodules.append(comp)
                     resolved_comp_ids.add(comp.component_id)
+            for iface in efs_ir.interfaces:
+                if iface.name.lower() == n_name.lower() and not any(i.name == iface.name for i in interfaces):
+                    interfaces.append(iface)
+            for sig in efs_ir.signals:
+                if sig.name.lower() == n_name.lower() and not any(s.name == sig.name for s in signals):
+                    signals.append(sig)
+            for reg in efs_ir.registers:
+                if reg.name.lower() == n_name.lower() and not any(r.name == reg.name for r in registers):
+                    registers.append(reg)
     except Exception as e:
-        logger.debug(f"Neo4j graph dependency expansion skipped: {e}")
+        logger.debug(f"Knowledge graph dependency expansion skipped: {e}")
 
     # Expand to depth = 2 if max_depth >= 2 or if direct submodules exist
     effective_depth = max_depth

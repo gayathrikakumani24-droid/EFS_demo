@@ -52,7 +52,7 @@ Return ONLY a valid JSON object matching the full EFS IR Extraction schema. No M
 """
 
 
-def analyze_requirements(requirement_text: str) -> Dict[str, Any]:
+def analyze_requirements(requirement_text: Any) -> Dict[str, Any]:
     """
     Parse requirement text by converting it into a canonical DocumentIR
     and processing it through GenericRequirementExtractor.
@@ -63,10 +63,23 @@ def analyze_requirements(requirement_text: str) -> Dict[str, Any]:
     from core.extraction.requirement_extractor import GenericRequirementExtractor
     from core.compiler.efs_compiler import RequirementToEFSCompiler
 
+    if hasattr(requirement_text, "to_full_combined_dict"):
+        full_result = requirement_text.to_full_combined_dict()
+        if hasattr(requirement_text, "to_approved_extraction"):
+            approved_art = requirement_text.to_approved_extraction()
+            full_result["_approved_extraction"] = approved_art.to_dict()
+        return full_result
+    elif hasattr(requirement_text, "to_dict"):
+        return requirement_text.to_dict()
+    elif isinstance(requirement_text, dict):
+        return requirement_text
+
+    text_str = str(requirement_text) if requirement_text is not None else ""
+
     # Split text into structured DocumentBlocks by section/paragraph
-    raw_blocks = [p.strip() for p in requirement_text.split("\n\n") if p.strip()]
+    raw_blocks = [p.strip() for p in text_str.split("\n\n") if p.strip()]
     if not raw_blocks:
-        raw_blocks = [requirement_text] if requirement_text.strip() else []
+        raw_blocks = [text_str] if text_str.strip() else []
 
     doc_blocks = []
     for i, b_text in enumerate(raw_blocks):
@@ -97,16 +110,37 @@ def analyze_requirements(requirement_text: str) -> Dict[str, Any]:
     try:
         extractor = GenericRequirementExtractor(doc_ir)
         req_ir = extractor.extract_requirement_ir()
-        compiler = RequirementToEFSCompiler(req_ir)
-        efs_ir = compiler.compile()
-        full_result = req_ir.to_full_combined_dict() if hasattr(req_ir, "to_full_combined_dict") else efs_ir.to_dict()
-        if full_result and (full_result.get("interfaces") or full_result.get("requirements")):
+        full_result = req_ir.to_full_combined_dict()
+        has_extracted_data = bool(
+            full_result.get("signals")
+            or full_result.get("interfaces")
+            or full_result.get("requirements")
+            or full_result.get("registers")
+            or full_result.get("modules")
+            or full_result.get("components")
+            or full_result.get("entities")
+        )
+        if full_result and has_extracted_data:
+            approved_art = req_ir.to_approved_extraction()
+            full_result["_raw_req_ir"] = req_ir.to_dict()
+            full_result["_approved_extraction"] = approved_art.to_dict()
             return full_result
     except Exception as e:
         logger.warning(f"Generic extraction failed for requirement text: {e}")
 
     # Rule-based fallback
-    return get_heuristic_fallback(requirement_text)
+    fallback_result = get_heuristic_fallback(requirement_text)
+    from core.requirement_ir.models import ApprovedExtractionArtifact
+    fallback_art = ApprovedExtractionArtifact.from_dict({
+        "signals": fallback_result.get("interfaces", []),
+        "modules": fallback_result.get("submodules", []),
+        "components": fallback_result.get("submodules", []),
+        "registers": fallback_result.get("registers", []),
+        "timing_rules": [{"statement": t} for t in fallback_result.get("timing_constraints", [])],
+        "functional_behavior": [{"statement": f} for f in fallback_result.get("functional_requirements", [])]
+    })
+    fallback_result["_approved_extraction"] = fallback_art.to_dict()
+    return fallback_result
 
 
 # Alias for backward compatibility

@@ -117,47 +117,59 @@ def _heuristic_extract(chunk: Chunk, entities: List[Entity]) -> List[Relationshi
 
 
 def extract_relationships(chunk: Chunk, entities: List[Entity]) -> List[Relationship]:
-    """Extract relationships among the given entities, constrained to this chunk's text."""
+    """Extract relationships among the given entities, using decision engine for token optimization."""
     if len(entities) < 2:
         return []
 
+    from core.extraction.pre_classifier import classify_chunk
+    from core.extraction.decision_engine import needs_llm
+    from core.extraction.heuristic_extractor import extract_heuristically
+
+    class_res = classify_chunk(chunk.text, heading=chunk.heading or "")
+    h_res = extract_heuristically(chunk.text, chunk_id=chunk.chunk_id, doc_id=chunk.doc_id)
+
+    if not needs_llm(chunk.text, class_res, h_res):
+        return _heuristic_extract(chunk, entities)
+
     llm = get_llm_client()
     if llm.available:
-        entity_names = sorted({e.name for e in entities})
-        user_prompt = (
-            f"Entities: {entity_names}\n\nText:\n{chunk.text}"
-        )
-        result = llm.complete_json(_SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
-        if result and isinstance(result.get("relationships"), list):
-            valid_names = set(entity_names)
-            rels = []
-            for item in result["relationships"]:
-                if not isinstance(item, dict):
-                    continue
-                rel_type = (item.get("relation") or "").strip()
-                source = (item.get("source") or "").strip()
-                target = (item.get("target") or "").strip()
-                if rel_type not in RELATIONSHIP_TYPES:
-                    continue
-                if source not in valid_names or target not in valid_names or source == target:
-                    continue
-                evidence = item.get("evidence", "")
-                if not isinstance(evidence, str):
-                    evidence = ""
-                rels.append(
-                    Relationship(
-                        rel_id=new_id("rel"),
-                        source=source,
-                        relation=rel_type,
-                        target=target,
-                        chunk_id=chunk.chunk_id,
-                        doc_id=chunk.doc_id,
-                        evidence=evidence,
+        try:
+            entity_names = sorted({e.name for e in entities})
+            user_prompt = (
+                f"Entities: {entity_names}\n\nText:\n{chunk.text}"
+            )
+            result = llm.complete_json(_SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
+            if result and isinstance(result.get("relationships"), list):
+                valid_names = set(entity_names)
+                rels = []
+                for item in result["relationships"]:
+                    if not isinstance(item, dict):
+                        continue
+                    rel_type = (item.get("relation") or "").strip()
+                    source = (item.get("source") or "").strip()
+                    target = (item.get("target") or "").strip()
+                    if rel_type not in RELATIONSHIP_TYPES:
+                        continue
+                    if source not in valid_names or target not in valid_names or source == target:
+                        continue
+                    evidence = item.get("evidence", "")
+                    if not isinstance(evidence, str):
+                        evidence = ""
+                    rels.append(
+                        Relationship(
+                            rel_id=new_id("rel"),
+                            source=source,
+                            relation=rel_type,
+                            target=target,
+                            chunk_id=chunk.chunk_id,
+                            doc_id=chunk.doc_id,
+                            evidence=evidence,
+                        )
                     )
-                )
-            if rels:
-                return rels
-        logger.debug(f"LLM produced no usable relationships for chunk {chunk.chunk_id}; falling back to heuristics.")
+                if rels:
+                    return rels
+        except Exception as ex:
+            logger.warning(f"LLM relationship extraction failed for chunk {chunk.chunk_id}: {ex}. Falling back to heuristics.")
 
     return _heuristic_extract(chunk, entities)
 

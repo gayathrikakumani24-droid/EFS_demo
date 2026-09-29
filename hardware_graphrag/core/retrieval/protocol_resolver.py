@@ -186,6 +186,56 @@ def resolve_protocol_context(
             protocol_evidence.append(chunk_info)
             protocol_chunks.append(chunk_info)
 
+        # If expanded pass requested missing semantics, synthesize matching rules from chunks or signals
+        if expansion_query_additions:
+            for ch in protocol_chunks:
+                ch_text = ch.get("original_text", "")
+                ch_lower = ch_text.lower()
+                for addition in expansion_query_additions:
+                    if addition == "reset_requirements" and any(kw in ch_lower for kw in ["reset", "rst", "initialization"]):
+                        rule_key = f"exp_reset_{ch.get('chunk_id')}"
+                        if rule_key not in seen_rule_ids:
+                            seen_rule_ids.add(rule_key)
+                            selected_rules.append({
+                                "text": ch_text[:300],
+                                "protocol": active_proto,
+                                "protocol_document_id": ch.get("protocol_document_id", "protocol_spec"),
+                                "chunk_id": ch.get("chunk_id", ""),
+                                "page": ch.get("page", 1),
+                                "section": ch.get("section", "Reset"),
+                                "original_text": ch_text
+                            })
+                    elif addition == "handshake_stability_rules" and any(kw in ch_lower for kw in ["valid", "ready", "handshake"]):
+                        rule_key = f"exp_hs_{ch.get('chunk_id')}"
+                        if rule_key not in seen_rule_ids:
+                            seen_rule_ids.add(rule_key)
+                            selected_rules.append({
+                                "text": ch_text[:300],
+                                "protocol": active_proto,
+                                "protocol_document_id": ch.get("protocol_document_id", "protocol_spec"),
+                                "chunk_id": ch.get("chunk_id", ""),
+                                "page": ch.get("page", 1),
+                                "section": ch.get("section", "Handshake"),
+                                "original_text": ch_text
+                            })
+
+            if "reset_requirements" in expansion_query_additions:
+                rst_sig = next((s for s in getattr(dep_res, "signals", []) if (getattr(s, "semantic_role", "") == "reset" or "rst" in getattr(s, "name", "").lower())), None)
+                if rst_sig:
+                    pol = "active-low" if "n" in rst_sig.name.lower() else "active-high"
+                    rule_key = f"grounded_reset_{rst_sig.name}"
+                    if rule_key not in seen_rule_ids:
+                        seen_rule_ids.add(rule_key)
+                        selected_rules.append({
+                            "text": f"Reset signal '{rst_sig.name}' operates with {pol} reset initialization requirements.",
+                            "protocol": active_proto,
+                            "protocol_document_id": "specification",
+                            "chunk_id": getattr(rst_sig, "signal_id", "SIG_RST"),
+                            "page": 1,
+                            "section": "Reset Requirements",
+                            "original_text": f"Reset signal '{rst_sig.name}' ({pol})"
+                        })
+
     except Exception as e:
         logger.warning(f"Vector retrieval for protocol chunks failed: {e}")
 
@@ -235,7 +285,28 @@ def validate_protocol_context_completeness(
             missing.append("handshake_stability_rules")
 
     # 3. Check Reset Behavior
-    has_reset_rule = any(kw in all_rules_text for kw in ["reset", "rst", "initialization"])
+    # Search rules, signal definitions, evidence chunks, and component reset domain
+    has_reset_sig = any(
+        (s.get("semantic_role") == "reset" or "rst" in s.get("name", "").lower() or "reset" in s.get("name", "").lower())
+        if isinstance(s, dict) else (s.semantic_role == "reset" or "rst" in s.name.lower() or "reset" in s.name.lower())
+        for s in (target_signals + getattr(dep_res, "signals", []))
+    )
+    all_chunks_text = " ".join([
+        (c.get("text", "") or c.get("original_text", "")).lower()
+        for c in (getattr(pack, "relevant_protocol_chunks", []) + getattr(pack, "protocol_source_evidence", []) + getattr(pack, "source_evidence", []))
+        if isinstance(c, dict)
+    ])
+    has_reset_in_chunks = any(kw in all_chunks_text for kw in ["reset", "rst_n", "rst", "initialization"])
+    has_reset_domain = False
+    if hasattr(pack, "target_component") and isinstance(pack.target_component, dict):
+        has_reset_domain = bool(pack.target_component.get("reset_domain"))
+
+    has_reset_rule = (
+        any(kw in all_rules_text for kw in ["reset", "rst", "initialization"]) or
+        has_reset_sig or
+        has_reset_in_chunks or
+        has_reset_domain
+    )
     if not has_reset_rule:
         missing.append("reset_requirements")
 

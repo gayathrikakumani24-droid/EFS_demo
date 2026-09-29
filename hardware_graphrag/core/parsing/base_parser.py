@@ -24,9 +24,14 @@ from utils.logger import get_logger
 
 logger = get_logger("parsing.base")
 
+_STANDALONE_SECTION_RE = re.compile(
+    r"^\s*(Chapter|Section|Appendix)\s*((?:0|[1-9]\d*)(?:\.\d+){0,4}|[A-Z](?:\.\d+){0,4})\s*[:.\-]?\s*$",
+    re.IGNORECASE,
+)
+
 # Matches "3", "3.2", "3.2.1", "Chapter 3", "Section 3.2", "Appendix A.1" etc.
 _NUMBERED_HEADING_RE = re.compile(
-    r"^\s*(Chapter|Section|Appendix)?\s*(\d+(?:\.\d+){0,4}|[A-Z](?:\.\d+){0,4})\s*[:.\-]?\s+(.{2,120})$",
+    r"^\s*(Chapter|Section|Appendix)?\s*((?:0|[1-9]\d*)(?:\.\d+){0,4}|[A-Z](?:\.\d+){0,4})\s*[:.\-]?\s+(.{2,120})$",
     re.IGNORECASE,
 )
 
@@ -56,11 +61,34 @@ class HeadingClassifier:
         line = line.strip()
         if not line or len(line) > 160:
             return None
+
+        # Check standalone section heading first (e.g. "Section 14", "Chapter 3")
+        sm = _STANDALONE_SECTION_RE.match(line)
+        if sm:
+            prefix = sm.group(1)
+            number = sm.group(2)
+            depth = number.count(".")
+            return number, depth, f"{prefix} {number}"
+
         m = _NUMBERED_HEADING_RE.match(line)
         if not m:
             return None
+
+        prefix = m.group(1)
         number = m.group(2)
         title = m.group(3).strip().rstrip(".")
+
+        # If no formal prefix (Chapter/Section/Appendix) and no dotted sub-level (e.g. just "64"):
+        # Do not treat as heading if title contains a colon (key: value pair like "Matrix ALU : Performs...")
+        # or if number > 25 without dot (hardware specs rarely have chapter 64 without prefix)
+        if not prefix and "." not in number:
+            if " : " in title or (number.isdigit() and int(number) > 25):
+                return None
+
+        # If title ends with description in parens or contains key-value colon, avoid false heading
+        if " : " in title and not prefix:
+            return None
+
         depth = number.count(".")
         return number, depth, title
 

@@ -103,42 +103,59 @@ def _heuristic_extract(chunk: Chunk) -> List[Entity]:
 # ------------------------------------------------------------------
 
 def extract_entities(chunk: Chunk) -> List[Entity]:
-    """Extract entities from a single chunk, preferring the LLM path."""
+    """Extract entities from a single chunk, using pre-classifier & decision engine for token optimization."""
+    from core.extraction.pre_classifier import classify_chunk
+    from core.extraction.decision_engine import needs_llm
+    from core.extraction.heuristic_extractor import extract_heuristically
+
+    # 1. Pre-classify
+    class_res = classify_chunk(chunk.text, heading=chunk.heading or "")
+    if not class_res.relevant:
+        return []
+
+    # 2. Check heuristics & decision engine
+    h_res = extract_heuristically(chunk.text, chunk_id=chunk.chunk_id, doc_id=chunk.doc_id)
+    if not needs_llm(chunk.text, class_res, h_res):
+        return _heuristic_extract(chunk)
+
+    # 3. LLM path with rate-limit safe fallback
     llm = get_llm_client()
     if llm.available:
-        user_prompt = (
-            f"Chapter: {chunk.chapter}\nSection: {chunk.section}\nHeading: {chunk.heading}\n\n"
-            f"Text:\n{chunk.text}"
-        )
-        result = llm.complete_json(_SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
-        if result and isinstance(result.get("entities"), list):
-            entities = []
-            for item in result["entities"]:
-                if not isinstance(item, dict):
-                    continue
-                etype = (item.get("type") or "").strip()
-                if etype not in ENTITY_TYPES:
-                    continue
-                name = (item.get("name") or "").strip()
-                if not name:
-                    continue
-                entities.append(
-                    Entity(
-                        entity_id=new_id("ent"),
-                        name=name,
-                        raw_name=name,
-                        entity_type=etype,
-                        chunk_id=chunk.chunk_id,
-                        doc_id=chunk.doc_id,
-                        page=chunk.page,
-                        chapter=chunk.chapter,
-                        section=chunk.section,
-                        original_text=item.get("text_span", chunk.text[:300]) if isinstance(item.get("text_span"), str) else chunk.text[:300],
+        try:
+            user_prompt = (
+                f"Chapter: {chunk.chapter}\nSection: {chunk.section}\nHeading: {chunk.heading}\n\n"
+                f"Text:\n{chunk.text}"
+            )
+            result = llm.complete_json(_SYSTEM_PROMPT, user_prompt, model=CONFIG.llm.extraction_model)
+            if result and isinstance(result.get("entities"), list):
+                entities = []
+                for item in result["entities"]:
+                    if not isinstance(item, dict):
+                        continue
+                    etype = (item.get("type") or "").strip()
+                    if etype not in ENTITY_TYPES:
+                        continue
+                    name = (item.get("name") or "").strip()
+                    if not name:
+                        continue
+                    entities.append(
+                        Entity(
+                            entity_id=new_id("ent"),
+                            name=name,
+                            raw_name=name,
+                            entity_type=etype,
+                            chunk_id=chunk.chunk_id,
+                            doc_id=chunk.doc_id,
+                            page=chunk.page,
+                            chapter=chunk.chapter,
+                            section=chunk.section,
+                            original_text=item.get("text_span", chunk.text[:300]) if isinstance(item.get("text_span"), str) else chunk.text[:300],
+                        )
                     )
-                )
-            if entities:
-                return entities
-        logger.debug(f"LLM produced no usable entities for chunk {chunk.chunk_id}; falling back to heuristics.")
+                if entities:
+                    return entities
+        except Exception as ex:
+            logger.warning(f"LLM entity extraction failed for chunk {chunk.chunk_id}: {ex}. Falling back to heuristics.")
 
     return _heuristic_extract(chunk)
 

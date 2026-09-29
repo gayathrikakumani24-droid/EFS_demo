@@ -280,6 +280,140 @@ class RequirementIR:
             "ingestion_timestamp": self.ingestion_timestamp,
         }
 
+    def to_full_combined_dict(self) -> Dict[str, Any]:
+        """Produce full complete combined dictionary across all extracted entities and requirements."""
+        from core.compiler.efs_compiler import RequirementToEFSCompiler
+        try:
+            compiler = RequirementToEFSCompiler(self)
+            efs_ir = compiler.compile()
+            efs_dict = efs_ir.to_dict()
+        except Exception:
+            efs_dict = {}
+
+        # Synthesize modules / components
+        modules = [e.to_dict() for e in self.entities if e.type.lower() in ("module", "component", "subsystem", "block", "unit", "controller")]
+        if not modules and efs_dict.get("components"):
+            modules = efs_dict["components"]
+
+        # Synthesize signals / ports
+        signals = [e.to_dict() for e in self.entities if e.type.lower() in ("signal", "port", "clock", "reset")]
+        if not signals and efs_dict.get("signals"):
+            signals = efs_dict["signals"]
+
+        # Synthesize registers
+        registers = [e.to_dict() for e in self.entities if e.type.lower() in ("register", "reg")]
+        if not registers and efs_dict.get("registers"):
+            registers = efs_dict["registers"]
+
+        # Synthesize instructions & opcodes
+        instructions = [e.to_dict() for e in self.entities if e.type.lower() in ("instruction", "inst", "mnemonic")]
+        if not instructions and efs_dict.get("instructions"):
+            instructions = efs_dict["instructions"]
+
+        opcodes = [e.to_dict() for e in self.entities if e.type.lower() in ("opcode", "encoding")]
+        if not opcodes and efs_dict.get("opcodes"):
+            opcodes = efs_dict["opcodes"]
+
+        # Synthesize functional behavior & transactions
+        behaviors = [r.to_dict() for r in self.requirements if r.type.upper() in ("BEHAVIOR", "FUNCTIONAL_BEHAVIOR", "SEQUENCE", "FLOW", "ALGORITHM")]
+        if not behaviors and efs_dict.get("functional_behavior"):
+            behaviors = efs_dict["functional_behavior"]
+
+        transactions = [r.to_dict() for r in self.requirements if r.type.upper() in ("TRANSACTION", "PROTOCOL_TRANSACTION")]
+        if not transactions and efs_dict.get("transactions"):
+            transactions = efs_dict["transactions"]
+
+        # Synthesize FSM states & transitions
+        states = []
+        transitions = []
+        for r in self.requirements:
+            if r.state:
+                states.append({"name": r.state})
+            if r.next_state:
+                states.append({"name": r.next_state})
+            if r.state and r.next_state:
+                transitions.append({
+                    "from": r.state,
+                    "to": r.next_state,
+                    "condition": r.condition or r.statement,
+                    "action": r.action or ""
+                })
+        if not states and efs_dict.get("fsms"):
+            for f in efs_dict["fsms"]:
+                states.extend(f.get("states", []))
+                transitions.extend(f.get("transitions", []))
+
+        # Synthesize conditions & constraints
+        conditions = [r.to_dict() for r in self.requirements if r.condition or r.type.upper() in ("CONSTRAINT", "HOLD", "GUARD")]
+        if not conditions and efs_dict.get("constraints"):
+            conditions = efs_dict["constraints"]
+
+        # Synthesize timing
+        timing_rules = [r.to_dict() for r in self.requirements if r.timing or r.type.upper() in ("TIMING", "TIMEOUT")]
+        if not timing_rules and efs_dict.get("timing_rules"):
+            timing_rules = efs_dict["timing_rules"]
+
+        # Synthesize parameters
+        parameters = [e.to_dict() for e in self.entities if e.type.lower() in ("parameter", "param", "generic")]
+        if not parameters and efs_dict.get("parameters"):
+            parameters = efs_dict["parameters"]
+
+        # Resolve design name from doc_ir, sections, filename, or entities
+        design_name = ""
+        if self.doc_ir and self.doc_ir.sections:
+            first_sec = self.doc_ir.sections[0]
+            sec_title = first_sec.get("title") if isinstance(first_sec, dict) else getattr(first_sec, "title", "")
+            if sec_title and sec_title.strip() and sec_title.strip().lower() not in ("table of contents", "overview", "introduction"):
+                design_name = sec_title.strip()
+        if not design_name and self.doc_ir and self.doc_ir.metadata.get("filename"):
+            fn = self.doc_ir.metadata["filename"]
+            base = fn.rsplit(".", 1)[0].replace("_", " ").title().strip()
+            if base and base.lower() not in ("specification", "spec"):
+                design_name = base
+        if not design_name and modules:
+            m0 = modules[0]
+            m0_name = m0.get("name") if isinstance(m0, dict) else getattr(m0, "name", "")
+            if m0_name:
+                design_name = m0_name
+        if not design_name:
+            design_name = efs_dict.get("metadata", {}).get("display_name") or efs_dict.get("metadata", {}).get("design_name") or ""
+
+        return {
+            "document_id": self.document_id or self.doc_ir.document_id,
+            "document_hash": self.document_hash or self.doc_ir.document_hash,
+            "ingestion_id": self.ingestion_id or self.doc_ir.ingestion_id,
+            "design_name": design_name,
+            "title": design_name,
+            "entities": [e.to_dict() for e in self.entities],
+            "requirements": [r.to_dict() for r in self.requirements],
+            "modules": modules,
+            "components": modules,
+            "signals": signals,
+            "interfaces": efs_dict.get("interfaces", []),
+            "registers": registers,
+            "instructions": instructions,
+            "opcodes": opcodes,
+            "memory_regions": efs_dict.get("memory_regions", []),
+            "data_structures": efs_dict.get("data_structures", []),
+            "transactions": transactions,
+            "functional_behavior": behaviors,
+            "states": states,
+            "transitions": transitions,
+            "fsms": efs_dict.get("fsms", []),
+            "conditions": conditions,
+            "constraints": conditions,
+            "timing_rules": timing_rules,
+            "parameters": parameters,
+            "relationships": [ed.to_dict() for ed in self.edges],
+            "conflicts": [cf.to_dict() for cf in self.conflicts],
+            "validation_status": self.validation_status,
+        }
+
+    def to_approved_extraction(self) -> ApprovedExtractionArtifact:
+        """Construct an ApprovedExtractionArtifact from this RequirementIR."""
+        full_data = self.to_full_combined_dict()
+        return ApprovedExtractionArtifact.from_dict(full_data)
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> RequirementIR:
         doc_ir = DocumentIR.from_dict(data.get("doc_ir", {}))
@@ -298,3 +432,200 @@ class RequirementIR:
             source_validation=data.get("source_validation", {}),
             ingestion_timestamp=data.get("ingestion_timestamp", datetime.now().isoformat()),
         )
+
+
+# --------------------------------------------------------------------------
+# Committed / Approved Extraction Artifact (Phase 3)
+# --------------------------------------------------------------------------
+
+@dataclass
+class ApprovedExtractionArtifact:
+    """
+    Authoritative committed artifact storing the approved extracted knowledge
+    from hardware specifications across approval lifecycles.
+    """
+    artifact_id: str = field(default_factory=lambda: new_req_id("appr"))
+    document_id: str = ""
+    design_name: str = "Target_Module"
+    approval_state: Dict[str, str] = field(default_factory=lambda: {
+        "ai_approval": "PENDING",
+        "custom_approval": "PENDING",
+        "status": "PENDING"
+    })
+    entities: List[Dict[str, Any]] = field(default_factory=list)
+    modules: List[Dict[str, Any]] = field(default_factory=list)
+    components: List[Dict[str, Any]] = field(default_factory=list)
+    signals: List[Dict[str, Any]] = field(default_factory=list)
+    interfaces: List[Dict[str, Any]] = field(default_factory=list)
+    registers: List[Dict[str, Any]] = field(default_factory=list)
+    instructions: List[Dict[str, Any]] = field(default_factory=list)
+    opcodes: List[Dict[str, Any]] = field(default_factory=list)
+    memory_regions: List[Dict[str, Any]] = field(default_factory=list)
+    data_structures: List[Dict[str, Any]] = field(default_factory=list)
+    transactions: List[Dict[str, Any]] = field(default_factory=list)
+    functional_behavior: List[Dict[str, Any]] = field(default_factory=list)
+    states: List[Dict[str, Any]] = field(default_factory=list)
+    transitions: List[Dict[str, Any]] = field(default_factory=list)
+    fsms: List[Dict[str, Any]] = field(default_factory=list)
+    conditions: List[Dict[str, Any]] = field(default_factory=list)
+    constraints: List[Dict[str, Any]] = field(default_factory=list)
+    events: List[Dict[str, Any]] = field(default_factory=list)
+    timing_rules: List[Dict[str, Any]] = field(default_factory=list)
+    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    relationships: List[Dict[str, Any]] = field(default_factory=list)
+    conflicts: List[Dict[str, Any]] = field(default_factory=list)
+    resolutions: List[Dict[str, Any]] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def has_functional_data(self) -> bool:
+        """Check if artifact contains substantive extracted functional information."""
+        return bool(
+            self.signals
+            or self.registers
+            or self.components
+            or self.modules
+            or self.instructions
+            or self.opcodes
+            or self.fsms
+            or self.states
+            or self.transitions
+            or self.transactions
+            or self.functional_behavior
+        )
+
+    def apply_resolution(self, res: Any, is_ai: bool = False, approved_by: str = "") -> None:
+        """
+        Apply an approved resolution proposal or custom decision to the functional artifact,
+        updating the affected entity/property directly and logging provenance.
+        """
+        conf_id = getattr(res, "conflict_id", "") or (res.get("conflict_id") if isinstance(res, dict) else "")
+        proposed_change = getattr(res, "proposed_change", "") or (res.get("proposed_change") if isinstance(res, dict) else "")
+        proposed_val = getattr(res, "proposed_value", None)
+        if proposed_val is None and isinstance(res, dict):
+            proposed_val = res.get("proposed_value")
+        target_ent = getattr(res, "target_entity", None) or (res.get("target_entity") if isinstance(res, dict) else None)
+        affected_reqs = getattr(res, "affected_requirements", []) or (res.get("affected_requirements") if isinstance(res, dict) else [])
+        prop = getattr(res, "property", "") or (res.get("property") if isinstance(res, dict) else "")
+
+        # Extract target property and value from proposed_change if formatted e.g. "DST_ADDR.offset = 0x14"
+        if proposed_change and "=" in proposed_change:
+            lhs, rhs = proposed_change.split("=", 1)
+            rhs_clean = rhs.strip()
+            if proposed_val is None or proposed_val == "":
+                proposed_val = rhs_clean
+            lhs_clean = lhs.strip()
+            if "." in lhs_clean:
+                target_ent = target_ent or lhs_clean.split(".")[0].strip()
+                prop = prop or lhs_clean.split(".")[-1].strip()
+            else:
+                prop = prop or lhs_clean
+
+        val_str = str(proposed_val).strip() if proposed_val is not None else ""
+        target_names = set()
+        if target_ent:
+            target_names.add(target_ent.lower())
+        for req in affected_reqs:
+            target_names.add(str(req).lower())
+
+        # 1. Apply to Registers
+        for reg in self.registers:
+            r_name = str(reg.get("name", "")).lower()
+            if not target_names or r_name in target_names or any(t in r_name for t in target_names):
+                if "offset" in prop.lower() or "address" in prop.lower() or val_str.startswith("0x"):
+                    reg["offset"] = val_str
+                    reg["address"] = val_str
+                elif "width" in prop.lower() and val_str.isdigit():
+                    reg["width"] = int(val_str)
+                elif "access" in prop.lower():
+                    reg["access"] = val_str
+                    reg["access_type"] = val_str
+
+        # 2. Apply to Signals
+        for sig in self.signals:
+            s_name = str(sig.get("name", "")).lower()
+            if not target_names or s_name in target_names or any(t in s_name for t in target_names):
+                if "direction" in prop.lower() or val_str.lower() in ("input", "output", "inout"):
+                    sig["direction"] = val_str.lower()
+                elif "width" in prop.lower() or val_str.isdigit() or ":" in val_str:
+                    sig["width"] = val_str
+
+        # 3. Apply to Opcodes / Instructions
+        for opc in self.opcodes:
+            o_name = str(opc.get("mnemonic", "")).lower()
+            if not target_names or o_name in target_names or any(t in o_name for t in target_names):
+                if "encoding" in prop.lower() or "opcode" in prop.lower() or val_str:
+                    opc["binary_encoding"] = val_str
+
+        for inst in self.instructions:
+            i_name = str(inst.get("mnemonic", inst.get("name", ""))).lower()
+            if not target_names or i_name in target_names or any(t in i_name for t in target_names):
+                if "encoding" in prop.lower() or "opcode" in prop.lower() or val_str:
+                    inst["opcode"] = val_str
+
+        # 4. Mark conflict as resolved in self.conflicts
+        for conf in self.conflicts:
+            c_id = conf.get("conflict_id") if isinstance(conf, dict) else getattr(conf, "conflict_id", "")
+            if c_id == conf_id or (target_names and any(str(e).lower() in target_names for e in (conf.get("entities", []) if isinstance(conf, dict) else getattr(conf, "entities", [])))):
+                if isinstance(conf, dict):
+                    conf["status"] = "APPROVED"
+                    conf["resolution_status"] = "RESOLVED"
+                    conf["blocking"] = False
+                    conf["requires_human_decision"] = False
+                else:
+                    conf.status = "APPROVED"
+                    conf.resolution_status = "RESOLVED"
+                    conf.blocking = False
+                    conf.requires_human_decision = False
+
+        # 5. Record resolution in self.resolutions
+        res_entry = {
+            "conflict_id": conf_id,
+            "target_entity": target_ent or (affected_reqs[0] if affected_reqs else ""),
+            "property": prop,
+            "proposed_value": val_str,
+            "proposed_change": proposed_change or f"{prop} = {val_str}",
+            "approval_status": "APPROVED",
+            "approved_by": approved_by or ("ai_recommendation" if is_ai else "human_designer"),
+            "resolution_type": "AI_PROPOSAL" if is_ai else "CUSTOM_REQUIREMENT",
+        }
+        self.resolutions.append(res_entry)
+
+        # 6. Update approval states
+        if is_ai:
+            self.approval_state["ai_approval"] = "COMPLETED"
+        else:
+            self.approval_state["custom_approval"] = "COMPLETED"
+
+        unresolved = [
+            c for c in self.conflicts
+            if (c.get("blocking", True) if isinstance(c, dict) else getattr(c, "blocking", True))
+            and (c.get("resolution_status", "UNRESOLVED") if isinstance(c, dict) else getattr(c, "resolution_status", "UNRESOLVED")) == "UNRESOLVED"
+        ]
+        if not unresolved:
+            self.approval_state["status"] = "APPROVED"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> ApprovedExtractionArtifact:
+        if not data:
+            return cls()
+        fields = cls.__dataclass_fields__
+        kwargs = {}
+        for k, v in data.items():
+            if k in fields:
+                kwargs[k] = v
+        # Ensure design_name is not left as Target_Module if title or display_name exists
+        if not kwargs.get("design_name") or kwargs.get("design_name") in ("Target_Module", "target_module", "unnamed_design"):
+            cand = data.get("title") or data.get("design_spec_title") or data.get("display_name") or data.get("name")
+            if cand and str(cand).strip() not in ("Target_Module", "target_module", "unnamed_design"):
+                kwargs["design_name"] = str(cand).strip()
+
+        # Ensure modules & components are synced
+        if not kwargs.get("modules") and kwargs.get("components"):
+            kwargs["modules"] = kwargs["components"]
+        if not kwargs.get("components") and kwargs.get("modules"):
+            kwargs["components"] = kwargs["modules"]
+        return cls(**kwargs)
+

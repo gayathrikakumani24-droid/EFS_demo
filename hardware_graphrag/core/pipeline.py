@@ -110,16 +110,20 @@ class PipelineResult:
             "requirements": [r.to_dict() for r in req_ir.requirements],
             "relationships": [ed.to_dict() for ed in req_ir.edges],
             "behaviors": [r.to_dict() for r in req_ir.requirements if r.type in ("BEHAVIOR", "SEQUENCE", "FLOW")],
+            "functional_behavior": [fb.to_dict() for fb in efs_ir.functional_behavior],
             "transactions": [t.to_dict() for t in efs_ir.transactions],
             "states": [s.to_dict() for f in efs_ir.fsms for s in f.states],
-            "transitions": [t.to_dict() for t in efs_ir.fsms for t in f.transitions],
+            "transitions": [t.to_dict() for f in efs_ir.fsms for t in f.transitions],
             "conditions": [c.to_dict() for c in efs_ir.constraints if c.condition],
             "events": [r.to_dict() for r in req_ir.requirements if r.event],
             "timing": [t.to_dict() for t in efs_ir.timing_rules],
             "interfaces": [i.to_dict() for i in efs_ir.interfaces],
             "registers": [r.to_dict() for r in efs_ir.registers],
+            "parameters": [p.to_dict() for p in efs_ir.parameters],
             "operations": op_list,
             "instructions": inst_list,
+            "instruction_formats": [fmt.to_dict() for fmt in efs_ir.instruction_formats],
+            "opcodes": [op.to_dict() for op in efs_ir.opcodes],
             "memory": mem_list,
             "data_structures": ds_list,
             "errors": err_list,
@@ -134,7 +138,8 @@ class PipelineResult:
             "extraction_coverage": coverage,
             "missing_information_report": missing_report,
             "pipeline_validation_report": val_report,
-            "semantic_inventory": inventory
+            "semantic_inventory": inventory,
+            "extraction_stats": getattr(req_ir, "stats", {})
         }
 
 

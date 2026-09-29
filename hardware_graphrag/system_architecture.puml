@@ -1,0 +1,187 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundCorner 8
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam componentStyle uml2
+
+skinparam package {
+  BackgroundColor #F8F9FA
+  BorderColor #6C757D
+  FontColor #212529
+  FontStyle bold
+}
+
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #0D6EFD
+  FontColor #212529
+}
+
+skinparam database {
+  BackgroundColor #E8F4FD
+  BorderColor #0D6EFD
+  FontColor #0D6EFD
+}
+
+skinparam interface {
+  BackgroundColor #FFF3CD
+  BorderColor #FFC107
+}
+
+skinparam note {
+  BackgroundColor #FFF3CD
+  BorderColor #FFEEBA
+  FontColor #856404
+}
+
+title Hardware GraphRAG: Complete End-to-End System Architecture & Workflow
+
+' ==============================================================================
+' LAYER 1 & 2: INGESTION & EXTRACTION PIPELINE
+' ==============================================================================
+package "1. Document Ingestion Layer" as L1 {
+  [Input Specs\n(PDF / DOCX / MD)] as InDoc #E9ECEF
+  [Hierarchical Parsers\n(pdfplumber / docx / md)] as Parser
+  [HeadingClassifier\n(Hierarchy Tree)] as HeadClass
+  [ParsedDocument\n(DocSection Nodes)] as ParsedDoc
+  
+  InDoc --> Parser
+  Parser --> HeadClass
+  HeadClass --> ParsedDoc
+}
+
+package "2. Adaptive Semantic Extraction Layer" as L2 {
+  [DocumentIR Blocks] as DocIR
+  [Deterministic Pre-Classifier\n(15 Regex Categories)] as PreClass
+  [Heuristic Extractor\n(6 Hardware Pattern Families)] as Heuristic
+  [Decision Engine\n(Confidence & Complexity Gate)] as DecisionEng
+  [Batched LLM Client\n(OpenRouter/Groq/OpenAI)] as LLMExtract
+  [Extraction Cache\n(SHA-256 Hash)] as ExtCache
+  
+  ParsedDoc --> DocIR
+  DocIR --> PreClass
+  PreClass --> Heuristic : Relevant Chunks
+  Heuristic --> DecisionEng : Confidence Score
+  DecisionEng --> LLMExtract : Low Conf / Ambiguous (<0.90)
+  LLMExtract <--> ExtCache
+}
+
+package "3. Requirement IR & Validation Layer" as L3 {
+  [RequirementIR\n(Atomic Requirements & Entities)] as ReqIR
+  [Cross-Reference Resolver] as RefResolver
+  [Dependency Graph Builder] as DepGraph
+  [Requirement Validator\n(5 Consistency Checks)] as ReqVal
+  
+  Heuristic --> ReqIR : High Conf (>=0.90)
+  LLMExtract --> ReqIR
+  ReqIR --> RefResolver
+  RefResolver --> DepGraph
+  DepGraph --> ReqVal
+}
+
+package "4. Canonical EFS IR Compilation Layer" as L4 {
+  [EFS IR Compiler\n(30+ Entity Classes)] as EFSCompiler
+  [Canonical EFS IR Data Model\n(Components, Interfaces, Signals,\nRegisters, FSMs, Transactions)] as EFSIR
+  [EFS Structural Validator\n(Offset/Width Normalization)] as EFSVal
+  
+  ReqVal --> EFSCompiler
+  EFSCompiler --> EFSIR
+  EFSIR --> EFSVal
+}
+
+' ==============================================================================
+' LAYER 5: DUAL-MODE KNOWLEDGE STORAGE
+' ==============================================================================
+package "5. Knowledge Storage & Protocol Library Layer" as L5 {
+  [Protocol Manager\n(library.json & Workspace Isolation)] as ProtoMgr
+  
+  database "Knowledge Graph\n(Neo4j MERGE Upserts /\nInMemoryGraphStore Fallback)" as KG {
+    [10 Hardware Node Types:\nDesign, Component, Interface, Signal,\nRegister, Field, Transaction, FSM, State] as KGNodes
+    [16 Relational Edges:\nCONTAINS, HAS_INTERFACE, DRIVES,\nFEEDS, CLOCKS, RESETS, HAS_REGISTER,\nINITIATES, IMPLEMENTS_FSM, etc.] as KGEdges
+  }
+  
+  database "FAISS Vector Database\n(all-MiniLM-L6-v2 384-dim /\nHashingEmbedder Fallback)" as VDB {
+    [Flat L2 / IndexFlatIP] as FAISSIdx
+    [Enriched Metadata Store:\nchunk_id, doc_id, efs_ir_id,\nsignal_ids, component_ids] as VDBMeta
+    [Disk Embedding Cache\n(SHA-256 .npy)] as VecCache
+  }
+  
+  database "Pipeline Registry\n(Pickle Persistence)" as RegStore
+  
+  EFSVal --> ProtoMgr
+  ProtoMgr --> KG : Isolate per protocol
+  ProtoMgr --> VDB : Isolate per protocol
+  ProtoMgr --> RegStore
+  EFSIR --> KGNodes
+  DocIR --> FAISSIdx
+}
+
+' ==============================================================================
+' LAYER 6: MULTI-AGENT SYNTHESIS & VERIFICATION PIPELINE
+' ==============================================================================
+package "6. Multi-Agent Synthesis & Verification Layer" as L6 {
+  [Multi-Agent Orchestrator\n(10-Stage Pipeline Coordinator)] as Orch
+  
+  package "Agent Collective" as Agents {
+    [Requirement Agent] as AgReq
+    [Planning Agent] as AgPlan
+    [Protocol Resolver Agent\n(10-Step Resolution)] as AgRet
+    [Design Spec Agent] as AgSpec
+    [PlantUML Diagram Agent] as AgPUML
+    [RTL Synthesis Agent\n(13 Grounding Rules)] as AgRTL
+    [Two-Level Verifier\n(Static AST + Semantic EFS)] as AgVer
+    [Automated Repair Agent] as AgRep
+  }
+  
+  package "Governance & Safety Engines" as Engines {
+    [Conflict Resolution Engine\n(Opcode/Width/Offset Collisions)] as ConfEngine
+    [Controlled Inference Engine\n(DERIVED vs IMPLEMENTATION_CHOICE)] as InfEngine
+    [Context Compilation Subsystem\n(TokenBudgetController 4K-8K)] as CtxComp
+  }
+  
+  RegStore --> Orch : Load Context
+  Orch --> AgReq : 1. Parse Requirements
+  AgReq --> AgPlan : 2. Architectural Plan
+  AgPlan --> AgRet : 3. Retrieve Protocol
+  
+  KG <--> AgRet : Graph Traversal
+  VDB <--> AgRet : Semantic Search
+  
+  AgRet --> AgSpec : 4. Formal Design Spec
+  AgSpec --> InfEngine : 4.5 Inferred Details
+  InfEngine --> ConfEngine : Check Contradictions
+  
+  ConfEngine --> CtxComp : Clean EFS Context
+  CtxComp --> AgPUML : Diagram Context (4K)
+  CtxComp --> AgRTL : RTL Context (8K)
+  
+  AgPUML --> [PlantUML HTTP API\n(Deflate + Custom Base64)] : Render PNG
+  
+  AgRTL --> AgVer : Generated SystemVerilog
+  AgVer --> AgRep : Compliance < 85% / Errors
+  AgRep --> AgRTL : Iterative Patch (Max 3)
+}
+
+' ==============================================================================
+' LAYER 7: UI & HUMAN-IN-THE-LOOP INTERACTION
+' ==============================================================================
+package "7. Presentation & Human-in-the-Loop Layer (Streamlit 20 Pages)" as L7 {
+  [Hardware Design Wizard\n(Requirement Input & Target Select)] as UI_Wizard
+  [Human-in-the-Loop Modal\n(Review & Approve AI Proposals)] as UI_HITL
+  [PlantUML Diagram Viewer\n(Arch, Seq, FSM Renderings)] as UI_Diagrams
+  [RTL Code Viewer & Exporter\n(SV / Verilog / VHDL / SVA / UVM)] as UI_RTL
+  [Protocol & Graph Explorers] as UI_Explorers
+}
+
+UI_Wizard --> Orch : Trigger Run
+ConfEngine --> UI_HITL : CRITICAL Conflict Detected\n(PAUSE Pipeline)
+UI_HITL --> ConfEngine : User Approves / Modifies\n(RESUME Pipeline)
+
+AgPUML --> UI_Diagrams : architecture.puml & PNG URLs
+AgVer --> UI_RTL : Synthesizable Code & Testbenches
+KG --> UI_Explorers : Interactive Cytoscape Graph
+
+@enduml

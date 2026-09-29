@@ -1,33 +1,262 @@
 {
   "metadata": {
-    "design_id": "DSN_41001662",
+    "design_id": "DSN_b250a8aa",
     "design_name": "unnamed_design",
+    "canonical_id": "EFS_b250a8aa",
+    "display_name": "EFS_Hardware_Module",
+    "aliases": [],
     "project_name": "default_project",
-    "protocol": "generic",
-    "protocol_version": "1.0",
-    "source_documents": [],
+    "document_id": "",
+    "document_hash": "",
+    "ingestion_id": "",
+    "generation_run_id": "RUN_0e6b300a",
     "specification_revision": "1.0",
     "ir_schema_version": "1.0",
-    "generation_timestamp": "2026-08-25T20:56:23.863484"
+    "model_version": 2,
+    "resolution_version": 1,
+    "protocol": "generic",
+    "protocol_version": "1.0",
+    "top_module": "",
+    "description": "",
+    "author": "Hardware GraphRAG",
+    "source_documents": [],
+    "generation_timestamp": "2026-09-29T12:41:49.016045"
   },
   "components": [],
   "interfaces": [],
-  "signals": [],
-  "registers": [],
-  "transactions": [],
-  "fsms": [],
-  "constraints": [],
-  "timing_rules": [],
-  "protocol_rules": [],
-  "flows": [],
-  "assertions": [],
-  "coverage": [],
+  "signals": [
+    {
+      "signal_id": "SIG_8b381283",
+      "name": "clk",
+      "width": 1,
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "description": "",
+      "semantic_role": "data",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    },
+    {
+      "signal_id": "SIG_b457d936",
+      "name": "rst_n",
+      "width": 1,
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "description": "",
+      "semantic_role": "data",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    }
+  ],
+  "clocks": [],
+  "resets": [],
+  "parameters": [],
+  "registers": [
+    {
+      "register_id": "REG_6336f54f",
+      "name": "CTRL_REG",
+      "address": null,
+      "offset": "0x04",
+      "offset_source": "explicit",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "",
+      "side_effects": "",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    },
+    {
+      "register_id": "REG_ORIG",
+      "name": "STATUS_REG",
+      "address": "0x08",
+      "offset": "0x08",
+      "offset_source": "explicit",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "",
+      "side_effects": "",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    }
+  ],
   "instructions": [],
+  "instruction_formats": [],
   "opcodes": [],
+  "fsms": [],
+  "transactions": [],
+  "functional_behavior": [],
   "memory_regions": [],
-  "data_structures": [],
-  "errors": [],
+  "memory": [],
+  "protocol_rules": [],
+  "timing_rules": [],
+  "timing_requirements": [],
   "performance_requirements": [],
-  "conflicts": [],
-  "requirements": []
+  "errors": [],
+  "constraints": [],
+  "requirements": [],
+  "validation": {
+    "status": "PASSED",
+    "design_id": "DSN_b250a8aa",
+    "canonical_id": "EFS_b250a8aa",
+    "generation_run_id": "RUN_0e6b300a",
+    "document_id": "",
+    "ingestion_id": "",
+    "summary": {
+      "total": 0,
+      "critical": 0,
+      "warning": 0,
+      "info": 0
+    },
+    "findings": []
+  },
+  "resolutions": [
+    {
+      "resolution_id": "RES_636c0e40",
+      "conflict_id": "C_IMMUTABLE",
+      "target_entity": "STATUS_REG",
+      "property": "offset",
+      "resolution_type": "CUSTOM_REQUIREMENT",
+      "proposed_change": "STATUS_REG offset = 0x08",
+      "rationale": "User custom requirement override: 'STATUS_REG offset = 0x08'",
+      "reason": "User custom requirement override: 'STATUS_REG offset = 0x08'",
+      "affected_requirements": [
+        "STATUS_REG"
+      ],
+      "evidence": "",
+      "source_values": [],
+      "proposed_value": "0x08",
+      "resolved_value": "0x08",
+      "original_value": "N/A",
+      "field_name": "offset",
+      "resolution_source": "human",
+      "validation_status": "PASSED",
+      "approval_status": "APPROVED",
+      "approved_by": "user",
+      "created_at": "2026-09-29T12:41:49.016823",
+      "metadata": {},
+      "issue_id": "C_IMMUTABLE",
+      "issue_type": "CUSTOM_REQUIREMENT",
+      "original_evidence": "",
+      "resolution": "STATUS_REG offset = 0x08",
+      "source": "user",
+      "approved_by_user": true
+    }
+  ],
+  "examples": [],
+  "ambiguities": [],
+  "conflicts": [
+    {
+      "conflict_id": "C_IMMUTABLE",
+      "type": "",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": " Detected",
+      "description": "",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "STATUS_REG"
+      ],
+      "affected_entities": [
+        "STATUS_REG"
+      ],
+      "target_entities": [
+        "STATUS_REG"
+      ],
+      "property": "offset",
+      "properties": [
+        "offset"
+      ],
+      "conflicting_values": [],
+      "source_references": [],
+      "current_values": {},
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Resolved by approved resolution.",
+      "semantic_key": "SPEC_CONFLICT::offset:STATUS_REG:",
+      "generation_run_id": "",
+      "created_at": "2026-09-29T12:41:49.016215",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    }
+  ],
+  "contradictions": [
+    {
+      "conflict_id": "C_IMMUTABLE",
+      "type": "",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": " Detected",
+      "description": "",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "STATUS_REG"
+      ],
+      "affected_entities": [
+        "STATUS_REG"
+      ],
+      "target_entities": [
+        "STATUS_REG"
+      ],
+      "property": "offset",
+      "properties": [
+        "offset"
+      ],
+      "conflicting_values": [],
+      "source_references": [],
+      "current_values": {},
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Resolved by approved resolution.",
+      "semantic_key": "SPEC_CONFLICT::offset:STATUS_REG:",
+      "generation_run_id": "",
+      "created_at": "2026-09-29T12:41:49.016215",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    }
+  ],
+  "extraction_quality": {
+    "extraction_status": "success",
+    "source_completeness": "unknown",
+    "ir_completeness": "partial",
+    "missing_information": []
+  },
+  "extraction_coverage": {}
 }
