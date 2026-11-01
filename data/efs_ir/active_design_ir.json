@@ -1,122 +1,782 @@
 {
   "metadata": {
-    "design_id": "DSN_b250a8aa",
-    "design_name": "unnamed_design",
-    "canonical_id": "EFS_b250a8aa",
-    "display_name": "EFS_Hardware_Module",
-    "aliases": [],
+    "design_id": "DSN_66044996",
+    "design_name": "register_mapped_controller",
+    "canonical_id": "EFS_66044996",
+    "display_name": "register-mapped controller",
+    "aliases": [
+      "register-mapped controller",
+      "register_mapped_controller",
+      "EFS_66044996",
+      "RegisterMappedController",
+      "registerMappedController",
+      "registermappedcontroller",
+      "Register Mapped Controller",
+      "RegisteredMappedController"
+    ],
     "project_name": "default_project",
-    "document_id": "",
-    "document_hash": "",
-    "ingestion_id": "",
-    "generation_run_id": "RUN_0e6b300a",
+    "document_id": "text_spec",
+    "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+    "ingestion_id": "ING_881549cb",
+    "generation_run_id": "RUN_1793370441363",
     "specification_revision": "1.0",
     "ir_schema_version": "1.0",
-    "model_version": 2,
-    "resolution_version": 1,
+    "model_version": 1,
+    "resolution_version": 0,
     "protocol": "generic",
     "protocol_version": "1.0",
-    "top_module": "",
+    "top_module": "register_mapped_controller",
     "description": "",
     "author": "Hardware GraphRAG",
-    "source_documents": [],
-    "generation_timestamp": "2026-09-29T12:41:49.016045"
+    "source_documents": [
+      {
+        "document_id": "text_spec",
+        "document_name": "specification.docx",
+        "name": "specification.docx",
+        "document_type": "docx",
+        "type": "docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "revision": "1.0",
+        "ingestion_id": "ING_881549cb",
+        "path": ""
+      }
+    ],
+    "generation_timestamp": "2026-10-30T19:57:21.364047"
   },
-  "components": [],
-  "interfaces": [],
-  "signals": [
+  "components": [
     {
-      "signal_id": "SIG_8b381283",
-      "name": "clk",
-      "width": 1,
-      "direction": "input",
-      "datatype": "logic",
-      "signedness": false,
-      "description": "",
-      "semantic_role": "data",
+      "component_id": "COMP_2932f207",
+      "name": "register-mapped controller",
+      "type": "top_level_design",
+      "description": "Top-Level Composite Design Module: register-mapped controller",
+      "interfaces": [],
       "traceability": {
-        "extraction_method": "unknown",
-        "confidence": null
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'register-mapped controller'",
+        "source_text": "Specification entry for 'register-mapped controller'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
       }
     },
     {
-      "signal_id": "SIG_b457d936",
-      "name": "rst_n",
-      "width": 1,
-      "direction": "input",
-      "datatype": "logic",
-      "signedness": false,
-      "description": "",
-      "semantic_role": "data",
+      "component_id": "COMP_4830088f",
+      "name": "Register_File",
+      "type": "register_file",
+      "description": "Holds control/status registers.",
+      "interfaces": [],
       "traceability": {
-        "extraction_method": "unknown",
-        "confidence": null
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Register_File'",
+        "source_text": "Specification entry for 'Register_File'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_7f28aad4",
+      "name": "FSM_Control_Unit",
+      "type": "fsm_control_unit",
+      "description": "Coordinates handshakes and state logic.",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'FSM_Control_Unit'",
+        "source_text": "Specification entry for 'FSM_Control_Unit'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_5b189c9c",
+      "name": "Specification Core Requirements",
+      "type": "module",
+      "description": "Primary hardware module: Specification Core Requirements",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Specification Core Requirements'",
+        "source_text": "Specification entry for 'Specification Core Requirements'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
       }
     }
   ],
-  "clocks": [],
-  "resets": [],
+  "interfaces": [],
+  "signals": [
+    {
+      "signal_id": "SIG_602cf12a",
+      "name": "clk",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "consumer": "COMP_7f28aad4",
+      "description": "Clock signal",
+      "semantic_role": "clock",
+      "aliases": [
+        "Clock"
+      ],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'clk'",
+        "source_text": "Specification entry for 'clk'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_3697dd92",
+      "name": "rst_n",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "description": "Active-low reset",
+      "semantic_role": "reset",
+      "aliases": [
+        "Reset"
+      ],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'rst_n'",
+        "source_text": "Specification entry for 'rst_n'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_c6144725",
+      "name": "operand_a",
+      "width": "64",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "description": "Matrix A operand input",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'operand_a'",
+        "source_text": "Specification entry for 'operand_a'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_50161b4b",
+      "name": "operand_b",
+      "width": "64",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "description": "Matrix B operand input",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'operand_b'",
+        "source_text": "Specification entry for 'operand_b'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_71be19b5",
+      "name": "result",
+      "width": "64",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_4830088f",
+      "description": "Matrix addition output",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'result'",
+        "source_text": "Specification entry for 'result'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_3a54ac08",
+      "name": "done",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_4830088f",
+      "description": "Operation completion flag",
+      "semantic_role": "control",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'done'",
+        "source_text": "Specification entry for 'done'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_367a291f",
+      "name": "s_axi_awvalid",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "description": "AXI Write Address Valid",
+      "semantic_role": "valid",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 's_axi_awvalid'",
+        "source_text": "Specification entry for 's_axi_awvalid'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_bc72dd63",
+      "name": "s_axi_awready",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_4830088f",
+      "description": "AXI Write Address Ready",
+      "semantic_role": "ready",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 's_axi_awready'",
+        "source_text": "Specification entry for 's_axi_awready'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_808384f5",
+      "name": "s_axi_wdata",
+      "width": "32",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "description": "AXI Write Data",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 's_axi_wdata'",
+        "source_text": "Specification entry for 's_axi_wdata'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    },
+    {
+      "signal_id": "SIG_94d32b03",
+      "name": "s_axi_wvalid",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_2932f207",
+      "description": "AXI Write Data Valid",
+      "semantic_role": "valid",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 's_axi_wvalid'",
+        "source_text": "Specification entry for 's_axi_wvalid'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_spec",
+      "width_source": "explicit_spec"
+    }
+  ],
+  "clocks": [
+    {
+      "signal_id": "SIG_602cf12a"
+    }
+  ],
+  "resets": [
+    {
+      "signal_id": "SIG_3697dd92"
+    }
+  ],
   "parameters": [],
   "registers": [
     {
-      "register_id": "REG_6336f54f",
-      "name": "CTRL_REG",
+      "register_id": "REG_ba231edb",
+      "name": "ADDER_CTRL",
       "address": null,
-      "offset": "0x04",
-      "offset_source": "explicit",
+      "offset": "0x00",
+      "offset_source": "inferred",
       "width": 32,
       "access_type": "RW",
       "access": "RW",
       "reset_value": null,
       "fields": [],
-      "description": "",
+      "description": "Control register for Matrix Adder",
       "side_effects": "",
+      "owner": "COMP_2932f207",
       "traceability": {
-        "extraction_method": "unknown",
-        "confidence": null
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'ADDER_CTRL'",
+        "source_text": "Specification entry for 'ADDER_CTRL'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
       }
     },
     {
-      "register_id": "REG_ORIG",
-      "name": "STATUS_REG",
-      "address": "0x08",
-      "offset": "0x08",
-      "offset_source": "explicit",
+      "register_id": "REG_ce2f46c1",
+      "name": "ADDER_STATUS",
+      "address": null,
+      "offset": "0x04",
+      "offset_source": "inferred",
       "width": 32,
       "access_type": "RW",
       "access": "RW",
       "reset_value": null,
       "fields": [],
-      "description": "",
+      "description": "Status register",
       "side_effects": "",
+      "owner": "COMP_2932f207",
       "traceability": {
-        "extraction_method": "unknown",
-        "confidence": null
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'ADDER_STATUS'",
+        "source_text": "Specification entry for 'ADDER_STATUS'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
       }
     }
   ],
   "instructions": [],
   "instruction_formats": [],
   "opcodes": [],
-  "fsms": [],
+  "fsms": [
+    {
+      "fsm_id": "FSM_9bf2b751",
+      "name": "Inferred_Controller_FSM",
+      "states": [
+        {
+          "state_id": "ST_f3882699",
+          "name": "IDLE",
+          "encoding": "",
+          "outputs": {},
+          "actions": [],
+          "description": ""
+        },
+        {
+          "state_id": "ST_2cf50c48",
+          "name": "EXECUTE",
+          "encoding": "",
+          "outputs": {},
+          "actions": [],
+          "description": ""
+        },
+        {
+          "state_id": "ST_c46ffdf8",
+          "name": "DONE",
+          "encoding": "",
+          "outputs": {},
+          "actions": [],
+          "description": ""
+        }
+      ],
+      "initial_state": "IDLE",
+      "terminal_states": [
+        "DONE"
+      ],
+      "reset_state": "IDLE",
+      "reset_behavior": "Active-low reset",
+      "encoding": "binary",
+      "transitions": [
+        {
+          "transition_id": "TRANS_38bdba50",
+          "source_state": "IDLE",
+          "target_state": "EXECUTE",
+          "condition": "start asserted",
+          "action": "",
+          "priority": 0,
+          "associated_signal": "start",
+          "condition_type": "signal_assertion",
+          "evidence": "IDLE to EXECUTE when start asserted",
+          "traceability": {
+            "doc_id": "text_spec",
+            "source_document_id": "text_spec",
+            "source_document": "specification",
+            "section": "Execution Control",
+            "original_text": "Control signals: done, valid, ready",
+            "source_text": "Control signals: done, valid, ready",
+            "extraction_method": "source_backed_recovery",
+            "confidence": 0.95
+          },
+          "from": "IDLE",
+          "to": "EXECUTE"
+        },
+        {
+          "transition_id": "TRANS_b763ad6d",
+          "source_state": "EXECUTE",
+          "target_state": "DONE",
+          "condition": "done asserted",
+          "action": "",
+          "priority": 0,
+          "associated_signal": "done",
+          "condition_type": "signal_assertion",
+          "evidence": "EXECUTE to DONE when done asserted",
+          "traceability": {
+            "doc_id": "text_spec",
+            "source_document_id": "text_spec",
+            "source_document": "specification",
+            "section": "Execution Control",
+            "original_text": "Control signals: done, valid, ready",
+            "source_text": "Control signals: done, valid, ready",
+            "extraction_method": "source_backed_recovery",
+            "confidence": 0.95
+          },
+          "from": "EXECUTE",
+          "to": "DONE"
+        },
+        {
+          "transition_id": "TRANS_74a00645",
+          "source_state": "DONE",
+          "target_state": "IDLE",
+          "condition": "done deasserted",
+          "action": "",
+          "priority": 0,
+          "associated_signal": "done",
+          "condition_type": "signal_assertion",
+          "evidence": "DONE to IDLE when done deasserted",
+          "traceability": {
+            "doc_id": "text_spec",
+            "source_document_id": "text_spec",
+            "source_document": "specification",
+            "section": "Execution Control",
+            "original_text": "Control signals: done, valid, ready",
+            "source_text": "Control signals: done, valid, ready",
+            "extraction_method": "source_backed_recovery",
+            "confidence": 0.95
+          },
+          "from": "DONE",
+          "to": "IDLE"
+        }
+      ],
+      "actions": [],
+      "outputs": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "section": "Execution Control",
+        "original_text": "Control signals: done, valid, ready",
+        "source_text": "Control signals: done, valid, ready",
+        "extraction_method": "source_backed_recovery",
+        "confidence": 0.95
+      }
+    }
+  ],
   "transactions": [],
-  "functional_behavior": [],
-  "memory_regions": [],
-  "memory": [],
+  "functional_behavior": [
+    {
+      "flow_id": "FLOW_3b950213",
+      "name": "Inferred_Controller_FSM_Flow",
+      "components": [],
+      "interfaces": [],
+      "ordered_steps": [
+        {
+          "step_id": "FSTEP_e5bd4598",
+          "action_description": "State transition: IDLE -> EXECUTE",
+          "condition": "start asserted",
+          "expected_events": [],
+          "state_transitions": [
+            "IDLE->EXECUTE"
+          ],
+          "signal_behavior": "Triggered by start",
+          "timing_expectations": ""
+        },
+        {
+          "step_id": "FSTEP_06303665",
+          "action_description": "State transition: EXECUTE -> DONE",
+          "condition": "done asserted",
+          "expected_events": [],
+          "state_transitions": [
+            "EXECUTE->DONE"
+          ],
+          "signal_behavior": "Triggered by done",
+          "timing_expectations": ""
+        },
+        {
+          "step_id": "FSTEP_e2b7d837",
+          "action_description": "State transition: DONE -> IDLE",
+          "condition": "done deasserted",
+          "expected_events": [],
+          "state_transitions": [
+            "DONE->IDLE"
+          ],
+          "signal_behavior": "Triggered by done",
+          "timing_expectations": ""
+        }
+      ],
+      "conditions": "",
+      "expected_events": [],
+      "state_transitions": [
+        "IDLE->EXECUTE",
+        "EXECUTE->DONE",
+        "DONE->IDLE"
+      ],
+      "signal_behavior": "",
+      "timing_expectations": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "section": "Execution Control",
+        "original_text": "Control signals: done, valid, ready",
+        "source_text": "Control signals: done, valid, ready",
+        "extraction_method": "source_backed_recovery",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "memory_regions": [
+    {
+      "region_id": "MEMREG_a67f3a48",
+      "name": "Memory_Region_1",
+      "type": "memory_resource",
+      "base_address": "",
+      "size": "unspecified",
+      "depth": 0,
+      "width": 0,
+      "description": "Recovered from: - DMA Controller",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_002",
+        "section": "Specification Core Requirements",
+        "original_text": "- DMA Controller",
+        "source_text": "- DMA Controller",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    }
+  ],
+  "memory": [
+    {
+      "region_id": "MEMREG_a67f3a48",
+      "name": "Memory_Region_1",
+      "type": "memory_resource",
+      "base_address": "",
+      "size": "unspecified",
+      "depth": 0,
+      "width": 0,
+      "description": "Recovered from: - DMA Controller",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_002",
+        "section": "Specification Core Requirements",
+        "original_text": "- DMA Controller",
+        "source_text": "- DMA Controller",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    }
+  ],
   "protocol_rules": [],
   "timing_rules": [],
   "timing_requirements": [],
   "performance_requirements": [],
   "errors": [],
-  "constraints": [],
+  "constraints": [
+    {
+      "constraint_id": "CONST_2c83792a",
+      "type": "stability",
+      "source_objects": [
+        "s_axi_awvalid"
+      ],
+      "target_objects": [],
+      "condition": "asserted(s_axi_awvalid)",
+      "expected_behavior": "stable(s_axi_awvalid) until handshaked",
+      "severity": "CRITICAL",
+      "protocol": "generic",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 's_axi_awvalid'",
+        "source_text": "Specification entry for 's_axi_awvalid'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      },
+      "confidence": 1.0
+    },
+    {
+      "constraint_id": "CONST_8acf4d7d",
+      "type": "stability",
+      "source_objects": [
+        "s_axi_wvalid"
+      ],
+      "target_objects": [],
+      "condition": "asserted(s_axi_wvalid)",
+      "expected_behavior": "stable(s_axi_wvalid) until handshaked",
+      "severity": "CRITICAL",
+      "protocol": "generic",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 's_axi_wvalid'",
+        "source_text": "Specification entry for 's_axi_wvalid'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      },
+      "confidence": 1.0
+    }
+  ],
   "requirements": [],
+  "relationships": [],
   "validation": {
     "status": "PASSED",
-    "design_id": "DSN_b250a8aa",
-    "canonical_id": "EFS_b250a8aa",
-    "generation_run_id": "RUN_0e6b300a",
-    "document_id": "",
-    "ingestion_id": "",
+    "design_id": "DSN_66044996",
+    "canonical_id": "EFS_66044996",
+    "generation_run_id": "RUN_1793370441363",
+    "document_id": "text_spec",
+    "ingestion_id": "ING_881549cb",
     "summary": {
       "total": 0,
       "critical": 0,
@@ -125,138 +785,134 @@
     },
     "findings": []
   },
-  "resolutions": [
-    {
-      "resolution_id": "RES_636c0e40",
-      "conflict_id": "C_IMMUTABLE",
-      "target_entity": "STATUS_REG",
-      "property": "offset",
-      "resolution_type": "CUSTOM_REQUIREMENT",
-      "proposed_change": "STATUS_REG offset = 0x08",
-      "rationale": "User custom requirement override: 'STATUS_REG offset = 0x08'",
-      "reason": "User custom requirement override: 'STATUS_REG offset = 0x08'",
-      "affected_requirements": [
-        "STATUS_REG"
-      ],
-      "evidence": "",
-      "source_values": [],
-      "proposed_value": "0x08",
-      "resolved_value": "0x08",
-      "original_value": "N/A",
-      "field_name": "offset",
-      "resolution_source": "human",
-      "validation_status": "PASSED",
-      "approval_status": "APPROVED",
-      "approved_by": "user",
-      "created_at": "2026-09-29T12:41:49.016823",
-      "metadata": {},
-      "issue_id": "C_IMMUTABLE",
-      "issue_type": "CUSTOM_REQUIREMENT",
-      "original_evidence": "",
-      "resolution": "STATUS_REG offset = 0x08",
-      "source": "user",
-      "approved_by_user": true
-    }
-  ],
+  "resolutions": [],
   "examples": [],
   "ambiguities": [],
   "conflicts": [
     {
-      "conflict_id": "C_IMMUTABLE",
-      "type": "",
+      "conflict_id": "CONF_b23d6028",
+      "id": "CONF_b23d6028",
+      "category": "HARDWARE_COMPLETENESS_GAP",
+      "type": "HARDWARE_COMPLETENESS_GAP",
       "severity": "CRITICAL",
-      "blocking": false,
-      "status": "RESOLVED",
-      "title": " Detected",
-      "description": "",
-      "explanation": "",
-      "impact": "",
-      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "Missing Inter-Module Relationships",
+      "description": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
+      "explanation": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
+      "impact": "PlantUML architecture diagrams and RTL interconnect require explicit module relationships.",
+      "why_it_matters": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
       "entities": [
-        "STATUS_REG"
+        "Module_Relationships"
       ],
       "affected_entities": [
-        "STATUS_REG"
+        "Module_Relationships"
       ],
       "target_entities": [
-        "STATUS_REG"
+        "Module_Relationships"
       ],
-      "property": "offset",
+      "property": "interfaces",
       "properties": [
-        "offset"
+        "interfaces"
       ],
       "conflicting_values": [],
-      "source_references": [],
-      "current_values": {},
+      "source_references": [
+        {
+          "entity": "Module_Relationships",
+          "source": "Hardware Completeness Validator",
+          "section": "Category: Module_Relationships",
+          "value": "Unresolved in source specification"
+        }
+      ],
+      "current_values": {
+        "Module_Relationships": "MISSING"
+      },
       "source_objects": [],
-      "evidence": "",
-      "suggestions": [],
+      "evidence": "The Matrix Adder connects to an AXI4-Lite slave control interface.",
+      "suggestions": [
+        "Specify module connectivity in HITL."
+      ],
       "resolution_candidates": [],
       "candidates": [],
-      "resolution_status": "RESOLVED",
-      "requires_human_decision": false,
-      "resolved_reason": "Resolved by approved resolution.",
-      "semantic_key": "SPEC_CONFLICT::offset:STATUS_REG:",
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "MISSING_SPECIFICATION:HARDWARE_COMPLETENESS_GAP:interfaces:MODULE_RELATIONSHIPS:missing",
       "generation_run_id": "",
-      "created_at": "2026-09-29T12:41:49.016215",
+      "created_at": "2026-10-30T19:57:21.413843",
       "traceability": {
         "extraction_method": "unknown",
         "confidence": null
       },
-      "diagnostic_type": "SPEC_CONFLICT"
+      "diagnostic_type": "MISSING_SPECIFICATION"
     }
   ],
   "contradictions": [
     {
-      "conflict_id": "C_IMMUTABLE",
-      "type": "",
+      "conflict_id": "CONF_b23d6028",
+      "id": "CONF_b23d6028",
+      "category": "HARDWARE_COMPLETENESS_GAP",
+      "type": "HARDWARE_COMPLETENESS_GAP",
       "severity": "CRITICAL",
-      "blocking": false,
-      "status": "RESOLVED",
-      "title": " Detected",
-      "description": "",
-      "explanation": "",
-      "impact": "",
-      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "Missing Inter-Module Relationships",
+      "description": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
+      "explanation": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
+      "impact": "PlantUML architecture diagrams and RTL interconnect require explicit module relationships.",
+      "why_it_matters": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
       "entities": [
-        "STATUS_REG"
+        "Module_Relationships"
       ],
       "affected_entities": [
-        "STATUS_REG"
+        "Module_Relationships"
       ],
       "target_entities": [
-        "STATUS_REG"
+        "Module_Relationships"
       ],
-      "property": "offset",
+      "property": "interfaces",
       "properties": [
-        "offset"
+        "interfaces"
       ],
       "conflicting_values": [],
-      "source_references": [],
-      "current_values": {},
+      "source_references": [
+        {
+          "entity": "Module_Relationships",
+          "source": "Hardware Completeness Validator",
+          "section": "Category: Module_Relationships",
+          "value": "Unresolved in source specification"
+        }
+      ],
+      "current_values": {
+        "Module_Relationships": "MISSING"
+      },
       "source_objects": [],
-      "evidence": "",
-      "suggestions": [],
+      "evidence": "The Matrix Adder connects to an AXI4-Lite slave control interface.",
+      "suggestions": [
+        "Specify module connectivity in HITL."
+      ],
       "resolution_candidates": [],
       "candidates": [],
-      "resolution_status": "RESOLVED",
-      "requires_human_decision": false,
-      "resolved_reason": "Resolved by approved resolution.",
-      "semantic_key": "SPEC_CONFLICT::offset:STATUS_REG:",
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "MISSING_SPECIFICATION:HARDWARE_COMPLETENESS_GAP:interfaces:MODULE_RELATIONSHIPS:missing",
       "generation_run_id": "",
-      "created_at": "2026-09-29T12:41:49.016215",
+      "created_at": "2026-10-30T19:57:21.413843",
       "traceability": {
         "extraction_method": "unknown",
         "confidence": null
       },
-      "diagnostic_type": "SPEC_CONFLICT"
+      "diagnostic_type": "MISSING_SPECIFICATION"
     }
   ],
   "extraction_quality": {
     "extraction_status": "success",
-    "source_completeness": "unknown",
+    "source_completeness": "partial",
     "ir_completeness": "partial",
-    "missing_information": []
+    "missing_information": [
+      "fsms"
+    ]
   },
   "extraction_coverage": {}
 }

@@ -16,7 +16,7 @@ from typing import List
 
 try:
     from dotenv import load_dotenv
-    load_dotenv(override=True)
+    load_dotenv()
 except ImportError:
     pass
 
@@ -80,14 +80,12 @@ def _resolve_llm_api_key(provider: str) -> str:
 
 @dataclass
 class LLMConfig:
-    provider: str = os.getenv("LLM_PROVIDER", "groq")   # openai | groq | openrouter | gemini | none
-    model: str = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
-    extraction_model: str = os.getenv("LLM_EXTRACTION_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-20b"))
-    code_model: str = os.getenv("LLM_CODE_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-120b"))
-    api_key: str = field(default_factory=lambda: _resolve_llm_api_key(os.getenv("LLM_PROVIDER", "groq")))
-    base_url: str = os.getenv("LLM_BASE_URL", "")          # for OpenAI-compatible / Groq / OpenRouter endpoints
+    provider: str = os.getenv("LLM_PROVIDER", "openrouter")   # openai | groq | openrouter | gemini | none
+    model: str = os.getenv("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
+    api_key: str = field(default_factory=lambda: _resolve_llm_api_key(os.getenv("LLM_PROVIDER", "openrouter")))
+    base_url: str = os.getenv("LLM_BASE_URL", "")          # for OpenAI-compatible / Groq endpoints
     temperature: float = _env_float("LLM_TEMPERATURE", 0.0)
-    max_tokens: int = _env_int("LLM_MAX_TOKENS", 8192)
+    max_tokens: int = _env_int("LLM_MAX_TOKENS", 4000)
     timeout_s: int = _env_int("LLM_TIMEOUT_S", 60)
 
 
@@ -123,15 +121,6 @@ class RetrievalConfig:
 
 
 @dataclass
-class ContextCompilerConfig:
-    plantuml_token_budget: int = _env_int("PLANTUML_CONTEXT_TOKEN_BUDGET", 4000)
-    rtl_token_budget: int = _env_int("RTL_CONTEXT_TOKEN_BUDGET", 8000)
-    tb_token_budget: int = _env_int("TB_CONTEXT_TOKEN_BUDGET", 8000)
-    uvm_token_budget: int = _env_int("UVM_CONTEXT_TOKEN_BUDGET", 8000)
-    sva_token_budget: int = _env_int("SVA_CONTEXT_TOKEN_BUDGET", 6000)
-
-
-@dataclass
 class AppConfig:
     app_title: str = "Hardware Spec GraphRAG"
     data_dir: str = os.getenv("DATA_DIR", "data")
@@ -145,33 +134,6 @@ class AppConfig:
     neo4j: Neo4jConfig = field(default_factory=Neo4jConfig)
     chunking: ChunkingConfig = field(default_factory=ChunkingConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
-    context_compiler: ContextCompilerConfig = field(default_factory=ContextCompilerConfig)
-
-    # Verification / Repair optimization configuration settings (Disabled by default for maximum speed)
-    max_repair_iterations: int = _env_int("MAX_REPAIR_ITERATIONS", 0)
-    compliance_threshold: int = _env_int("COMPLIANCE_THRESHOLD", 90)
-    enable_static_verification: bool = _env_bool("ENABLE_STATIC_VERIFICATION", False)
-    enable_semantic_verification: bool = _env_bool("ENABLE_SEMANTIC_VERIFICATION", False)
-    verify_secondary_artifacts: bool = _env_bool("VERIFY_SECONDARY_ARTIFACTS", False)
-    skip_duplicate_verification: bool = _env_bool("SKIP_DUPLICATE_VERIFICATION", True)
-
-    # Token & Extraction Optimization Settings
-    enable_heuristic_extraction: bool = _env_bool("ENABLE_HEURISTIC_EXTRACTION", True)
-    enable_llm_escalation: bool = _env_bool("ENABLE_LLM_ESCALATION", True)
-    enable_extraction_cache: bool = _env_bool("ENABLE_EXTRACTION_CACHE", True)
-    enable_deduplication: bool = _env_bool("ENABLE_DEDUPLICATION", True)
-
-    heuristic_high_confidence: float = _env_float("HEURISTIC_HIGH_CONFIDENCE", 0.90)
-    heuristic_medium_confidence: float = _env_float("HEURISTIC_MEDIUM_CONFIDENCE", 0.70)
-
-    max_extraction_batch_tokens: int = _env_int("MAX_EXTRACTION_BATCH_TOKENS", 3000)
-    max_extraction_retries: int = _env_int("MAX_EXTRACTION_RETRIES", 3)
-    retry_base_delay: float = _env_float("RETRY_BASE_DELAY", 1.0)
-
-    top_k_vector_fact: int = _env_int("TOP_K_VECTOR_FACT", 2)
-    top_k_graph_fact: int = _env_int("TOP_K_GRAPH_FACT", 3)
-    top_k_vector_multihop: int = _env_int("TOP_K_VECTOR_MULTIHOP", 5)
-    top_k_graph_multihop: int = _env_int("TOP_K_GRAPH_MULTIHOP", 8)
 
     def ensure_dirs(self) -> None:
         for d in (self.data_dir, self.upload_dir, self.vector_index_dir, self.graph_cache_dir):

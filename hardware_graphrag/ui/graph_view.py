@@ -10,53 +10,19 @@ from core.graph.neo4j_builder import get_graph_store
 from utils.models import ENTITY_TYPES
 
 _TYPE_COLORS = {
-    "Design": "#8e44ad",
-    "Component": "#2980b9",
-    "Interface": "#e67e22",
-    "Channel": "#f1c40f",
-    "Signal": "#2ecc71",
-    "Register": "#1abc9c",
-    "Field": "#3498db",
-    "Transaction": "#9b59b6",
-    "FSM": "#d35400",
-    "State": "#e67e22",
-    "Constraint": "#c0392b",
-    "TimingConstraint": "#34495e",
-    "TimingRule": "#34495e",
-    "Flow": "#16a085",
-    "ClockDomain": "#16a085",
-    "MemoryRegion": "#7f8c8d",
-    "Address": "#95a5a6",
-    "Interrupt": "#e74c3c",
-    "Protocol": "#e74c3c",
-    "ProtocolRule": "#c0392b",
-    "Instruction": "#27ae60",
-    "Opcode": "#2ecc71",
-    "Command": "#2980b9",
-    "DataStructure": "#27ae60",
-    "Feature": "#f39c12",
+    "Protocol": "#e74c3c", "Interface": "#e67e22", "Channel": "#f1c40f",
+    "Signal": "#2ecc71", "Register": "#1abc9c", "Field": "#3498db",
+    "Transaction": "#9b59b6", "TimingConstraint": "#34495e", "ClockDomain": "#16a085",
+    "MemoryRegion": "#d35400", "Address": "#7f8c8d", "Interrupt": "#c0392b",
+    "State": "#8e44ad", "Command": "#2980b9", "DataStructure": "#27ae60", "Feature": "#f39c12",
 }
 
 
 def render() -> None:
-    store = get_graph_store()
-    col_title, col_btn1, col_btn2 = st.columns([3, 1.5, 1.5])
-    with col_title:
-        st.title("🕸️ Knowledge Graph")
-        st.caption("Explore extracted entities and their relationships.")
-    with col_btn1:
-        if st.button("🧹 Deduplicate Graph", use_container_width=True):
-            if hasattr(store, "deduplicate_nodes"):
-                n_rem, e_rem = store.deduplicate_nodes()
-                st.success(f"Deduplicated graph! Removed {n_rem} duplicate nodes.")
-                st.rerun()
-    with col_btn2:
-        if st.button("🗑️ Reset Graph", use_container_width=True):
-            if hasattr(store, "clear"):
-                store.clear()
-                st.warning("Knowledge graph cache reset.")
-                st.rerun()
+    st.title("🕸️ Knowledge Graph")
+    st.caption("Explore extracted entities and their relationships.")
 
+    store = get_graph_store()
     all_nodes = store.all_nodes()
     all_edges = store.all_edges()
 
@@ -64,13 +30,11 @@ def render() -> None:
         st.info("The knowledge graph is empty. Upload and process a document first.")
         return
 
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2 = st.columns([2, 2])
     with col1:
         type_filter = st.multiselect("Filter by entity type", ENTITY_TYPES, default=[])
     with col2:
         search = st.text_input("🔎 Focus on entity (name contains)", "")
-    with col3:
-        hops = st.selectbox("Neighbor depth", [1, 2, 3], index=1)
 
     nodes = all_nodes
     if type_filter:
@@ -80,10 +44,8 @@ def render() -> None:
     if search.strip():
         matches = [n for n in nodes if search.lower() in n.get("name", "").lower()]
         if matches:
-            # Prefer canonical Component/Design/Interface node if multiple match
-            preferred = sorted(matches, key=lambda x: 0 if x.get("type") in ("Component", "Design", "Interface", "Module", "module") else 1)
-            focus_name = preferred[0]["name"]
-            neighbor_nodes, neighbor_edges = store.get_neighbors(focus_name, hops=hops)
+            focus_name = matches[0]["name"]
+            neighbor_nodes, neighbor_edges = store.get_neighbors(focus_name, hops=1)
             nodes = neighbor_nodes
             edges = neighbor_edges
         else:
