@@ -1,2 +1,14 @@
-**/.env
+# Python cache
+__pycache__/
+*.pyc
+
+# Embedding cache
+hardware_graph/data/embedding_cache/
+
+# NumPy generated files
+*.npy
+
+# Environment
 .env
+.venv/
+venv/

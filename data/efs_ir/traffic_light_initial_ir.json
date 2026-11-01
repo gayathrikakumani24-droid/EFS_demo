@@ -1,0 +1,746 @@
+{
+  "metadata": {
+    "design_id": "DSN_traffic_light",
+    "design_name": "traffic_light_controller",
+    "canonical_id": "EFS_traffic_light",
+    "display_name": "Traffic Light Controller",
+    "aliases": [],
+    "project_name": "default_project",
+    "document_id": "",
+    "document_hash": "",
+    "ingestion_id": "",
+    "generation_run_id": "RUN_296e6498",
+    "specification_revision": "1.0",
+    "ir_schema_version": "1.0",
+    "model_version": 1,
+    "resolution_version": 0,
+    "protocol": "generic",
+    "protocol_version": "1.0",
+    "top_module": "traffic_light_controller",
+    "description": "",
+    "author": "Hardware GraphRAG",
+    "source_documents": [],
+    "generation_timestamp": "2026-10-26T10:47:04.096107"
+  },
+  "components": [
+    {
+      "component_id": "COMP_tlc",
+      "name": "traffic_light_controller",
+      "type": "module",
+      "description": "",
+      "interfaces": [],
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    }
+  ],
+  "interfaces": [],
+  "signals": [
+    {
+      "signal_id": "SIG_clk",
+      "name": "clk",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "owner": "COMP_tlc",
+      "description": "",
+      "semantic_role": "clock",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    },
+    {
+      "signal_id": "SIG_rst_n",
+      "name": "reset_n",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "owner": "COMP_tlc",
+      "description": "",
+      "semantic_role": "reset",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    },
+    {
+      "signal_id": "SIG_red",
+      "name": "red_light",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "owner": "COMP_tlc",
+      "description": "",
+      "semantic_role": "data",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    },
+    {
+      "signal_id": "SIG_green",
+      "name": "green_light",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "owner": "COMP_tlc",
+      "description": "",
+      "semantic_role": "data",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    },
+    {
+      "signal_id": "SIG_yellow",
+      "name": "yellow_light",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "owner": "COMP_tlc",
+      "description": "",
+      "semantic_role": "data",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    }
+  ],
+  "clocks": [
+    {
+      "signal_id": "SIG_clk"
+    }
+  ],
+  "resets": [
+    {
+      "signal_id": "SIG_rst_n"
+    }
+  ],
+  "parameters": [],
+  "registers": [],
+  "instructions": [],
+  "instruction_formats": [],
+  "opcodes": [],
+  "fsms": [
+    {
+      "fsm_id": "FSM_traffic_light",
+      "name": "traffic_light_fsm",
+      "states": [
+        {
+          "state_id": "ST_red",
+          "name": "RED",
+          "encoding": "",
+          "outputs": {
+            "red_light": "1'b1",
+            "green_light": "1'b0",
+            "yellow_light": "1'b0"
+          },
+          "actions": [
+            "red_light = 1'b1"
+          ]
+        },
+        {
+          "state_id": "ST_green",
+          "name": "GREEN",
+          "encoding": "",
+          "outputs": {
+            "red_light": "1'b0",
+            "green_light": "1'b1",
+            "yellow_light": "1'b0"
+          },
+          "actions": [
+            "green_light = 1'b1"
+          ]
+        },
+        {
+          "state_id": "ST_yellow",
+          "name": "YELLOW",
+          "encoding": "",
+          "outputs": {
+            "red_light": "1'b0",
+            "green_light": "1'b0",
+            "yellow_light": "1'b1"
+          },
+          "actions": [
+            "yellow_light = 1'b1"
+          ]
+        }
+      ],
+      "initial_state": "RED",
+      "terminal_states": [],
+      "reset_state": "RED",
+      "reset_behavior": "Asynchronous active-low reset to RED on reset_n",
+      "encoding": "binary",
+      "transitions": [
+        {
+          "transition_id": "TRANS_01",
+          "source_state": "RED",
+          "target_state": "GREEN",
+          "condition": "1'b1",
+          "action": "",
+          "priority": 0,
+          "condition_type": "semantic",
+          "duration_cycles": 5,
+          "evidence": "",
+          "traceability": {
+            "extraction_method": "unknown",
+            "confidence": null
+          },
+          "from": "RED",
+          "to": "GREEN"
+        },
+        {
+          "transition_id": "TRANS_02",
+          "source_state": "GREEN",
+          "target_state": "YELLOW",
+          "condition": "1'b1",
+          "action": "",
+          "priority": 0,
+          "condition_type": "semantic",
+          "duration_cycles": 10,
+          "evidence": "",
+          "traceability": {
+            "extraction_method": "unknown",
+            "confidence": null
+          },
+          "from": "GREEN",
+          "to": "YELLOW"
+        },
+        {
+          "transition_id": "TRANS_03",
+          "source_state": "YELLOW",
+          "target_state": "RED",
+          "condition": "1'b1",
+          "action": "",
+          "priority": 0,
+          "condition_type": "semantic",
+          "duration_cycles": 3,
+          "evidence": "",
+          "traceability": {
+            "extraction_method": "unknown",
+            "confidence": null
+          },
+          "from": "YELLOW",
+          "to": "RED"
+        }
+      ],
+      "actions": [],
+      "outputs": [
+        "green_light",
+        "red_light",
+        "yellow_light"
+      ],
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      }
+    }
+  ],
+  "transactions": [],
+  "functional_behavior": [],
+  "memory_regions": [],
+  "memory": [],
+  "protocol_rules": [],
+  "timing_rules": [],
+  "timing_requirements": [],
+  "performance_requirements": [],
+  "errors": [],
+  "constraints": [],
+  "requirements": [],
+  "relationships": [],
+  "validation": {
+    "status": "CONFLICTS_FOUND",
+    "design_id": "DSN_traffic_light",
+    "canonical_id": "EFS_traffic_light",
+    "generation_run_id": "RUN_296e6498",
+    "document_id": "",
+    "ingestion_id": "",
+    "summary": {
+      "total": 3,
+      "critical": 3,
+      "warning": 0
+    },
+    "findings": [
+      {
+        "conflict_id": "CONF_e6e7868f",
+        "type": "SOURCE_AMBIGUOUS",
+        "severity": "CRITICAL",
+        "blocking": true,
+        "status": "UNRESOLVED",
+        "title": "FSM Transition Semantic/Ambiguous: RED -> GREEN",
+        "description": "Transition condition from state 'RED' to 'GREEN' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+        "explanation": "",
+        "impact": "",
+        "why_it_matters": "Specification ambiguity requires human resolution.",
+        "entities": [
+          "RED",
+          "GREEN"
+        ],
+        "affected_entities": [
+          "RED",
+          "GREEN"
+        ],
+        "target_entities": [
+          "RED",
+          "GREEN"
+        ],
+        "property": "transition_condition",
+        "properties": [
+          "transition_condition"
+        ],
+        "conflicting_values": [
+          "1'b1"
+        ],
+        "source_references": [],
+        "current_values": {
+          "RED->GREEN": "1'b1"
+        },
+        "source_objects": [],
+        "evidence": "",
+        "suggestions": [],
+        "resolution_candidates": [],
+        "candidates": [],
+        "resolution_status": "UNRESOLVED",
+        "requires_human_decision": true,
+        "resolved_reason": "",
+        "semantic_key": "",
+        "generation_run_id": "",
+        "created_at": "2026-10-26T10:47:04.097436",
+        "traceability": {
+          "extraction_method": "unknown",
+          "confidence": null
+        },
+        "diagnostic_type": "SPEC_CONFLICT"
+      },
+      {
+        "conflict_id": "CONF_48403789",
+        "type": "SOURCE_AMBIGUOUS",
+        "severity": "CRITICAL",
+        "blocking": true,
+        "status": "UNRESOLVED",
+        "title": "FSM Transition Semantic/Ambiguous: GREEN -> YELLOW",
+        "description": "Transition condition from state 'GREEN' to 'YELLOW' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+        "explanation": "",
+        "impact": "",
+        "why_it_matters": "Specification ambiguity requires human resolution.",
+        "entities": [
+          "GREEN",
+          "YELLOW"
+        ],
+        "affected_entities": [
+          "GREEN",
+          "YELLOW"
+        ],
+        "target_entities": [
+          "GREEN",
+          "YELLOW"
+        ],
+        "property": "transition_condition",
+        "properties": [
+          "transition_condition"
+        ],
+        "conflicting_values": [
+          "1'b1"
+        ],
+        "source_references": [],
+        "current_values": {
+          "GREEN->YELLOW": "1'b1"
+        },
+        "source_objects": [],
+        "evidence": "",
+        "suggestions": [],
+        "resolution_candidates": [],
+        "candidates": [],
+        "resolution_status": "UNRESOLVED",
+        "requires_human_decision": true,
+        "resolved_reason": "",
+        "semantic_key": "",
+        "generation_run_id": "",
+        "created_at": "2026-10-26T10:47:04.097496",
+        "traceability": {
+          "extraction_method": "unknown",
+          "confidence": null
+        },
+        "diagnostic_type": "SPEC_CONFLICT"
+      },
+      {
+        "conflict_id": "CONF_be28b83d",
+        "type": "SOURCE_AMBIGUOUS",
+        "severity": "CRITICAL",
+        "blocking": true,
+        "status": "UNRESOLVED",
+        "title": "FSM Transition Semantic/Ambiguous: YELLOW -> RED",
+        "description": "Transition condition from state 'YELLOW' to 'RED' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+        "explanation": "",
+        "impact": "",
+        "why_it_matters": "Specification ambiguity requires human resolution.",
+        "entities": [
+          "YELLOW",
+          "RED"
+        ],
+        "affected_entities": [
+          "YELLOW",
+          "RED"
+        ],
+        "target_entities": [
+          "YELLOW",
+          "RED"
+        ],
+        "property": "transition_condition",
+        "properties": [
+          "transition_condition"
+        ],
+        "conflicting_values": [
+          "1'b1"
+        ],
+        "source_references": [],
+        "current_values": {
+          "YELLOW->RED": "1'b1"
+        },
+        "source_objects": [],
+        "evidence": "",
+        "suggestions": [],
+        "resolution_candidates": [],
+        "candidates": [],
+        "resolution_status": "UNRESOLVED",
+        "requires_human_decision": true,
+        "resolved_reason": "",
+        "semantic_key": "",
+        "generation_run_id": "",
+        "created_at": "2026-10-26T10:47:04.097534",
+        "traceability": {
+          "extraction_method": "unknown",
+          "confidence": null
+        },
+        "diagnostic_type": "SPEC_CONFLICT"
+      }
+    ]
+  },
+  "resolutions": [],
+  "examples": [],
+  "ambiguities": [],
+  "conflicts": [
+    {
+      "conflict_id": "CONF_e6e7868f",
+      "type": "SOURCE_AMBIGUOUS",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "FSM Transition Semantic/Ambiguous: RED -> GREEN",
+      "description": "Transition condition from state 'RED' to 'GREEN' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "RED",
+        "GREEN"
+      ],
+      "affected_entities": [
+        "RED",
+        "GREEN"
+      ],
+      "target_entities": [
+        "RED",
+        "GREEN"
+      ],
+      "property": "transition_condition",
+      "properties": [
+        "transition_condition"
+      ],
+      "conflicting_values": [
+        "1'b1"
+      ],
+      "source_references": [],
+      "current_values": {
+        "RED->GREEN": "1'b1"
+      },
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "",
+      "generation_run_id": "",
+      "created_at": "2026-10-26T10:47:04.097436",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_48403789",
+      "type": "SOURCE_AMBIGUOUS",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "FSM Transition Semantic/Ambiguous: GREEN -> YELLOW",
+      "description": "Transition condition from state 'GREEN' to 'YELLOW' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "GREEN",
+        "YELLOW"
+      ],
+      "affected_entities": [
+        "GREEN",
+        "YELLOW"
+      ],
+      "target_entities": [
+        "GREEN",
+        "YELLOW"
+      ],
+      "property": "transition_condition",
+      "properties": [
+        "transition_condition"
+      ],
+      "conflicting_values": [
+        "1'b1"
+      ],
+      "source_references": [],
+      "current_values": {
+        "GREEN->YELLOW": "1'b1"
+      },
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "",
+      "generation_run_id": "",
+      "created_at": "2026-10-26T10:47:04.097496",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_be28b83d",
+      "type": "SOURCE_AMBIGUOUS",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "FSM Transition Semantic/Ambiguous: YELLOW -> RED",
+      "description": "Transition condition from state 'YELLOW' to 'RED' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "YELLOW",
+        "RED"
+      ],
+      "affected_entities": [
+        "YELLOW",
+        "RED"
+      ],
+      "target_entities": [
+        "YELLOW",
+        "RED"
+      ],
+      "property": "transition_condition",
+      "properties": [
+        "transition_condition"
+      ],
+      "conflicting_values": [
+        "1'b1"
+      ],
+      "source_references": [],
+      "current_values": {
+        "YELLOW->RED": "1'b1"
+      },
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "",
+      "generation_run_id": "",
+      "created_at": "2026-10-26T10:47:04.097534",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    }
+  ],
+  "contradictions": [
+    {
+      "conflict_id": "CONF_e6e7868f",
+      "type": "SOURCE_AMBIGUOUS",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "FSM Transition Semantic/Ambiguous: RED -> GREEN",
+      "description": "Transition condition from state 'RED' to 'GREEN' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "RED",
+        "GREEN"
+      ],
+      "affected_entities": [
+        "RED",
+        "GREEN"
+      ],
+      "target_entities": [
+        "RED",
+        "GREEN"
+      ],
+      "property": "transition_condition",
+      "properties": [
+        "transition_condition"
+      ],
+      "conflicting_values": [
+        "1'b1"
+      ],
+      "source_references": [],
+      "current_values": {
+        "RED->GREEN": "1'b1"
+      },
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "",
+      "generation_run_id": "",
+      "created_at": "2026-10-26T10:47:04.097436",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_48403789",
+      "type": "SOURCE_AMBIGUOUS",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "FSM Transition Semantic/Ambiguous: GREEN -> YELLOW",
+      "description": "Transition condition from state 'GREEN' to 'YELLOW' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "GREEN",
+        "YELLOW"
+      ],
+      "affected_entities": [
+        "GREEN",
+        "YELLOW"
+      ],
+      "target_entities": [
+        "GREEN",
+        "YELLOW"
+      ],
+      "property": "transition_condition",
+      "properties": [
+        "transition_condition"
+      ],
+      "conflicting_values": [
+        "1'b1"
+      ],
+      "source_references": [],
+      "current_values": {
+        "GREEN->YELLOW": "1'b1"
+      },
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "",
+      "generation_run_id": "",
+      "created_at": "2026-10-26T10:47:04.097496",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_be28b83d",
+      "type": "SOURCE_AMBIGUOUS",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "status": "UNRESOLVED",
+      "title": "FSM Transition Semantic/Ambiguous: YELLOW -> RED",
+      "description": "Transition condition from state 'YELLOW' to 'RED' is semantic ('1'b1'). Explicit Boolean signal condition is required for RTL synthesis.",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "YELLOW",
+        "RED"
+      ],
+      "affected_entities": [
+        "YELLOW",
+        "RED"
+      ],
+      "target_entities": [
+        "YELLOW",
+        "RED"
+      ],
+      "property": "transition_condition",
+      "properties": [
+        "transition_condition"
+      ],
+      "conflicting_values": [
+        "1'b1"
+      ],
+      "source_references": [],
+      "current_values": {
+        "YELLOW->RED": "1'b1"
+      },
+      "source_objects": [],
+      "evidence": "",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "candidates": [],
+      "resolution_status": "UNRESOLVED",
+      "requires_human_decision": true,
+      "resolved_reason": "",
+      "semantic_key": "",
+      "generation_run_id": "",
+      "created_at": "2026-10-26T10:47:04.097534",
+      "traceability": {
+        "extraction_method": "unknown",
+        "confidence": null
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    }
+  ],
+  "extraction_quality": {
+    "extraction_status": "success",
+    "source_completeness": "unknown",
+    "ir_completeness": "partial",
+    "missing_information": []
+  },
+  "extraction_coverage": {}
+}

@@ -66,48 +66,18 @@ _formatter = logging.Formatter(_FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
 _root_configured = False
 
 
-import sys
-import hashlib
-
-def truncate_for_log(value: Any, max_chars: int = 200) -> str:
-    """Safely format and truncate arbitrary values for clean log messages."""
-    if value is None:
-        return "None"
-    val_str = str(value).strip().replace("\n", " ").replace("\r", " ")
-    val_str = " ".join(val_str.split())
-    if len(val_str) <= max_chars:
-        return val_str
-    val_hash = hashlib.md5(val_str.encode("utf-8", errors="replace")).hexdigest()[:8]
-    return f"{val_str[:max_chars]}... [len={len(val_str)}, hash={val_hash}]"
-
-
 def _configure_root() -> None:
     global _root_configured
-    root = logging.getLogger("graphrag")
-    if root.handlers:
-        _root_configured = True
-        return
     if _root_configured:
         return
+    root = logging.getLogger("graphrag")
     root.setLevel(logging.DEBUG)
 
-    # Force UTF-8 encoding on Windows console streams to prevent cp1252 charmap errors
-    if hasattr(sys.stdout, "reconfigure"):
-        try:
-            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
-            pass
-    if hasattr(sys.stderr, "reconfigure"):
-        try:
-            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
-            pass
-
-    console = logging.StreamHandler(sys.stdout)
+    console = logging.StreamHandler()
     console.setFormatter(_formatter)
     console.setLevel(logging.INFO)
 
-    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3, encoding="utf-8", errors="replace")
+    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3)
     file_handler.setFormatter(_formatter)
     file_handler.setLevel(logging.DEBUG)
 
@@ -141,41 +111,3 @@ def get_recent_logs(category: str = "all", level: str = "ALL", limit: int = 500)
 
 def clear_logs() -> None:
     _LOG_BUFFER.clear()
-    if os.path.exists(LOG_FILE):
-        try:
-            with open(LOG_FILE, "w", encoding="utf-8") as f:
-                f.truncate(0)
-        except Exception:
-            pass
-
-
-def _load_initial_logs() -> None:
-    if not os.path.exists(LOG_FILE):
-        return
-    try:
-        with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
-            lines = f.readlines()
-            for line in lines[-_MAX_BUFFER:]:
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split(" | ", 3)
-                if len(parts) == 4:
-                    asctime, levelname, logger_name, message = parts
-                    levelname = levelname.strip()
-                    logger_name = logger_name.strip()
-                    category = _categorize(logger_name)
-                    _LOG_BUFFER.append({
-                        "time": asctime,
-                        "level": levelname,
-                        "logger": logger_name,
-                        "category": category,
-                        "message": message,
-                        "formatted": line,
-                    })
-    except Exception:
-        pass
-
-
-# Load logs from file on startup to populate the in-memory ring buffer
-_load_initial_logs()
