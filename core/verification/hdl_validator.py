@@ -523,8 +523,8 @@ def validate_rtl_syntax_and_structure(
         # As assign target: assign <op> = ...
         # Or in procedural block: <op> <= ... or <op> = ...
         is_driven = bool(
-            re.search(rf"\bassign\s+{re.escape(op)}\b\s*=", clean_code) or
-            re.search(rf"\b{re.escape(op)}\b\s*(?:<=|=)", clean_code)
+            re.search(rf"\bassign\s+{re.escape(op)}\b(?:\s*\[[^\]]+\])*\s*=", clean_code) or
+            re.search(rf"\b{re.escape(op)}\b(?:\s*\[[^\]]+\])*\s*(?:<=|=(?!=))", clean_code)
         )
         if not is_driven:
             errors.append(
@@ -700,11 +700,15 @@ def validate_rtl_syntax_and_structure(
                 )
 
     # 14. Check for illegal identifiers containing spaces, dashes, or descriptive phrases in hardware declarations
-    decl_matches = re.finditer(r"\b(?:reg|wire|logic)\s+(?:\[[^\]]+\]\s+)?([^;]+);", clean_code)
+    body_only = re.sub(r"\bmodule\s+[a-zA-Z0-9_]+\s*(?:#\([^)]*\))?\s*\([^;]*\);", "", clean_code)
+    # Strip typedef enum definitions so enum state lists are not treated as variable declarations
+    body_only = re.sub(r"\btypedef\s+enum\s+[^{;]*\{[^}]*\}\s*[a-zA-Z0-9_]+;", "", body_only)
+    decl_matches = re.finditer(r"\b(?:reg|wire|logic)\s+(?:\[[^\]]+\]\s+)?([^;]+);", body_only)
     for dm in decl_matches:
         decl_str = dm.group(1).strip()
         for item in decl_str.split(","):
             id_candidate = item.split("=")[0].strip()
+            id_candidate = re.sub(r"\[[^\]]+\]", "", id_candidate).strip()
             if id_candidate and not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", id_candidate):
                 errors.append(
                     HDLError(
@@ -834,11 +838,8 @@ def _extract_declared_ports(clean_code: str) -> List[Dict[str, str]]:
     """Extract port declarations from module header."""
     ports = []
     # Match module header
-    m_header = re.search(r"\bmodule\s+[a-zA-Z0-9_]+\s*(?:#\s*\([^\)]*\)\s*)?\((.*?)\);", clean_code, re.DOTALL)
+    m_header = re.search(r"\bmodule\s+[a-zA-Z0-9_]+\s*(?:#\s*\([\s\S]*?\)\s*)?\(([\s\S]*?)\)\s*;", clean_code)
     if not m_header:
-        # Non-ANSI style header
-        m_non_ansi = re.search(r"\bmodule\s+[a-zA-Z0-9_]+\s*(?:#\s*\([^\)]*\)\s*)?\((.*?)\);", clean_code)
-        # Search for input/output declarations in module body
         body_ports = re.finditer(r"\b(input|output|inout)\s+(?:wire|reg|logic)?\s*(?:\[[^\]]+\])?\s*([a-zA-Z_][a-zA-Z0-9_]*)", clean_code)
         for bp in body_ports:
             ports.append({"name": bp.group(2), "direction": bp.group(1).lower()})
@@ -851,8 +852,8 @@ def _extract_declared_ports(clean_code: str) -> List[Dict[str, str]]:
         m_dir = re.search(r"\b(input|output|inout)\b", item)
         if m_dir:
             curr_dir = m_dir.group(1).lower()
-        # Find signal name (last word in port item)
-        m_name = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", item)
+        item_no_dim = re.sub(r"\[[^\]]+\]", "", item)
+        m_name = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", item_no_dim)
         if m_name:
             sig_name = m_name[-1]
             if sig_name not in ("input", "output", "inout", "logic", "wire", "reg", "signed", "unsigned"):

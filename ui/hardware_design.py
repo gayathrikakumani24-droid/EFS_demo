@@ -86,6 +86,16 @@ def render() -> None:
     gen_sv = st.sidebar.checkbox("SystemVerilog RTL", value=False)
     gen_vhdl = st.sidebar.checkbox("VHDL Design", value=False)
 
+    st.sidebar.markdown("### Hybrid Generation Engine")
+    generation_mode = st.sidebar.selectbox(
+        "RTL Generation Mode",
+        options=["HYBRID", "DETERMINISTIC", "DIRECT_LLM"],
+        index=0,
+        help="HYBRID combines deterministic structure with LLM behavior. DETERMINISTIC uses pure structural/library synthesis. DIRECT_LLM prompts LLM with locked header."
+    )
+    k_candidates = st.sidebar.slider("Number of Candidates (k)", min_value=1, max_value=3, value=1, help="Generate and rank k candidate RTL implementations.")
+    allow_partial = st.sidebar.checkbox("Allow Safe Partial Generation", value=False, help="Safely generate partial RTL when requirements are incomplete.")
+
     st.sidebar.markdown("### Loop Configurations")
     max_repair = st.sidebar.slider("Max Repair Iterations", min_value=0, max_value=5, value=0)
     score_threshold = st.sidebar.slider("Compliance Target Score (%)", min_value=50, max_value=100, value=95)
@@ -262,7 +272,10 @@ def render() -> None:
                     compliance_threshold=score_threshold,
                     progress_cb=progress_cb,
                     bypass_conflicts=bypass_conflicts,
-                    user_query=effective_query
+                    user_query=effective_query,
+                    generation_mode=generation_mode,
+                    k_candidates=k_candidates,
+                    allow_partial=allow_partial
                 )
                 
                 # Save results to session state
@@ -285,6 +298,68 @@ def render() -> None:
     # Display results and Context Preview
     if "design_results" in st.session_state:
         results = st.session_state["design_results"]
+        pipe_state = results.get("pipeline_state", results.get("status", "PLANNING"))
+
+        # Pipeline State Status Badge
+        badge_style_map = {
+            "PLANNING": ("#3b82f6", "#1e3a8a", "📐 PLANNING"),
+            "AWAITING_HITL": ("#f59e0b", "#78350f", "⚠️ AWAITING_HITL"),
+            "AWAITING_HUMAN_DECISION": ("#f59e0b", "#78350f", "⚠️ AWAITING_HITL"),
+            "GENERATING": ("#8b5cf6", "#4c1d95", "⚙️ GENERATING"),
+            "VERIFYING": ("#06b6d4", "#164e63", "🔍 VERIFYING"),
+            "PARTIAL": ("#eab308", "#713f12", "⚡ PARTIAL (Compliant Subsets)"),
+            "COMPLETED": ("#10b981", "#064e3b", "✅ COMPLETED"),
+            "GENERATION_COMPLETE": ("#10b981", "#064e3b", "✅ COMPLETED"),
+            "SUCCESS": ("#10b981", "#064e3b", "✅ COMPLETED"),
+            "FAILED": ("#ef4444", "#7f1d1d", "❌ FAILED"),
+            "RTL_VALIDATION_ERROR": ("#ef4444", "#7f1d1d", "❌ FAILED"),
+            "RTL_GENERATION_ERROR": ("#ef4444", "#7f1d1d", "❌ FAILED"),
+            "BLOCKED": ("#ef4444", "#7f1d1d", "❌ BLOCKED"),
+        }
+        b_fg, b_bg, b_label = badge_style_map.get(pipe_state, ("#64748b", "#1e293b", pipe_state))
+
+        st.markdown(f"""
+        <div style="background-color: #1e293b; padding: 12px 18px; border-radius: 8px; margin-bottom: 18px; border-left: 5px solid {b_fg};">
+          <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px; color: {b_fg};">
+            Pipeline Execution State: <span style="background: {b_bg}; padding: 2px 10px; border-radius: 4px;">{b_label}</span>
+          </div>
+          <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+            <span style="color: #10b981; font-weight: 600;">✓ Ingestion</span> &nbsp;→&nbsp;
+            <span style="color: #10b981; font-weight: 600;">✓ EFS IR & Validation</span> &nbsp;→&nbsp;
+            <span style="color: #10b981; font-weight: 600;">✓ Classification & Planning</span> &nbsp;→&nbsp;
+            <span style="color: {'#fbbf24' if 'HITL' in pipe_state else '#10b981'}; font-weight: 600;">{'⚠️ HITL Gate' if 'HITL' in pipe_state else '✓ HITL Gate'}</span> &nbsp;→&nbsp;
+            <span style="color: {'#10b981' if pipe_state in ('COMPLETED', 'SUCCESS', 'GENERATION_COMPLETE', 'PARTIAL') else '#94a3b8'};">{'✓ Hybrid RTL Generation' if pipe_state in ('COMPLETED', 'SUCCESS', 'GENERATION_COMPLETE', 'PARTIAL') else '○ Hybrid Generation'}</span> &nbsp;→&nbsp;
+            <span style="color: {'#10b981' if pipe_state in ('COMPLETED', 'SUCCESS', 'GENERATION_COMPLETE') else ('#ef4444' if pipe_state == 'FAILED' else '#94a3b8')};">{'✓ Verification & Selection' if pipe_state in ('COMPLETED', 'SUCCESS', 'GENERATION_COMPLETE') else '○ Verification'}</span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Architectural Classification & Plan Summary Cards
+        pri_target = results.get("performance_metrics", {}).get("primary_target", "Verilog")
+        out_dict = results.get("outputs", {}).get(pri_target, {})
+        arch_val = out_dict.get("architecture_classification") or results.get("architecture_classification") or "CUSTOM_ARCHITECTURE"
+        plan_dict = out_dict.get("plan") or results.get("rtl_generation_plan") or results.get("plan") or {}
+        fsm_strat = plan_dict.get("fsm_strategy", "INFERRED") if isinstance(plan_dict, dict) else "N/A"
+
+        card1, card2, card3, card4 = st.columns(4)
+        card1.metric("Architecture Classification", str(arch_val))
+        card2.metric("FSM Strategy", str(fsm_strat))
+        card3.metric("HDL Target", str(pri_target))
+        card4.metric("Generation Mode", str(generation_mode))
+
+        # Expandable Plan Summary
+        if plan_dict and isinstance(plan_dict, dict):
+            with st.expander("📐 Structured RTL Generation Plan Summary", expanded=False):
+                p_cols = st.columns(3)
+                if "ports" in plan_dict or "internal_registers" in plan_dict:
+                    p_cols[0].write(f"**Module Name:** `{plan_dict.get('module_name', 'mod')}`")
+                    p_cols[1].write(f"**Ports Defined:** {len(plan_dict.get('ports', []))}")
+                    p_cols[2].write(f"**Registers Defined:** {len(plan_dict.get('internal_registers', []))}")
+                else:
+                    p_cols[0].write(f"**System Architecture:** `{plan_dict.get('system_architecture', 'Standard Architecture')}`")
+                    p_cols[1].write(f"**Submodules:** {len(plan_dict.get('submodules', []))}")
+                    p_cols[2].write(f"**Clock Domains:** {len(plan_dict.get('clock_domains', []))}")
+                st.json(plan_dict)
         
         if results.get("status") == "SUCCESS":
             st.success("✅ RTL and PlantUML Diagrams Generated Successfully")
@@ -295,6 +370,30 @@ def render() -> None:
                 if code_text and not code_text.startswith("SPECIFICATION_INCOMPLETE"):
                     with st.expander(f"📄 Generated {primary_target} RTL Code", expanded=True):
                         st.code(code_text, language="systemverilog" if "Verilog" in primary_target else "vhdl")
+
+            # Comprehensive, Structured RTL Technical Documentation & Architecture Summary
+            summary_text = (
+                results.get("rtl_summary")
+                or outputs.get(primary_target, {}).get("summary")
+            )
+            if not summary_text:
+                try:
+                    from core.agents.rtl_summary_generator import generate_comprehensive_rtl_summary
+                    if code_text and not code_text.startswith("SPECIFICATION_INCOMPLETE"):
+                        summary_text = generate_comprehensive_rtl_summary(
+                            code=code_text,
+                            efs_ir=results.get("efs_ir"),
+                            rtl_plan=plan_dict,
+                            architecture_classification=arch_val,
+                            verification_report=outputs.get(primary_target, {}).get("report"),
+                            target_lang=primary_target
+                        )
+                except Exception as e_sum:
+                    logger.debug(f"UI dynamic summary generation exception: {e_sum}")
+
+            if summary_text:
+                with st.expander("📑 Comprehensive RTL Architecture & Technical Documentation", expanded=True):
+                    st.markdown(summary_text)
 
             for tgt, out_data in outputs.items():
                 if tgt != primary_target and isinstance(out_data, dict):
@@ -445,7 +544,11 @@ def render() -> None:
                             results,
                             _ss_resolutions,
                             target_outputs=_resume_targets,
-                            user_query=_res_query
+                            user_query=_res_query,
+                            bypass_conflicts=bypass_conflicts,
+                            generation_mode=generation_mode,
+                            k_candidates=k_candidates,
+                            allow_partial=allow_partial
                         )
                         st.session_state["design_results"] = res_results
                         if "outputs" in res_results:
@@ -618,7 +721,20 @@ def render() -> None:
                                 st.text_input("Current Value:", value=str(current_val_show), disabled=True, key=f"curr_val_{conf.conflict_id}")
 
                             effective_prop = conf.property or ("opcode" if conf.type == "DUPLICATE_OPCODE" else "value")
-                            prop_placeholder = f"e.g. 1011 (opcode), 0x08 (offset), 32 (width), timer_cnt == 4'd4 (transition)..."
+                            if effective_prop in ("transition_condition", "fsm_definition"):
+                                prop_placeholder = "e.g. start == 1'b1, req == 1'b1, timer_cnt >= 4'd4"
+                                st.info("💡 **FSM Condition Guidance:** Enter an explicit Boolean condition (e.g. `start == 1'b1`, `timer_cnt >= 4'd10`, `data_valid && ready`) to define the state transition.")
+                            elif effective_prop == "direction":
+                                prop_placeholder = "e.g. input, output, or inout"
+                            elif effective_prop == "width":
+                                prop_placeholder = "e.g. 32, 16, 8, [7:0]"
+                            elif effective_prop in ("offset", "address"):
+                                prop_placeholder = "e.g. 0x08, 0x10, 0x14"
+                            elif effective_prop in ("opcode", "binary_encoding"):
+                                prop_placeholder = "e.g. 1011, 4'b1011, 0x0B"
+                            else:
+                                prop_placeholder = f"e.g. 1011 (opcode), 0x08 (offset), 32 (width), timer_cnt == 4'd4 (transition)..."
+
                             custom_new_val = st.text_input(
                                 f"Enter new value for {effective_prop}:",
                                 placeholder=prop_placeholder,
@@ -698,7 +814,10 @@ def render() -> None:
                                                     results,
                                                     st.session_state["approved_resolutions"],
                                                     target_outputs=targets,
-                                                    user_query=_res_query
+                                                    user_query=_res_query,
+                                                    generation_mode=generation_mode,
+                                                    k_candidates=k_candidates,
+                                                    allow_partial=allow_partial
                                                 )
                                                 st.session_state["design_results"] = res_results
                                                 if "outputs" in res_results:

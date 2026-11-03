@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 from config import CONFIG
 from core.extraction.llm_client import get_llm_client
 from utils.logger import get_logger
@@ -23,6 +23,30 @@ from core.verification.hdl_validator import (
     resolve_hdl_language,
     HDLLanguage,
 )
+from core.agents.spec_classifier import classify_hardware_architecture, ArchitectureClass, SpecType
+from core.efs_ir.rtl_plan import (
+    RTLGenerationPlan,
+    PlanPort,
+    PlanParameter,
+    PlanRegister,
+    PlanOpcode,
+    PlanFSM,
+    PlanResetRequirements,
+    PlanDatapath,
+    PlanTraceability,
+    PlanSpecificationStatus,
+    EvidenceClassification,
+)
+from core.agents.rtl_plan_validator import (
+    RTLPlanValidator,
+    RTLPlanValidationReport,
+    DiagnosticCode,
+    PlanDiagnostic,
+)
+from core.agents.fsm_inference_engine import FSMInferenceEngine, FSMHandlingCase
+from core.verification.hitl_plan_manager import HITLPlanManager
+
+LAST_GENERATION_REPORT: Optional[Dict[str, Any]] = None
 
 
 def get_system_prompt(target_language: str = "SystemVerilog", language_version: Optional[str] = None) -> str:
@@ -309,6 +333,13 @@ Do NOT generate SystemVerilog code yet. Output ONLY valid JSON according to this
       ]
     }}
   ],
+  "opcodes": [
+    {{
+      "name": "string",
+      "binary_encoding": "string",
+      "associated_operations": ["string"]
+    }}
+  ],
   "fsm": {{
     "states": ["string"],
     "initial_state": "string",
@@ -464,9 +495,11 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
 
             # Ensure internal counter register is declared in plan if timer_cnt is referenced
             has_timer_in_fsm = any(
-                "timer_cnt" in str(tr.get("condition", ""))
+                "timer_cnt" in (
+                    str(tr.get("condition_expression", "")) + " " +
+                    str(tr.get("condition", {}).get("expression", "") if isinstance(tr.get("condition"), dict) else str(tr.get("condition", "")))
+                ) if isinstance(tr, dict) else ("timer_cnt" in str(getattr(tr, "condition_expression", getattr(tr, "condition", ""))))
                 for tr in plan_res.get("fsm", {}).get("transitions", [])
-                if isinstance(tr, dict)
             )
             if has_timer_in_fsm:
                 int_regs = plan_res.setdefault("internal_registers", [])
@@ -477,6 +510,30 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
                         "description": "Cycle counter tracking elapsed cycles in current state.",
                         "reset_value": "0"
                     })
+
+            # Populate plan opcodes from efs_ir or compiled_rtl if omitted or empty
+            ir_opcodes_list = []
+            if efs_ir and hasattr(efs_ir, "opcodes") and efs_ir.opcodes:
+                ir_opcodes_list = efs_ir.opcodes
+            elif compiled_rtl and compiled_rtl.get("opcodes"):
+                ir_opcodes_list = compiled_rtl["opcodes"]
+
+            existing_plan_opcs = plan_res.setdefault("opcodes", [])
+            existing_opc_names = {
+                (o.get("name") if isinstance(o, dict) else getattr(o, "name", "")).strip().upper()
+                for o in existing_plan_opcs
+            }
+            for op in ir_opcodes_list:
+                m_name = (op.mnemonic if hasattr(op, "mnemonic") else op.get("mnemonic", op.get("name", ""))).strip()
+                if m_name and m_name.upper() not in existing_opc_names:
+                    existing_plan_opcs.append({
+                        "name": m_name,
+                        "binary_encoding": str(op.binary_encoding if hasattr(op, "binary_encoding") else op.get("binary_encoding", op.get("encoding", ""))),
+                        "associated_operations": [op.operation] if (hasattr(op, "operation") and op.operation) else (op.get("associated_operations", []) if isinstance(op, dict) else []),
+                        "evidence": getattr(getattr(op, "traceability", None), "source_text", "") if hasattr(op, "traceability") else (op.get("evidence", "") if isinstance(op, dict) else ""),
+                        "efs_id": getattr(op, "opcode_id", None) if hasattr(op, "opcode_id") else (op.get("efs_id") if isinstance(op, dict) else None)
+                    })
+                    existing_opc_names.add(m_name.upper())
 
             # Filter out any false positive blocking issues regarding "next clock cycle" or known port assertions
             if isinstance(plan_res.get("specification_status"), dict):
@@ -599,6 +656,7 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
                                 s["direction"] = resolved_sig["direction"]
                             elif hasattr(s, "direction"):
                                 s.direction = resolved_sig["direction"]
+                            is_resolved = True
                         else:
                             is_resolved = False
                             if efs_ir and hasattr(efs_ir, "resolutions"):
@@ -622,7 +680,8 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
                                 "evidence": f"EFS IR: {norm_s_dir}, Spec/Plan: {norm_p_dir}"
                             })
 
-            val = validate_rtl_plan(plan_res, efs_ir=efs_ir, context_pack=context_pack)
+            plan_res["spec_text"] = design_spec
+            val = validate_rtl_plan(plan_res, efs_ir=efs_ir, context_pack=context_pack, spec_text=design_spec)
             plan_res["specification_status"] = {
                 "status": val["status"],
                 "blocking_issues": val["issues"]
@@ -815,25 +874,67 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
                         }
                     })
 
-    plan = {
-        "module_name": target_module_name if target_module_name not in ("target_module", "hardware_module", "custom_module") else spec_parsed.get("module_name", target_module_name),
-        "specification_status": spec_parsed.get("specification_status", {
-            "status": "COMPLETE",
-            "blocking_issues": []
-        }),
-        "ports": ports,
-        "parameters": spec_parsed.get("parameters", []),
-        "internal_registers": internal_regs,
-        "fsm": {
+    # Architectural classification & FSM inference
+    arch_res = classify_hardware_architecture(efs_ir=efs_ir, spec_text=design_spec)
+    fsm_res = FSMInferenceEngine.resolve_fsm(
+        efs_ir=efs_ir,
+        context_pack=context_pack,
+        spec_text=design_spec,
+        compiled_rtl_context=compiled_rtl
+    )
+
+    fsm_data = None
+    if fsm_res.case in (FSMHandlingCase.EXPLICIT_FSM, FSMHandlingCase.INFERRED_FSM) and fsm_res.fsm:
+        fsm_data = fsm_res.fsm.to_dict()
+    elif fsm_res.case == FSMHandlingCase.FSM_UNNECESSARY:
+        fsm_data = None
+    elif fsm_res.case == FSMHandlingCase.INSUFFICIENT_INFORMATION:
+        fsm_data = {
             "states": fsm_states,
             "initial_state": fsm_states[0] if fsm_states else None,
             "transitions": fsm_transitions
-        },
-        "datapath_strategy": "Direct state machine & register transfer logic",
-        "reset_polarity": "active_low"
-    }
+        }
 
-    val = validate_rtl_plan(plan, efs_ir=efs_ir, context_pack=context_pack)
+    # If architecture is pure combinational, ensure no clock or reset ports are present
+    if arch_res.primary_class == ArchitectureClass.COMBINATIONAL or (not arch_res.has_clock and not arch_res.has_reset):
+        ports = [p for p in ports if p.get("semantic_role") not in ("clock", "reset") and not any(k in str(p.get("name", "")).lower() for k in ("clk", "clock", "rst", "reset"))]
+
+    reset_port = next((p.get("name") for p in ports if any(k in str(p.get("name", "")).lower() for k in ("rst", "reset"))), None)
+
+    plan_opcodes: List[PlanOpcode] = []
+    ir_opcodes_list = []
+    if efs_ir and hasattr(efs_ir, "opcodes") and efs_ir.opcodes:
+        ir_opcodes_list = efs_ir.opcodes
+    elif compiled_rtl and compiled_rtl.get("opcodes"):
+        ir_opcodes_list = compiled_rtl["opcodes"]
+    for op in ir_opcodes_list:
+        o_dict = op.to_dict() if hasattr(op, "to_dict") else op
+        plan_opcodes.append(PlanOpcode.from_dict(o_dict))
+
+    plan_obj = RTLGenerationPlan(
+        module_name=target_module_name if target_module_name not in ("target_module", "hardware_module", "custom_module") else spec_parsed.get("module_name", target_module_name),
+        target_language=target if isinstance(target, str) else "Verilog",
+        architecture_class=arch_res.primary_class.value,
+        parameters=[PlanParameter.from_dict(p) for p in (spec_parsed.get("parameters") or compiled_rtl.get("parameters") or [])],
+        ports=[PlanPort.from_dict(p) for p in ports],
+        internal_registers=[PlanRegister.from_dict(r) for r in internal_regs],
+        opcodes=plan_opcodes,
+        fsm=PlanFSM.from_dict(fsm_data) if fsm_data else None,
+        reset_requirements=PlanResetRequirements(
+            reset_polarity="active_low" if (reset_port and "n" in str(reset_port).lower()) else "active_high",
+            reset_signal=reset_port
+        ) if reset_port else PlanResetRequirements(reset_polarity="none", reset_type="none"),
+        datapath=PlanDatapath(description="Direct state machine & register transfer logic"),
+        output_driving_strategy=spec_parsed.get("output_driving_strategy") if "output_driving_strategy" in spec_parsed else None,
+        traceability=PlanTraceability(
+            source_evidence_ids=compiled_rtl.get("source_refs", [])[:10],
+            confidence=arch_res.confidence,
+        )
+    )
+    plan = plan_obj.to_dict()
+    plan["spec_text"] = design_spec
+
+    val = validate_rtl_plan(plan, efs_ir=efs_ir, context_pack=context_pack, spec_text=design_spec)
     plan["specification_status"] = {
         "status": val["status"],
         "blocking_issues": val["issues"]
@@ -841,13 +942,22 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
     return plan
 
 
-def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None, context_pack: Optional[Any] = None) -> Dict[str, Any]:
+def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None, context_pack: Optional[Any] = None, spec_text: str = "") -> Dict[str, Any]:
     """
     Stage B Validation: Verifies that the generated RTL plan faithfully implements the extracted EFSIR or scoped ContextPack.
     Compares: RTL Plan <-> EFSIR / ContextPack (NOT against generic assumed hardware templates).
     """
     logger.info("Validating RTL plan against authoritative EFS IR or scoped ContextPack...")
     all_issues = []
+
+    # Run deep cross-validation with RTLPlanValidator
+    if not spec_text and isinstance(rtl_plan, dict):
+        spec_text = rtl_plan.get("spec_text", "")
+    validator = RTLPlanValidator(efs_ir=efs_ir, context_pack=context_pack, spec_text=spec_text)
+    v_report = validator.validate(rtl_plan)
+    for diag in v_report.diagnostics:
+        d_dict = diag.to_dict()
+        all_issues.append(d_dict)
 
     # Version and Source Consistency Logging
     model_ver = getattr(efs_ir.metadata, "model_version", 1) if (efs_ir and hasattr(efs_ir, "metadata")) else 1
@@ -1331,8 +1441,9 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None, 
 
     # 7. Check for Undriven Output Ports
     output_ports = [p for p in rtl_plan.get("ports", []) if isinstance(p, dict) and str(p.get("direction", "")).lower() in ("output", "out")]
+    has_strat_field = ("output_driving_strategy" in rtl_plan or "output_assignments" in rtl_plan)
     driving_strat = rtl_plan.get("output_driving_strategy") if "output_driving_strategy" in rtl_plan else rtl_plan.get("output_assignments")
-    if driving_strat is not None and output_ports:
+    if has_strat_field and output_ports:
         strat_str = str(driving_strat).lower()
         for op in output_ports:
             op_name = str(op.get("name", "")).lower()
@@ -1515,11 +1626,15 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None, 
     is_valid = len(blocking_issues) == 0
     final_status = "COMPLETE" if is_valid else ("CONTRADICTORY" if has_conflict else "INCOMPLETE")
 
+    spec_status = "COMPLETE" if is_valid else ("CONTRADICTORY" if has_conflict else "SPECIFICATION_INCOMPLETE")
     return {
         "valid": is_valid,
         "status": final_status,
+        "spec_status": spec_status,
         "issues": blocking_issues,
         "all_issues": all_issues,
+        "diagnostics": [i for i in all_issues],
+        "gaps": v_report.gaps if 'v_report' in locals() else [],
         "errors": [i.get("issue", "") for i in blocking_issues],
         "warnings": [i.get("issue", "") for i in all_issues if not i.get("is_blocking", False)],
         "missing_requirements": [i.get("required_information", "") for i in blocking_issues if i.get("classification") in ("PLAN_MISSING", "MISSING")],
@@ -1593,56 +1708,233 @@ def validate_generated_code(
     return len(errors) == 0, errors
 
 
-def generate_code(design_spec: str, target: str, efs_ir: Optional[EFSIR] = None, protocol_rules: Optional[List[Dict[str, Any]]] = None, context_pack: Optional[Any] = None) -> str:
-    """Generate HDL or verification collateral code from ContextPack or design specification."""
-    logger.info(f"Generating hardware code for target '{target}' (2-Stage Architecture)...")
+def execute_unified_rtl_pipeline(
+    design_spec: str,
+    target: str = "Verilog",
+    efs_ir: Optional[EFSIR] = None,
+    protocol_rules: Optional[List[Dict[str, Any]]] = None,
+    context_pack: Optional[Any] = None,
+    generation_mode: Any = "HYBRID",
+    k_candidates: int = 1,
+    rtl_plan: Optional[Dict[str, Any]] = None,
+    hitl_manager: Optional[HITLPlanManager] = None,
+    bypass_conflicts: bool = False,
+    allow_partial: bool = False,
+    user_query: Optional[str] = None,
+    max_recovery_iterations: int = 2,
+    **kwargs
+) -> Dict[str, Any]:
+    """
+    Unified, specification-driven 14-stage EFS-to-RTL pipeline coordinator.
+    Shared coordinator used by orchestrator, Streamlit UI, and evaluation harness.
 
-    # Resolve and validate target HDL language
-    hdl_lang, lang_ver = resolve_hdl_language(target)
+    Execution Stages:
+    1. EFS IR and specification ingestion.
+    2. Semantic validation.
+    3. Architecture classification.
+    4. RTL Generation Plan creation.
+    5. FSM strategy resolution.
+    6. ContextPack compilation.
+    7. RTL Plan validation.
+    8. HITL approval and conflict resolution.
+    9. Final approved plan and ContextPack preparation.
+    10. Hybrid RTL generation.
+    11. Multi-candidate verification.
+    12. Candidate evaluation and ranking.
+    13. Final candidate selection.
+    14. Traceability, metrics, and artifact packaging.
+    """
+    global LAST_GENERATION_REPORT
+
+    # Resolve target language
+    try:
+        hdl_lang, lang_ver = resolve_hdl_language(target, allow_unknown=True)
+    except Exception:
+        hdl_lang, lang_ver = HDLLanguage.UNKNOWN, "Unknown"
+
     if str(target).lower() in ("vhdl",):
-        target_lang = "VHDL"
+        err_msg = (
+            f"SPECIFICATION_INCOMPLETE\n\nTarget Language Selection Ambiguity:\n\n"
+            f"    🔴 [LANGUAGE_UNSUPPORTED] Target language '{target}' is not yet supported in the hybrid generation pipeline.\n\n"
+            f"Required clarification:\n\n"
+            f"    Specify target language explicitly as 'Verilog' (e.g. Verilog-2001, Verilog-2005) or 'SystemVerilog' (e.g. SystemVerilog-2012, SystemVerilog-2017)."
+        )
+        report = {"status": "BLOCKED", "passed": False, "errors": [err_msg], "diagnostics": []}
+        LAST_GENERATION_REPORT = report
+        return {
+            "status": "FAILED",
+            "pipeline_state": "FAILED",
+            "code": err_msg,
+            "report": report,
+            "verification_report": report,
+            "compliance_score": 0,
+            "passed": False,
+            "traceability": [],
+            "repair_history": [],
+            "plan": {},
+        }
     elif hdl_lang == HDLLanguage.UNKNOWN:
-        logger.error(f"Requested target language '{target}' is unsupported or ambiguous.")
-        return (
+        err_msg = (
             f"SPECIFICATION_INCOMPLETE\n\nTarget Language Selection Ambiguity:\n\n"
             f"    🔴 [LANGUAGE_UNSUPPORTED] Unsupported or ambiguous HDL target '{target}'.\n\n"
             f"Required clarification:\n\n"
             f"    Specify target language explicitly as 'Verilog' (e.g. Verilog-2001, Verilog-2005) or 'SystemVerilog' (e.g. SystemVerilog-2012, SystemVerilog-2017)."
         )
+        report = {"status": "BLOCKED", "passed": False, "errors": [err_msg], "diagnostics": []}
+        LAST_GENERATION_REPORT = report
+        return {
+            "status": "FAILED",
+            "pipeline_state": "FAILED",
+            "code": err_msg,
+            "report": report,
+            "verification_report": report,
+            "compliance_score": 0,
+            "passed": False,
+            "traceability": [],
+            "repair_history": [],
+            "plan": {},
+        }
     else:
         target_lang = hdl_lang.value
-    
-    # Stage 1: Generate Structured RTL Implementation Plan
-    rtl_plan = plan_rtl(design_spec, target_lang, efs_ir=efs_ir, context_pack=context_pack)
-    
-    # Deterministic Completeness Validation (Must run AFTER Stage 1 and BEFORE Stage 2)
-    validation = validate_rtl_plan(rtl_plan, efs_ir=efs_ir, context_pack=context_pack)
-    
-    if not validation.get("valid", False):
-        issues = validation.get("issues", [])
-        logger.warning(f"RTL Generation BLOCKED: Specification is incomplete or contradictory for target '{target_lang}'. Issues: {issues}")
-        
-        # Convert blocking validation issues into structured EFSConflict objects and attach to efs_ir
-        if efs_ir is not None:
-            try:
-                from core.verification.conflict_resolution_engine import ConflictResolutionEngine
-                parsed_conflicts = ConflictResolutionEngine.parse_specification_issues_to_conflicts(issues, efs_ir=efs_ir)
-                if not hasattr(efs_ir, "conflicts") or efs_ir.conflicts is None:
-                    efs_ir.conflicts = []
-                existing_keys = {getattr(c, "semantic_key", "") for c in efs_ir.conflicts}
-                for pc in parsed_conflicts:
-                    k = pc.semantic_key or ConflictResolutionEngine.compute_semantic_key(pc)
-                    if k not in existing_keys:
-                        efs_ir.conflicts.append(pc)
-                        existing_keys.add(k)
-            except Exception as e:
-                logger.warning(f"Failed to attach validation conflicts to efs_ir: {e}")
-        
-        missing_lines = []
-        req_lines = []
-        seen_issues = set()
-        seen_reqs = set()
-        
+
+    # Parse generation mode
+    from core.agents.constrained_generator import GenerationMode, generate_hybrid_rtl
+    if isinstance(generation_mode, str):
+        try:
+            mode_enum = GenerationMode(generation_mode.upper())
+        except Exception:
+            mode_enum = GenerationMode.HYBRID
+    else:
+        mode_enum = generation_mode
+
+    # -- STAGE 1: EFS IR and specification ingestion -----------------------
+    active_ir = efs_ir
+    approved_resolutions = [r for r in getattr(active_ir, "resolutions", []) if getattr(r, "approval_status", "") == "APPROVED"]
+    if approved_resolutions:
+        res_lines = [f"- {r.conflict_id} ({getattr(r, 'target_entity', '')}): {r.resolved_value}" for r in approved_resolutions]
+        if "=== APPROVED RESOLUTIONS ===" not in design_spec:
+            design_spec = design_spec.strip() + "\n\n=== APPROVED RESOLUTIONS ===\n" + "\n".join(res_lines)
+
+    if active_ir is None:
+        from core.efs_ir.models import EFSSignal, EFSRequirement
+        signals = []
+        for line in design_spec.splitlines():
+            m = re.search(r"^\s*[-*]?\s*([a-zA-Z_]\w*)\s*:\s*(input|output|inout)\b(?:\s*,\s*(\d+|\[[^\]]+\]|\w+))?", line, re.IGNORECASE)
+            if m:
+                s_name = m.group(1)
+                s_dir = m.group(2).lower()
+                s_w = m.group(3) or "1"
+                signals.append(EFSSignal(name=s_name, direction=s_dir, width=s_w, description=line.strip()))
+        active_ir = EFSIR(signals=signals, requirements=[EFSRequirement(requirement_id="REQ_BASE", description=design_spec[:200])])
+
+    # -- STAGE 2: Semantic validation --------------------------------------
+    validation_issues = []
+
+    # -- STAGE 3: Architecture classification ------------------------------
+    from core.agents.spec_classifier import classify_spec_type, SpecType
+    try:
+        spec_type_enum = classify_spec_type(design_spec, efs_ir=active_ir)
+        arch_class = spec_type_enum.value
+    except Exception as e_cls:
+        logger.debug(f"Architecture classification note: {e_cls}")
+        arch_class = "CUSTOM_ARCHITECTURE"
+
+    # -- STAGE 4: RTL Generation Plan creation -----------------------------
+    plan_to_use = rtl_plan
+    if plan_to_use is None:
+        plan_to_use = plan_rtl(design_spec, target_lang, efs_ir=active_ir, context_pack=context_pack)
+    if isinstance(plan_to_use, dict):
+        plan_to_use["architecture_class"] = arch_class
+
+    # -- STAGE 5: FSM strategy resolution ----------------------------------
+    try:
+        fsm_strategy, inferred_fsm = FSMInferenceEngine.infer_fsm_strategy(efs_ir=active_ir, design_spec=design_spec)
+        strat_val = fsm_strategy.value if hasattr(fsm_strategy, "value") else str(fsm_strategy)
+        if isinstance(plan_to_use, dict):
+            plan_to_use["fsm_strategy"] = strat_val
+            if inferred_fsm and not plan_to_use.get("fsm"):
+                plan_to_use["fsm"] = inferred_fsm.to_dict() if hasattr(inferred_fsm, "to_dict") else inferred_fsm
+    except Exception as e_fsm:
+        logger.debug(f"FSM strategy resolution note: {e_fsm}")
+
+    # -- STAGE 6: ContextPack compilation ----------------------------------
+    compiled_pack = context_pack
+    if compiled_pack is None:
+        try:
+            from core.retrieval.context_compiler import compile_task_context
+            query_str = user_query or design_spec[:100]
+            compiled_pack, _ = compile_task_context(query_str, active_ir, all_protocol_rules=protocol_rules)
+        except Exception as e_cp:
+            logger.debug(f"ContextPack compilation inline: {e_cp}")
+
+    # Record telemetry
+    try:
+        from core.context_compiler import CompilationMetrics, record_generation_telemetry, estimate_tokens
+        orig_tokens = estimate_tokens(design_spec) + (estimate_tokens(active_ir) if active_ir else 0)
+        compiled_tokens = estimate_tokens(plan_to_use)
+        metrics = CompilationMetrics(
+            artifact_type="rtl",
+            compiler_used="UnifiedRTLPipelineCoordinator",
+            original_context_tokens=orig_tokens,
+            compiled_context_tokens=compiled_tokens,
+            system_prompt_tokens=0,
+            final_input_tokens=compiled_tokens,
+            output_tokens=0,
+        )
+        mod_name = plan_to_use.get("module_name", "mod") if isinstance(plan_to_use, dict) else "mod"
+        record_generation_telemetry(metrics, generation_name=f"unified_rtl_{mod_name}")
+    except Exception as e_tel:
+        logger.debug(f"Telemetry logging notice: {e_tel}")
+
+    # -- STAGE 7: RTL Plan validation --------------------------------------
+    validation = validate_rtl_plan(plan_to_use, efs_ir=active_ir, context_pack=compiled_pack, spec_text=design_spec)
+
+    # -- STAGE 8: HITL approval and conflict resolution --------------------
+    plan_is_valid = validation.get("valid", True) and validation.get("status") not in ("SPECIFICATION_INCOMPLETE", "CONTRADICTORY")
+    issues = validation.get("issues", [])
+
+    if not plan_is_valid and active_ir is not None and not getattr(active_ir, "conflicts", None):
+        try:
+            from core.verification.conflict_resolution_engine import ConflictResolutionEngine
+            parsed_conflicts = ConflictResolutionEngine.parse_specification_issues_to_conflicts(issues, efs_ir=active_ir)
+            active_ir.conflicts = parsed_conflicts
+        except Exception as e_conf:
+            logger.debug(f"Conflict attachment notice: {e_conf}")
+
+    # Filter out issues that match resolved conflict IDs or properties
+    resolved_keys = {
+        str(getattr(r, "conflict_id", "")).lower() for r in approved_resolutions
+    } | {
+        str(getattr(r, "target_entity", "")).lower() for r in approved_resolutions
+    } | {
+        str(getattr(r, "property", "")).lower() for r in approved_resolutions
+    }
+
+    unresolved_blocking = []
+    if active_ir and hasattr(active_ir, "conflicts"):
+        for c in active_ir.conflicts:
+            cid = getattr(c, "conflict_id", getattr(c, "id", ""))
+            status = getattr(c, "resolution_status", getattr(c, "status", "UNRESOLVED"))
+            blocking = getattr(c, "blocking", True)
+            if cid.lower() not in resolved_keys and blocking and status in ("UNRESOLVED", "ACTIVE"):
+                unresolved_blocking.append(c)
+
+    remaining_blocking_issues = []
+    for issue in issues:
+        iss_str = str(issue.get("issue", issue) if isinstance(issue, dict) else issue).lower()
+        aff = str(issue.get("affected_object", "") if isinstance(issue, dict) else "").lower()
+        cat = str(issue.get("category", "") if isinstance(issue, dict) else "").lower()
+        cid = str(issue.get("conflict_id", "") if isinstance(issue, dict) else "").lower()
+        is_res = (
+            any(k in iss_str or (aff and k in aff) or (cat and k in cat) or (cid and k in cid) for k in resolved_keys if k) or
+            any(cid and getattr(c, "conflict_id", "").lower() == cid and getattr(c, "resolution_status", "") == "RESOLVED" for c in (getattr(active_ir, "conflicts", []) or []))
+        )
+        if not is_res:
+            remaining_blocking_issues.append(issue)
+
+    has_blocking = len(unresolved_blocking) > 0 or (len(remaining_blocking_issues) > 0 and not plan_is_valid)
+
+    if has_blocking and not bypass_conflicts and not allow_partial:
         badge_map = {
             "MISSING": "🔴 [MISSING]",
             "CONFLICT": "🟠 [CONFLICT]",
@@ -1652,161 +1944,214 @@ def generate_code(design_spec: str, target: str, efs_ir: Optional[EFSIR] = None,
             "IMPLEMENTATION_CHOICE": "⚙️ [IMPLEMENTATION CHOICE]",
             "UNSUPPORTED": "🟣 [UNSUPPORTED]"
         }
-        
+        missing_lines = []
+        req_lines = []
+        seen_issues = set()
+        seen_reqs = set()
         for issue in issues:
-            iss_text = str(issue.get("issue", "")).strip()
-            req_text = str(issue.get("required_information", "")).strip()
-            cat = issue.get("category", "GENERAL")
-            cls = issue.get("classification", "MISSING")
-            evid = issue.get("evidence", issue.get("source_evidence", "N/A"))
-            badge = badge_map.get(cls, f"🔴 [{cls}]")
-            
+            iss_text = str(issue.get("issue", "")).strip() if isinstance(issue, dict) else str(issue).strip()
+            req_text = str(issue.get("required_information", "")).strip() if isinstance(issue, dict) else ""
+            cat = issue.get("category", "GENERAL") if isinstance(issue, dict) else "GENERAL"
+            cls_name = issue.get("classification", "MISSING") if isinstance(issue, dict) else "MISSING"
+            evid = issue.get("evidence", issue.get("source_evidence", "N/A")) if isinstance(issue, dict) else "N/A"
+            badge = badge_map.get(cls_name, f"🔴 [{cls_name}]")
             if iss_text and iss_text not in seen_issues:
                 seen_issues.add(iss_text)
                 missing_lines.append(f"    {badge} [{cat}] {iss_text} | Source: {evid}")
             if req_text and req_text not in seen_reqs:
                 seen_reqs.add(req_text)
                 req_lines.append(f"    {req_text}")
-                
+
         missing_str = "\n".join(missing_lines) if missing_lines else "    Specification requirements are incomplete or ambiguous."
         req_str = "\n".join(req_lines) if req_lines else "    Provide explicit signal, register, and FSM transition definitions."
-        
-        return f"SPECIFICATION_INCOMPLETE\n\nMissing/ambiguous requirements:\n\n{missing_str}\n\nRequired clarification:\n\n{req_str}"
-        
-    logger.info(f"Proceeding to Stage 2 RTL generation for target '{target_lang}'")
-    
-    module_name = rtl_plan.get("module_name", "custom_module")
-    ports = rtl_plan.get("ports", [])
+        incomplete_msg = f"SPECIFICATION_INCOMPLETE\n\nMissing/ambiguous requirements:\n\n{missing_str}\n\nRequired clarification:\n\n{req_str}"
 
-    # Stage 2 LLM generation using validated Stage 1 RTL plan and scoped protocol rules
-    llm = get_llm_client()
-    lang_system_prompt = get_system_prompt(target_lang, lang_ver)
+        proposals_map = {}
+        for c in unresolved_blocking:
+            cid = getattr(c, "conflict_id", getattr(c, "id", "CONF"))
+            alts = HITLPlanManager._synthesize_alternatives(
+                getattr(c, "category", "GENERAL"),
+                getattr(c, "description", ""),
+                getattr(c, "evidence", "")
+            )
+            proposals_map[cid] = alts
 
-    if llm.available:
-        rules_to_use = protocol_rules or []
-        if not rules_to_use and context_pack:
-            if hasattr(context_pack, "protocol_rules"):
-                rules_to_use = context_pack.protocol_rules
-            elif isinstance(context_pack, dict):
-                rules_to_use = context_pack.get("relevant_protocol_rules", [])
+        report = {
+            "status": "BLOCKED",
+            "passed": False,
+            "errors": [incomplete_msg],
+            "diagnostics": issues,
+            "unresolved_conflicts": [getattr(c, "to_dict", lambda: c)() for c in unresolved_blocking],
+        }
+        LAST_GENERATION_REPORT = report
 
-        raw_user_query = ""
-        if context_pack and hasattr(context_pack, "task") and getattr(context_pack.task, "raw_query", None):
-            raw_user_query = str(context_pack.task.raw_query).strip()
-        user_query_note = f"\nTargeted User Generation Request: \"{raw_user_query}\"\n" if raw_user_query else ""
+        return {
+            "status": "AWAITING_HITL",
+            "pipeline_state": "AWAITING_HITL",
+            "requires_human_decision": True,
+            "code": incomplete_msg,
+            "report": report,
+            "verification_report": report,
+            "compliance_score": 0,
+            "passed": False,
+            "conflicts": unresolved_blocking,
+            "proposals": proposals_map,
+            "plan": plan_to_use if isinstance(plan_to_use, dict) else (plan_to_use.to_dict() if hasattr(plan_to_use, "to_dict") else {}),
+            "architecture_classification": arch_class,
+            "traceability": [],
+            "repair_history": [],
+            "issues": issues,
+        }
 
-        stage2_prompt = f"""Generate synthesizable {target_lang} module code based on this approved RTL plan:{user_query_note}
-{json.dumps(rtl_plan, indent=2)}
+    # -- STAGE 9: Final approved plan and ContextPack preparation -----------
+    if isinstance(plan_to_use, dict):
+        plan_to_use["status"] = "APPROVED"
 
-Relevant protocol rules:
-{json.dumps(rules_to_use, indent=2)}
+    # -- STAGE 10: Hybrid RTL generation -----------------------------------
+    code, gen_report = generate_hybrid_rtl(
+        design_spec=design_spec,
+        target=target_lang,
+        efs_ir=active_ir,
+        rtl_plan=plan_to_use,
+        context_pack=compiled_pack,
+        mode=mode_enum,
+        k_candidates=k_candidates,
+        **kwargs
+    )
 
-Target module name: {module_name}
-
-Output ONLY raw synthesizable {target_lang} code with `module {module_name} ... endmodule` without conversational markdown or explanations.
-Ensure all sequential and combinational procedural blocks are fully implemented without empty blocks, placeholder comments, or truncated structures.
-"""
-        try:
-            code = llm.complete(lang_system_prompt, stage2_prompt, model=CONFIG.llm.model)
-            cleaned = clean_generated_code(code)
-            if target_lang == "Verilog" and cleaned and any(k in cleaned for k in ("logic", "always_comb", "always_ff")):
-                cleaned = re.sub(r"\binput\s+logic\b", "input wire", cleaned)
-                cleaned = re.sub(r"\boutput\s+logic\b", "output reg", cleaned)
-                cleaned = re.sub(r"\blogic\b", "wire", cleaned)
-                cleaned = re.sub(r"\balways_comb\b", "always @(*)", cleaned)
-                cleaned = re.sub(r"\balways_ff\b", "always", cleaned)
-
-            is_valid_code, code_errors = validate_generated_code(
-                cleaned, rtl_plan, target_language=target_lang, language_version=lang_ver, efs_ir=efs_ir
+    is_partial = False
+    if allow_partial and not plan_is_valid:
+        is_partial = True
+        if "endmodule" in code:
+            code = code.replace(
+                "endmodule",
+                "\n    // [PARTIAL GENERATION] Note: Unimplemented incomplete specification blocks omitted safely.\nendmodule"
             )
 
-            # Bounded repair loop (up to 2 iterations) if generated code has defects
-            repair_attempts = 0
-            while not is_valid_code and repair_attempts < 2:
-                logger.info(f"Generated RTL has defects ({code_errors}); running bounded repair attempt {repair_attempts + 1}/2...")
-                repair_prompt = f"""The generated {target_lang} module has the following validation defects:
-{chr(10).join(f"- {e}" for e in code_errors)}
+    # -- STAGE 14: Traceability, metrics, and artifact packaging ------------
+    from core.verification.candidate_verifier import verify_candidate_traceability
+    plan_dict = plan_to_use if isinstance(plan_to_use, dict) else (plan_to_use.to_dict() if hasattr(plan_to_use, "to_dict") else {})
+    trace_report = verify_candidate_traceability(code, plan_dict, efs_ir=active_ir)
+    traceability_list = [item.to_dict() for item in trace_report.items]
 
-Please repair the {target_lang} code for module {module_name} to eliminate all syntax defects, empty blocks, placeholder comments, missing port vectors, language violations, and undriven outputs.
-Ensure all procedural blocks contain executable hardware logic conforming strictly to {target_lang}.
-Output ONLY raw synthesizable {target_lang} code with `module {module_name} ... endmodule`.
+    passed = bool(gen_report.get("passed", False))
+    comp_score = gen_report.get("score", 100 if passed else 0)
+    repairs_applied = gen_report.get("repair_history", [])
 
-Previous code:
-{cleaned}
-"""
-                repaired = llm.complete(lang_system_prompt, repair_prompt, model=CONFIG.llm.model)
-                repaired_clean = clean_generated_code(repaired)
-                if target_lang == "Verilog" and repaired_clean and any(k in repaired_clean for k in ("logic", "always_comb", "always_ff")):
-                    repaired_clean = re.sub(r"\binput\s+logic\b", "input wire", repaired_clean)
-                    repaired_clean = re.sub(r"\boutput\s+logic\b", "output reg", repaired_clean)
-                    repaired_clean = re.sub(r"\blogic\b", "wire", repaired_clean)
-                    repaired_clean = re.sub(r"\balways_comb\b", "always @(*)", repaired_clean)
-                    repaired_clean = re.sub(r"\balways_ff\b", "always", repaired_clean)
+    final_pipeline_state = "PARTIAL" if is_partial else ("COMPLETED" if passed else "FAILED")
+    final_status = "SUCCESS" if passed else ("PARTIAL" if is_partial else "REJECTED")
 
-                if repaired_clean and "module " in repaired_clean and "endmodule" in repaired_clean:
-                    is_valid_code, code_errors = validate_generated_code(
-                        repaired_clean, rtl_plan, target_language=target_lang, language_version=lang_ver, efs_ir=efs_ir
-                    )
-                    if is_valid_code:
-                        cleaned = repaired_clean
-                        break
-                repair_attempts += 1
+    result = {
+        "status": final_status,
+        "pipeline_state": final_pipeline_state,
+        "code": code,
+        "report": gen_report,
+        "verification_report": gen_report,
+        "compliance_score": comp_score,
+        "passed": passed,
+        "is_partial": is_partial,
+        "architecture_classification": arch_class,
+        "plan": plan_dict,
+        "context_pack": compiled_pack,
+        "traceability": traceability_list,
+        "repair_history": repairs_applied,
+        "tool_compilation": {
+            "iverilog": {
+                "tool": "iverilog",
+                "status": gen_report.get("compile", {}).get("status", "NOT_AVAILABLE") if gen_report.get("compile", {}).get("tool_name") == "iverilog" else "NOT_AVAILABLE",
+                "version": gen_report.get("compile", {}).get("tool_version", "N/A"),
+                "available": gen_report.get("compile", {}).get("tool_available", False)
+            },
+            "verilator": {
+                "tool": "verilator",
+                "status": "NOT_AVAILABLE",
+                "version": "N/A",
+                "available": False
+            }
+        },
+        "diagnostics": gen_report.get("diagnostics", []),
+        "errors": gen_report.get("errors", []),
+        "multi_candidate_report": gen_report.get("multi_candidate_report"),
+    }
+    LAST_GENERATION_REPORT = gen_report
+    return result
 
-            if is_valid_code and cleaned and "module " in cleaned and "endmodule" in cleaned:
-                try:
-                    from core.context_compiler import CompilationMetrics, record_generation_telemetry, estimate_tokens
-                    sys_tokens = estimate_tokens(lang_system_prompt)
-                    in_tokens = sys_tokens + estimate_tokens(stage2_prompt)
-                    provider_tokens = llm.last_usage.get("prompt_tokens") if (hasattr(llm, "last_usage") and isinstance(llm.last_usage.get("prompt_tokens"), (int, float))) else None
-                    out_tokens = llm.last_usage.get("completion_tokens") if (hasattr(llm, "last_usage") and isinstance(llm.last_usage.get("completion_tokens"), (int, float))) else estimate_tokens(cleaned)
-                    orig_tokens = estimate_tokens(design_spec) + (estimate_tokens(efs_ir) if efs_ir else 0)
-                    compiled_tokens = estimate_tokens(rtl_plan) + estimate_tokens(rules_to_use)
-                    
-                    actual_input = provider_tokens or in_tokens
-                    orig = max(orig_tokens, 1)
-                    reduction = round(max(0.0, (orig - actual_input) / orig) * 100, 2)
-                    end_to_end = round(max(0.0, (orig - in_tokens) / orig) * 100, 2)
-                    logger.info(
-                        f"[GenerationContext] artifact=rtl_stage2 | "
-                        f"original_tokens={orig_tokens} | "
-                        f"compiled_tokens={compiled_tokens} | "
-                        f"final_prompt_tokens={estimate_tokens(stage2_prompt)} | "
-                        f"final_input_tokens={in_tokens} | "
-                        f"provider_input_tokens={provider_tokens or 'N/A'} | "
-                        f"output_tokens={out_tokens} | "
-                        f"context_reduction={reduction}% | "
-                        f"end_to_end_reduction={end_to_end}%"
-                    )
-                    metrics = CompilationMetrics(
-                        artifact_type="rtl",
-                        compiler_used="RTLContextCompiler",
-                        original_context_tokens=orig_tokens,
-                        compiled_context_tokens=compiled_tokens,
-                        system_prompt_tokens=sys_tokens,
-                        final_input_tokens=in_tokens,
-                        output_tokens=out_tokens,
-                        extra_details={"provider_input_tokens": provider_tokens}
-                    )
-                    record_generation_telemetry(metrics, generation_name=f"rtl_stage2_{module_name}", model=CONFIG.llm.model)
-                except Exception as ex_tel:
-                    logger.debug(f"Stage 2 telemetry error: {ex_tel}")
-                return cleaned
-            else:
-                logger.warning(f"Stage 2 LLM generation produced incomplete code after repairs ({code_errors}); falling back to deterministic template.")
-        except Exception as e:
-            logger.warning(f"Stage 2 LLM generation failed, falling back to deterministic template: {e}")
 
-    # Deterministic Heuristic Fallback: synthesizes complete functional RTL without placeholder comments
-    fallback_code = get_heuristic_code_template(target_lang, design_spec, efs_ir=efs_ir, rtl_plan=rtl_plan)
-    fb_valid, fb_errors = validate_generated_code(
-        fallback_code, rtl_plan, target_language=target_lang, language_version=lang_ver, efs_ir=efs_ir
+def generate_code(
+    design_spec: str,
+    target: str,
+    efs_ir: Optional[EFSIR] = None,
+    protocol_rules: Optional[List[Dict[str, Any]]] = None,
+    context_pack: Optional[Any] = None,
+    generation_mode: Any = "HYBRID",
+    k_candidates: int = 1,
+    return_report: bool = False,
+    bypass_conflicts: bool = False,
+    allow_partial: bool = False,
+    user_query: Optional[str] = None,
+    **kwargs
+) -> Union[str, Tuple[str, Dict[str, Any]]]:
+    """Generate HDL or verification collateral code using the unified 14-stage EFS-to-RTL pipeline coordinator.
+
+    Replaces the legacy monolithic Stage-2 prompt and heuristic fallback.
+    Preserves backwards compatibility for callers expecting a code string.
+    """
+    global LAST_GENERATION_REPORT
+
+    pipeline_res = execute_unified_rtl_pipeline(
+        design_spec=design_spec,
+        target=target,
+        efs_ir=efs_ir,
+        protocol_rules=protocol_rules,
+        context_pack=context_pack,
+        generation_mode=generation_mode,
+        k_candidates=k_candidates,
+        bypass_conflicts=bypass_conflicts,
+        allow_partial=allow_partial,
+        user_query=user_query,
+        **kwargs
     )
-    if fb_valid:
-        return fallback_code
 
-    logger.error(f"Fallback generation incomplete for target {target_lang}: {fb_errors}")
-    return f"SPECIFICATION_INCOMPLETE\n\nCannot generate synthesizable {target_lang} RTL. Deficiencies:\n" + "\n".join(f"- {e}" for e in fb_errors)
+    code = pipeline_res.get("code", "")
+    LAST_GENERATION_REPORT = pipeline_res.get("report", {})
 
+    if return_report:
+        return code, pipeline_res
+    return code
+
+
+def generate_candidate_k_rtl(
+    design_spec: str,
+    target: str = "Verilog",
+    efs_ir: Optional[EFSIR] = None,
+    k_candidates: int = 1,
+    rtl_plan: Optional[Dict[str, Any]] = None,
+    context_pack: Optional[Any] = None,
+    generation_mode: Any = "HYBRID",
+    **kwargs
+) -> Tuple[str, Any]:
+    """Generate candidate RTL code for k candidates using the Hybrid RTL Engine."""
+    from core.agents.constrained_generator import generate_hybrid_rtl, GenerationMode
+
+    if isinstance(generation_mode, str):
+        try:
+            mode_enum = GenerationMode(generation_mode.upper())
+        except Exception:
+            mode_enum = GenerationMode.HYBRID
+    else:
+        mode_enum = generation_mode
+
+    code, report = generate_hybrid_rtl(
+        design_spec=design_spec,
+        target=target,
+        efs_ir=efs_ir,
+        rtl_plan=rtl_plan,
+        context_pack=context_pack,
+        mode=mode_enum,
+        k_candidates=k_candidates,
+        **kwargs
+    )
+    return code, report
 
 
 def sanitize_module_name(name: str) -> str:

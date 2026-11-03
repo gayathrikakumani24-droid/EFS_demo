@@ -24,6 +24,7 @@ from core.context_compiler.base import (
 from core.context_compiler.resolver import ContextResolver
 from core.context_compiler.validator import GroundingValidator
 from core.context_compiler.budget import TokenBudgetController
+from core.agents.spec_classifier import classify_hardware_architecture, ArchitectureClass
 from utils.logger import get_logger
 
 logger = get_logger("context_compiler.rtl")
@@ -113,9 +114,11 @@ class RTLContextCompiler(BaseContextCompiler):
                 m_match = re.search(r"#\s*Hardware Design Specification:\s*([A-Za-z0-9_\-\s]+)", design_spec_arg)
                 if not m_match:
                     m_match = re.search(r"module\s+([a-zA-Z0-9_]+)", design_spec_arg, re.IGNORECASE)
+                if not m_match:
+                    m_match = re.search(r"#\s*([A-Za-z0-9_\-\s]+)", design_spec_arg)
                 if m_match:
                     raw_name = m_match.group(1).strip().lower().replace(" ", "_").replace("-", "_")
-        clean_name = re.sub(r"[^a-zA-Z0-9_]+", "_", raw_name.strip()).strip("_")
+        clean_name = re.sub(r"[^a-zA-Z0-9_]+", "_", (raw_name or "hardware_module").strip()).strip("_")
         stop_words = {"builds", "upon", "the", "original", "while", "adding", "for", "and", "with", "a", "an", "in", "to", "of", "from"}
         tokens = [t for t in clean_name.split("_") if t and t.lower() not in stop_words]
         if len(clean_name) > 40 or len(clean_name.split("_")) > 5:
@@ -236,16 +239,24 @@ class RTLContextCompiler(BaseContextCompiler):
             ports.append(port_item)
             signals.append(port_item)
 
-        # If ports list is empty, synthesize standard clock/reset safely
+        # Architecture classification derivation
+        arch_res = classify_hardware_architecture(efs_ir=efs_ir, spec_text=kwargs.get("design_spec", ""))
+        is_pure_comb = (arch_res.primary_class == ArchitectureClass.COMBINATIONAL or (not arch_res.has_clock and not arch_res.has_reset))
+
+        # If ports list is empty and design is sequential, synthesize standard clock/reset safely
         if not ports:
-            ports = [
-                {"name": "clk", "direction": "input", "width": "1", "semantic_role": "clock", "signedness": False},
-                {"name": "rst_n", "direction": "input", "width": "1", "semantic_role": "reset", "signedness": False}
-            ]
-            clock_reset = [
-                {"name": "clk", "type": "clock", "direction": "input", "polarity": "rising"},
-                {"name": "rst_n", "type": "reset", "direction": "input", "polarity": "active_low"}
-            ]
+            if not is_pure_comb:
+                ports = [
+                    {"name": "clk", "direction": "input", "width": "1", "semantic_role": "clock", "signedness": False},
+                    {"name": "rst_n", "direction": "input", "width": "1", "semantic_role": "reset", "signedness": False}
+                ]
+                clock_reset = [
+                    {"name": "clk", "type": "clock", "direction": "input", "polarity": "rising"},
+                    {"name": "rst_n", "type": "reset", "direction": "input", "polarity": "active_low"}
+                ]
+        elif is_pure_comb:
+            # For pure combinational circuits, ensure no spurious clock or reset is injected
+            clock_reset = []
 
         # 3. Extract Registers & Fields (Preserve All Explicit Bit Meanings)
         registers: List[Dict[str, Any]] = []
@@ -516,6 +527,21 @@ class RTLContextCompiler(BaseContextCompiler):
         for p in scoped_signals:
             source_refs.extend(resolver.get_source_refs(p))
 
+        # Merge parameters from EFS IR if available
+        all_params = list(sem_deps.parameters)
+        if efs_ir and hasattr(efs_ir, "parameters") and efs_ir.parameters:
+            for param in efs_ir.parameters:
+                p_dict = param.to_dict() if hasattr(param, "to_dict") else vars(param)
+                if not any(p.get("name") == p_dict.get("name") for p in all_params):
+                    all_params.append(p_dict)
+
+        # Collect approved HITL resolutions
+        approved_resolutions: List[Dict[str, Any]] = []
+        if efs_ir and hasattr(efs_ir, "resolutions"):
+            for res in (efs_ir.resolutions or []):
+                if getattr(res, "approval_status", "") == "APPROVED":
+                    approved_resolutions.append(res.to_dict() if hasattr(res, "to_dict") else vars(res))
+
         # Build Minimum Sufficient Compiled RTL Context
         compiled_context = {
             "module": {
@@ -523,7 +549,10 @@ class RTLContextCompiler(BaseContextCompiler):
                 "type": target_comp.type if target_comp else "module",
                 "description": (target_comp.description if target_comp else "") or f"Synthesizable module {mod_name}",
             },
-            "parameters": sem_deps.parameters,
+            "architecture_classification": arch_res.to_dict(),
+            "approved_resolutions": approved_resolutions,
+            "context_reduction_manifest": [],
+            "parameters": all_params,
             "ports": ports,
             "clock_reset": clock_reset,
             "signals": signals,

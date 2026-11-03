@@ -109,10 +109,10 @@ def generate_design_spec(requirement_model: Any, plan: Dict[str, Any], protocol_
         logger.warning("LLM failed to return a valid design spec text. Falling back to heuristic spec.")
 
     clean_model = _clean_model_for_json(requirement_model)
-    return get_heuristic_spec(clean_model, plan, protocol_rules)
+    return get_heuristic_spec(clean_model, plan, protocol_rules, efs_ir=efs_ir)
 
 
-def get_heuristic_spec(req_model: Dict[str, Any], plan: Dict[str, Any], protocol_rules: List[Dict[str, Any]]) -> str:
+def get_heuristic_spec(req_model: Dict[str, Any], plan: Dict[str, Any], protocol_rules: List[Dict[str, Any]], efs_ir: Optional[Any] = None) -> str:
     """Heuristic spec generator when LLM is unavailable."""
     ports_rows = []
     ports = req_model.get("signals") or []
@@ -140,6 +140,26 @@ def get_heuristic_spec(req_model: Dict[str, Any], plan: Dict[str, Any], protocol
                 continue
             ports_rows.append(f"| {p_name} | {p_width} | {p_dir} | {p_desc} |")
         
+    # Opcodes & Instruction set table
+    raw_opcs = []
+    if efs_ir and hasattr(efs_ir, "opcodes") and efs_ir.opcodes:
+        raw_opcs = efs_ir.opcodes
+    elif req_model.get("opcodes"):
+        raw_opcs = req_model.get("opcodes")
+
+    opc_rows = []
+    for op in raw_opcs:
+        op_m = (op.mnemonic if hasattr(op, "mnemonic") else op.get("mnemonic", op.get("name", "")) or "").strip()
+        op_e = str(op.binary_encoding if hasattr(op, "binary_encoding") else op.get("binary_encoding", op.get("encoding", "")) or "").strip()
+        op_desc = (op.operation if hasattr(op, "operation") else op.get("operation", "")) or "-"
+        if op_m:
+            opc_rows.append(f"| {op_m} | {op_e or '-'} | {op_desc} |")
+
+    opc_section = ""
+    if opc_rows:
+        opc_table = "\n".join(opc_rows)
+        opc_section = f"\n\n## 6. Opcode and Instruction Definitions\n| Mnemonic | Binary Encoding | Operation |\n|---|---|---|\n{opc_table}"
+
     regs_rows = []
     for r in req_model.get("registers", []):
         if isinstance(r, dict):
@@ -194,10 +214,12 @@ Transitions:
 |---|---|---|---|
 {chr(10).join(regs_rows)}
 
-## 6. Protocol Compliance Checklist
+{opc_section}
+
+## 7. Protocol Compliance Checklist
 {chr(10).join(rules_list) if rules_list else "- General interface compliance."}
 
-## 7. Key Design Assumptions
+## 8. Key Design Assumptions
 - Target frequency: 100MHz.
 - Standard protocol timings apply.
 """

@@ -69,7 +69,10 @@ def run_design_flow(
     compliance_threshold: int = 90,
     progress_cb: Callable[[str, float], None] = None,
     bypass_conflicts: bool = False,
-    user_query: Optional[str] = None
+    user_query: Optional[str] = None,
+    generation_mode: str = "HYBRID",
+    k_candidates: int = 1,
+    allow_partial: bool = False
 ) -> Dict[str, Any]:
     """Execute the multi-agent design flow end-to-end, returning intermediate and final outputs."""
     import time
@@ -421,7 +424,19 @@ def run_design_flow(
     update_progress(f"Generating initial RTL code for primary target: {primary_target}...", 0.55)
 
     start_time = time.time()
-    code = generate_code(design_spec, primary_target, efs_ir=efs_ir, protocol_rules=protocol_rules, context_pack=context_pack)
+    code, pipe_res = generate_code(
+        design_spec,
+        primary_target,
+        efs_ir=efs_ir,
+        protocol_rules=protocol_rules,
+        context_pack=context_pack,
+        generation_mode=generation_mode,
+        k_candidates=k_candidates,
+        return_report=True,
+        bypass_conflicts=bypass_conflicts,
+        allow_partial=allow_partial,
+        user_query=query_cmd
+    )
     timings[f"{primary_target} Initial Generation"] = time.time() - start_time
     llm_calls_count += 1
 
@@ -458,6 +473,8 @@ def run_design_flow(
                 for conf in unresolved_blocking:
                     proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, efs_ir)
 
+                pipe_plan = pipe_res.get("plan") if isinstance(pipe_res, dict) else None
+                pipe_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
                 return {
                     "status": "AWAITING_HUMAN_DECISION",
                     "pipeline_state": "AWAITING_HUMAN_DECISION",
@@ -466,7 +483,9 @@ def run_design_flow(
                     "is_blocked": False,
                     "user_query": query_cmd,
                     "requirement_model": req_model,
-                    "plan": plan,
+                    "plan": pipe_plan or plan,
+                    "rtl_generation_plan": pipe_plan,
+                    "architecture_classification": pipe_arch,
                     "protocol_rules": protocol_rules,
                     "design_spec": design_spec,
                     "efs_ir": efs_ir,
@@ -480,6 +499,8 @@ def run_design_flow(
                             "final_code": code,
                             "compliance_score": None,
                             "readiness_status": "SPECIFICATION_INCOMPLETE",
+                            "plan": pipe_plan,
+                            "architecture_classification": pipe_arch,
                             "report": {
                                 "failed_checks": [
                                     {"check_name": "Specification Conflict", "violation": c.description}
@@ -503,10 +524,14 @@ def run_design_flow(
                     }
                 }
 
+        pipe_plan = pipe_res.get("plan") if isinstance(pipe_res, dict) else None
+        pipe_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
         outputs[primary_target] = {
             "final_code": code,
             "compliance_score": None,
             "readiness_status": "SPECIFICATION_INCOMPLETE",
+            "plan": pipe_plan,
+            "architecture_classification": pipe_arch,
             "report": {"failed_checks": [{"check_name": "RTL Generation Quality", "violation": "RTL agent could not produce complete synthesizable code from the resolved specification. Review the EFS IR and design spec for gaps."}]},
             "history": [],
             "iterations_run": 0
@@ -520,7 +545,9 @@ def run_design_flow(
             "user_query": query_cmd,
             "error_message": "RTL generation could not produce complete output. The specification passed completeness checks but the RTL agent could not synthesize it. Check the design spec and EFS IR for any remaining ambiguities.",
             "requirement_model": req_model,
-            "plan": plan,
+            "plan": pipe_plan or plan,
+            "rtl_generation_plan": pipe_plan,
+            "architecture_classification": pipe_arch,
             "protocol_rules": protocol_rules,
             "design_spec": design_spec,
             "efs_ir": efs_ir,
@@ -546,24 +573,35 @@ def run_design_flow(
     compliance_report = {}
     repairs_applied = []
     
-    # Best-version tracking variables
+    # Extract candidate verifier results from hybrid pipeline
+    ver_report = pipe_res.get("report", {}) if isinstance(pipe_res, dict) else {}
+    pipe_score = pipe_res.get("compliance_score", ver_report.get("score", 100 if ver_report.get("passed") else 0)) if isinstance(pipe_res, dict) else 100
+    pipe_passed = pipe_res.get("passed", ver_report.get("passed", True)) if isinstance(pipe_res, dict) else True
+    repairs_applied = pipe_res.get("repair_history", []) if isinstance(pipe_res, dict) else []
+    traceability_data = pipe_res.get("traceability", []) if isinstance(pipe_res, dict) else []
+
     best_code = code
-    best_score = -1
-    best_iteration = -1
-    if max_repair_iterations == 0 or (not getattr(CONFIG, "enable_static_verification", False) and not getattr(CONFIG, "enable_semantic_verification", False)):
-        logger.info(f"Verification & repair loop disabled by config. Accepting generated {primary_target} code as unverified.")
-        best_code = code
-        best_score = None
-        best_report = {"compliance_score": None, "passed_checks": [], "failed_checks": [], "warnings": ["Verification disabled by configuration; RTL is unverified."]}
-        outputs[primary_target] = {
-            "final_code": best_code,
-            "compliance_score": None,
-            "readiness_status": "RTL_GENERATED_UNVERIFIED",
-            "report": best_report,
-            "history": [],
-            "iterations_run": 0
-        }
-    else:
+    best_score = pipe_score
+    best_iteration = len(repairs_applied)
+    best_report = ver_report
+
+    # Use unified pipeline candidate verifier results directly
+    outputs[primary_target] = {
+        "final_code": best_code,
+        "compliance_score": best_score,
+        "readiness_status": "RTL_VERIFIED" if pipe_passed else ("PARTIAL" if (isinstance(pipe_res, dict) and pipe_res.get("is_partial")) else "RTL_REJECTED"),
+        "report": best_report,
+        "verification_report": pipe_res.get("verification_report", best_report) if isinstance(pipe_res, dict) else best_report,
+        "traceability": traceability_data,
+        "repair_history": repairs_applied,
+        "history": repairs_applied,
+        "iterations_run": len(repairs_applied),
+        "architecture_classification": pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None,
+        "plan": pipe_res.get("plan") if isinstance(pipe_res, dict) else None,
+        "tool_compilation": pipe_res.get("tool_compilation", {}) if isinstance(pipe_res, dict) else {},
+    }
+
+    if False:  # Legacy regex repair loop replaced by unified Subprompt 3 candidate verifier
         while iteration <= max_repair_iterations:
             update_progress(f"Verifying code for {primary_target} (Iteration {iteration}/{max_repair_iterations})...", 0.50 + (0.15 * (iteration / (max_repair_iterations + 1))))
             
@@ -728,41 +766,32 @@ def run_design_flow(
         update_progress(f"Generating secondary format: {target}...", 0.70 + (0.20 * (idx / max(1, len(secondary_targets)))))
         
         start_time = time.time()
-        sec_code = generate_code(stabilized_context, target, efs_ir=efs_ir, protocol_rules=protocol_rules, context_pack=context_pack)
+        sec_code, sec_res = generate_code(
+            stabilized_context,
+            target,
+            efs_ir=efs_ir,
+            protocol_rules=protocol_rules,
+            context_pack=context_pack,
+            generation_mode=generation_mode,
+            return_report=True,
+            bypass_conflicts=bypass_conflicts
+        )
         timings[f"{target} Generation"] = time.time() - start_time
         llm_calls_count += 1
-        
-        # Verify secondary format (disabled by default)
-        sec_report = {"compliance_score": None, "passed_checks": [], "failed_checks": [], "warnings": ["Secondary format generation unverified."]}
-        sec_score = None
-        sec_readiness = "RTL_GENERATED_UNVERIFIED"
-        if getattr(CONFIG, "verify_secondary_artifacts", False):
-            if getattr(CONFIG, "enable_static_verification", False) or getattr(CONFIG, "enable_semantic_verification", False):
-                sec_report = verify_code(
-                    sec_code,
-                    stabilized_context,
-                    protocol_rules,
-                    req_model,
-                    plan,
-                    efs_ir=efs_ir,
-                    target_language=target
-                )
-                sec_score = sec_report.get("compliance_score")
-                if getattr(CONFIG, "enable_semantic_verification", False):
-                    llm_calls_count += 1
-                static_checks_count += len(sec_report.get("passed_checks", [])) + len(sec_report.get("failed_checks", []))
-                has_crit_sec = any(f.get("severity") in ("CRITICAL", "MAJOR") for f in sec_report.get("failed_checks", []))
-                if not sec_report.get("failed_checks") or (not has_crit_sec and sec_score is not None and sec_score >= compliance_threshold):
-                    sec_readiness = "RTL_VERIFIED"
-            
+
+        sec_report = sec_res.get("report", {}) if isinstance(sec_res, dict) else {}
+        sec_score = sec_res.get("compliance_score", 100 if (isinstance(sec_res, dict) and sec_res.get("passed")) else 0) if isinstance(sec_res, dict) else 100
+        sec_readiness = "RTL_VERIFIED" if (isinstance(sec_res, dict) and sec_res.get("passed")) else "RTL_REJECTED"
+
         outputs[target] = {
             "final_code": sec_code,
             "compliance_score": sec_score,
             "readiness_status": sec_readiness,
             "report": sec_report,
-            "traceability_report": sec_report.get("traceability_report"),
-            "history": [],
-            "iterations_run": 0
+            "verification_report": sec_res.get("verification_report", sec_report) if isinstance(sec_res, dict) else sec_report,
+            "traceability": sec_res.get("traceability", []) if isinstance(sec_res, dict) else [],
+            "history": sec_res.get("repair_history", []) if isinstance(sec_res, dict) else [],
+            "iterations_run": len(sec_res.get("repair_history", [])) if isinstance(sec_res, dict) else 0
         }
 
     update_progress("Design generation complete.", 1.0)
@@ -781,14 +810,39 @@ def run_design_flow(
         final_status = "RTL_VALIDATION_ERROR"
         logger.warning(f"RTL validation failed: {err_msg}. Reporting error without restarting pipeline.")
 
+    final_pipe_state = "PARTIAL" if (isinstance(pipe_res, dict) and pipe_res.get("is_partial")) else ("COMPLETED" if final_status == "SUCCESS" else "FAILED")
+
+    # Generate comprehensive, structured RTL technical summary
+    rtl_summary_text = None
+    try:
+        from core.agents.rtl_summary_generator import generate_comprehensive_rtl_summary
+        pri_code = outputs.get(primary_target, {}).get("final_code", "")
+        pri_report = outputs.get(primary_target, {}).get("report", best_report)
+        pri_plan = (pipe_res.get("plan") if isinstance(pipe_res, dict) and pipe_res.get("plan") else plan)
+        pri_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
+        if pri_code and not pri_code.startswith("SPECIFICATION_INCOMPLETE"):
+            rtl_summary_text = generate_comprehensive_rtl_summary(
+                code=pri_code,
+                efs_ir=efs_ir,
+                rtl_plan=pri_plan,
+                architecture_classification=pri_arch,
+                verification_report=pri_report,
+                target_lang=primary_target
+            )
+            outputs[primary_target]["summary"] = rtl_summary_text
+    except Exception as e_sum:
+        logger.warning(f"Error generating RTL summary: {e_sum}")
+
     return {
         "status": final_status,
-        "pipeline_state": "GENERATION_COMPLETE",
+        "pipeline_state": final_pipe_state,
         "workflow_state": WorkflowState.GENERATION_COMPLETE.value,
         "error_message": err_msg,
         "user_query": query_cmd,
         "requirement_model": req_model,
-        "plan": plan,
+        "plan": (pipe_res.get("plan") if isinstance(pipe_res, dict) and pipe_res.get("plan") else plan),
+        "rtl_generation_plan": pipe_res.get("plan") if isinstance(pipe_res, dict) else None,
+        "architecture_classification": pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None,
         "protocol_rules": protocol_rules,
         "design_spec": design_spec,
         "efs_ir": efs_ir,
@@ -798,6 +852,7 @@ def run_design_flow(
         "diagrams": diagrams,
         "diagram_urls": diagram_urls,
         "outputs": outputs,
+        "rtl_summary": rtl_summary_text,
         # Performance logging metrics
         "performance_metrics": {
             "llm_calls_count": llm_calls_count,
@@ -816,7 +871,10 @@ def resume_design_flow_with_resolutions(
     target_outputs: List[str] = None,
     progress_cb: Callable[[str, float], None] = None,
     bypass_conflicts: bool = False,
-    user_query: Optional[str] = None
+    user_query: Optional[str] = None,
+    generation_mode: str = "HYBRID",
+    k_candidates: int = 1,
+    allow_partial: bool = False
 ) -> Dict[str, Any]:
     """
     Applies user-approved resolution proposals to the design model,
@@ -989,6 +1047,8 @@ def resume_design_flow_with_resolutions(
         and getattr(c, "requires_human_decision", True)
         and (c.resolution_status == "UNRESOLVED" or c.status == "ACTIVE")
         and c.status != "RESOLVED"
+        and c.status != "APPROVED"
+        and getattr(c, "conflict_id", "") not in all_approved_cids
     ]
     blocking_count = len(unresolved_blocking)
     logger.info(f"Revalidation complete: blocking_issues={blocking_count} post_resolution_llm_calls=0")
@@ -1073,12 +1133,18 @@ def resume_design_flow_with_resolutions(
     
     outputs = {}
     primary_target = targets[0] if targets else "Verilog"
-    code = generate_code(
+    code, pipe_res = generate_code(
         resolved_design_spec,
         primary_target,
         efs_ir=resolved_ir,
         protocol_rules=protocol_rules,
-        context_pack=context_pack
+        context_pack=context_pack,
+        generation_mode=generation_mode,
+        k_candidates=k_candidates,
+        return_report=True,
+        bypass_conflicts=bypass_conflicts,
+        allow_partial=allow_partial,
+        user_query=resume_query
     )
 
     # Handle RTL generation returning an insufficient output marker.
@@ -1112,6 +1178,8 @@ def resume_design_flow_with_resolutions(
                 for conf in unresolved_blocking:
                     proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, resolved_ir)
 
+                pipe_plan = pipe_res.get("plan") if isinstance(pipe_res, dict) else None
+                pipe_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
                 return {
                     **design_results,
                     "status": "AWAITING_HUMAN_DECISION",
@@ -1121,7 +1189,9 @@ def resume_design_flow_with_resolutions(
                     "is_blocked": False,
                     "user_query": resume_query,
                     "requirement_model": req_model,
-                    "plan": plan,
+                    "plan": pipe_plan or plan,
+                    "rtl_generation_plan": pipe_plan,
+                    "architecture_classification": pipe_arch,
                     "protocol_rules": protocol_rules,
                     "design_spec": resolved_design_spec,
                     "efs_ir": resolved_ir,
@@ -1137,6 +1207,8 @@ def resume_design_flow_with_resolutions(
                             "final_code": code,
                             "compliance_score": None,
                             "readiness_status": "SPECIFICATION_INCOMPLETE",
+                            "plan": pipe_plan,
+                            "architecture_classification": pipe_arch,
                             "report": {
                                 "failed_checks": [
                                     {"check_name": "Specification Conflict", "violation": c.description}
@@ -1149,10 +1221,14 @@ def resume_design_flow_with_resolutions(
                     }
                 }
 
+        pipe_plan = pipe_res.get("plan") if isinstance(pipe_res, dict) else None
+        pipe_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
         outputs[primary_target] = {
             "final_code": code,
             "compliance_score": None,
             "readiness_status": "SPECIFICATION_INCOMPLETE",
+            "plan": pipe_plan,
+            "architecture_classification": pipe_arch,
             "report": {"failed_checks": [{"check_name": "RTL Generation Quality", "violation": "RTL agent could not produce complete synthesizable code from the resolved specification."}]},
             "history": [],
             "iterations_run": 0
@@ -1167,7 +1243,9 @@ def resume_design_flow_with_resolutions(
             "user_query": resume_query,
             "error_message": "RTL generation could not produce complete output after conflict resolution. The specification passed completeness and conflict checks but the RTL agent was unable to synthesize it.",
             "requirement_model": req_model,
-            "plan": plan,
+            "plan": pipe_plan or plan,
+            "rtl_generation_plan": pipe_plan,
+            "architecture_classification": pipe_arch,
             "protocol_rules": protocol_rules,
             "design_spec": resolved_design_spec,
             "efs_ir": resolved_ir,
@@ -1182,57 +1260,61 @@ def resume_design_flow_with_resolutions(
     logger.info("RTL_GENERATION_COMPLETED: RTL generation completed. Running RTL validation...")
     update_resume_progress("Validating generated RTL against hardware specification...", 0.95)
 
-    # Validate RTL once
-    compliance_report = {"compliance_score": 100, "passed_checks": [], "failed_checks": [], "warnings": []}
-    comp_score = 100
-    try:
-        from core.agents.verification_agent import verify_code
-        compliance_report = verify_code(
-            code,
-            resolved_design_spec,
-            protocol_rules,
-            req_model,
-            plan,
-            efs_ir=resolved_ir
-        )
-        comp_score = compliance_report.get("compliance_score", 100)
-    except Exception as e_ver:
-        logger.warning(f"RTL verification execution warning: {e_ver}")
-
-    failed_checks = compliance_report.get("failed_checks", [])
-    has_critical_violations = any(f.get("severity") in ("CRITICAL", "MAJOR") for f in failed_checks)
-    primary_readiness = "RTL_VERIFIED" if not has_critical_violations else "RTL_GENERATED_UNVERIFIED"
+    ver_report = pipe_res.get("report", {}) if isinstance(pipe_res, dict) else {}
+    comp_score = pipe_res.get("compliance_score", 100 if (isinstance(pipe_res, dict) and pipe_res.get("passed")) else 0) if isinstance(pipe_res, dict) else 100
+    is_passed = pipe_res.get("passed", True) if isinstance(pipe_res, dict) else True
+    primary_readiness = "RTL_VERIFIED" if is_passed else ("PARTIAL" if (isinstance(pipe_res, dict) and pipe_res.get("is_partial")) else "RTL_REJECTED")
 
     outputs[primary_target] = {
         "final_code": code,
         "compliance_score": comp_score,
         "readiness_status": primary_readiness,
-        "report": compliance_report,
-        "history": [],
-        "iterations_run": 0
+        "report": ver_report,
+        "verification_report": pipe_res.get("verification_report", ver_report) if isinstance(pipe_res, dict) else ver_report,
+        "traceability": pipe_res.get("traceability", []) if isinstance(pipe_res, dict) else [],
+        "repair_history": pipe_res.get("repair_history", []) if isinstance(pipe_res, dict) else [],
+        "history": pipe_res.get("repair_history", []) if isinstance(pipe_res, dict) else [],
+        "iterations_run": len(pipe_res.get("repair_history", [])) if isinstance(pipe_res, dict) else 0,
+        "architecture_classification": pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None,
+        "plan": pipe_res.get("plan") if isinstance(pipe_res, dict) else None,
+        "tool_compilation": pipe_res.get("tool_compilation", {}) if isinstance(pipe_res, dict) else {},
     }
-    
+
     # Generate secondary formats if requested
     secondary_targets = [t for t in targets if t != primary_target]
     for sec_tgt in secondary_targets:
         try:
-            sec_code = generate_code(
+            sec_code, sec_res = generate_code(
                 resolved_design_spec,
                 sec_tgt,
                 efs_ir=resolved_ir,
                 protocol_rules=protocol_rules,
-                context_pack=context_pack
+                context_pack=context_pack,
+                generation_mode=generation_mode,
+                return_report=True,
+                bypass_conflicts=bypass_conflicts
             )
+            sec_rep = sec_res.get("report", {}) if isinstance(sec_res, dict) else {}
+            sec_sc = sec_res.get("compliance_score", 100 if sec_res.get("passed") else 0) if isinstance(sec_res, dict) else 100
+            sec_readiness = "RTL_VERIFIED" if (isinstance(sec_res, dict) and sec_res.get("passed")) else "RTL_REJECTED"
             outputs[sec_tgt] = {
                 "final_code": sec_code,
-                "compliance_score": comp_score,
-                "readiness_status": primary_readiness,
-                "report": compliance_report,
-                "history": [],
-                "iterations_run": 0
+                "compliance_score": sec_sc,
+                "readiness_status": sec_readiness,
+                "report": sec_rep,
+                "verification_report": sec_res.get("verification_report", sec_rep) if isinstance(sec_res, dict) else sec_rep,
+                "traceability": sec_res.get("traceability", []) if isinstance(sec_res, dict) else [],
+                "history": sec_res.get("repair_history", []) if isinstance(sec_res, dict) else [],
+                "iterations_run": len(sec_res.get("repair_history", [])) if isinstance(sec_res, dict) else 0,
             }
         except Exception as e_sec:
             logger.warning(f"Failed to generate secondary format {sec_tgt}: {e_sec}")
+
+    failed_checks = ver_report.get("failed_checks", []) if isinstance(ver_report, dict) else []
+    has_critical_violations = any(
+        f.get("severity") in ("CRITICAL", "MAJOR")
+        for f in failed_checks
+    )
 
     if has_critical_violations:
         # Show missing requirement / violation as an error, but do NOT restart the pipeline.
@@ -1268,17 +1350,40 @@ def resume_design_flow_with_resolutions(
     log_generation_end("success")
     update_resume_progress("Generation complete with approved resolutions.", 1.0)
 
+    # Generate comprehensive, structured RTL technical summary post-resume
+    rtl_summary_text = None
+    try:
+        from core.agents.rtl_summary_generator import generate_comprehensive_rtl_summary
+        pri_code = outputs.get(primary_target, {}).get("final_code", "")
+        pri_report = outputs.get(primary_target, {}).get("report", ver_report)
+        pri_plan = (pipe_res.get("plan") if isinstance(pipe_res, dict) and pipe_res.get("plan") else plan)
+        pri_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
+        if pri_code and not pri_code.startswith("SPECIFICATION_INCOMPLETE"):
+            rtl_summary_text = generate_comprehensive_rtl_summary(
+                code=pri_code,
+                efs_ir=resolved_ir,
+                rtl_plan=pri_plan,
+                architecture_classification=pri_arch,
+                verification_report=pri_report,
+                target_lang=primary_target
+            )
+            outputs[primary_target]["summary"] = rtl_summary_text
+    except Exception as e_sum:
+        logger.warning(f"Error generating RTL summary post-resume: {e_sum}")
+
     return {
         **design_results,
-        "status": "SUCCESS",
-        "pipeline_state": "GENERATION_COMPLETE",
+        "status": "SUCCESS" if is_passed else ("PARTIAL" if (isinstance(pipe_res, dict) and pipe_res.get("is_partial")) else "RTL_VALIDATION_ERROR"),
+        "pipeline_state": "PARTIAL" if (isinstance(pipe_res, dict) and pipe_res.get("is_partial")) else ("COMPLETED" if is_passed else "FAILED"),
         "workflow_state": WorkflowState.GENERATION_COMPLETE.value,
         "requires_human_decision": False,
         "is_blocked": False,
         "user_query": resume_query,
         "bypass_warning": bypass_warning,
         "requirement_model": req_model,
-        "plan": plan,
+        "plan": (pipe_res.get("plan") if isinstance(pipe_res, dict) and pipe_res.get("plan") else plan),
+        "rtl_generation_plan": pipe_res.get("plan") if isinstance(pipe_res, dict) else None,
+        "architecture_classification": pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None,
         "protocol_rules": protocol_rules,
         "design_spec": resolved_design_spec,
         "efs_ir": resolved_ir,
@@ -1287,6 +1392,7 @@ def resume_design_flow_with_resolutions(
         "efs_ir_validation_issues": validation_issues,
         "diagrams": diagrams,
         "diagram_urls": diagram_urls,
-        "outputs": outputs
+        "outputs": outputs,
+        "rtl_summary": rtl_summary_text
     }
 
