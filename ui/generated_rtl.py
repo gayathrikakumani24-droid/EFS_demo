@@ -40,6 +40,10 @@ def render() -> None:
             
             if readiness == "RTL_VERIFIED":
                 st.success(f"✅ **Readiness Status: RTL_VERIFIED** — Passed verification checks (Score: `{score}%` at iteration `{iterations}`)")
+            elif readiness == "PARTIAL":
+                st.warning("⚡ **Readiness Status: PARTIAL** — Compliant partial subsets generated safely for incomplete specification.")
+            elif readiness == "RTL_REJECTED":
+                st.error(f"❌ **Readiness Status: RTL_REJECTED** — Candidate failed mandatory verification checks (Score: `{score}%`).")
             elif readiness == "RTL_GENERATED_UNVERIFIED":
                 if score is not None:
                     st.warning(f"⚠️ **Readiness Status: RTL_GENERATED_UNVERIFIED** — Generated RTL has unverified items (Score: `{score}%`)")
@@ -106,3 +110,25 @@ def render() -> None:
                 st.text_area("Specification Incompleteness Report", code, height=300)
             else:
                 st.code(code, language="verilog" if target != "VHDL" else "vhdl")
+
+                # Comprehensive Technical Architecture Documentation
+                summary_text = (
+                    out_data.get("summary")
+                    or results.get("rtl_summary")
+                )
+                if not summary_text:
+                    try:
+                        from core.agents.rtl_summary_generator import generate_comprehensive_rtl_summary
+                        summary_text = generate_comprehensive_rtl_summary(
+                            code=code,
+                            efs_ir=results.get("efs_ir"),
+                            rtl_plan=out_data.get("plan"),
+                            architecture_classification=out_data.get("architecture_classification"),
+                            verification_report=out_data.get("report"),
+                            target_lang=target
+                        )
+                    except Exception:
+                        pass
+                if summary_text:
+                    with st.expander("📑 Comprehensive Technical Architecture Documentation", expanded=False):
+                        st.markdown(summary_text)

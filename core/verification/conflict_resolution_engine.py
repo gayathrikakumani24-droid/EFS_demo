@@ -1744,7 +1744,21 @@ class ConflictResolutionEngine:
             old_key = old.semantic_key or cls.compute_semantic_key(old)
             old.semantic_key = old_key
 
-            if old_key in current_map:
+            is_resolved_by_res = (
+                old.conflict_id in approved_conflict_ids or
+                getattr(old, "status", "") in ("APPROVED", "RESOLVED") or
+                getattr(old, "resolution_status", "") == "RESOLVED" or
+                any((ent.lower(), (old.property or "").lower()) in approved_entity_props for ent in (old.affected_entities or old.entities or []))
+            )
+
+            if is_resolved_by_res:
+                old.status = "RESOLVED"
+                old.resolution_status = "RESOLVED"
+                old.blocking = False
+                old.requires_human_decision = False
+                old.resolved_reason = "Approved resolution applied by designer."
+                matched_current_keys.add(old_key)
+            elif old_key in current_map:
                 old.status = ConflictStatus("UNRESOLVED")
                 old.resolution_status = "UNRESOLVED"
                 old.blocking = True
@@ -1759,15 +1773,11 @@ class ConflictResolutionEngine:
                     old.conflicting_values = list(curr.conflicting_values)
                 matched_current_keys.add(old_key)
             else:
-                is_resolved_by_res = (
-                    old.conflict_id in approved_conflict_ids or
-                    any((ent.lower(), (old.property or "").lower()) in approved_entity_props for ent in (old.affected_entities or old.entities or []))
-                )
                 old.status = "RESOLVED"
                 old.resolution_status = "RESOLVED"
                 old.blocking = False
                 old.requires_human_decision = False
-                old.resolved_reason = "Approved resolution applied: violation no longer exists in current EFS state." if is_resolved_by_res else "Violation no longer exists in current EFS state."
+                old.resolved_reason = "Violation no longer exists in current EFS state."
 
             reconciled.append(old)
 
@@ -1776,10 +1786,22 @@ class ConflictResolutionEngine:
             curr_key = curr.semantic_key or cls.compute_semantic_key(curr)
             curr.semantic_key = curr_key
             if curr_key not in matched_current_keys and curr_key not in old_keys:
-                curr.status = ConflictStatus("UNRESOLVED")
-                curr.resolution_status = "UNRESOLVED"
-                curr.blocking = True
-                curr.requires_human_decision = True
+                is_curr_res = (
+                    curr.conflict_id in approved_conflict_ids or
+                    getattr(curr, "status", "") in ("APPROVED", "RESOLVED") or
+                    getattr(curr, "resolution_status", "") == "RESOLVED" or
+                    any((ent.lower(), (curr.property or "").lower()) in approved_entity_props for ent in (curr.affected_entities or curr.entities or []))
+                )
+                if is_curr_res:
+                    curr.status = "RESOLVED"
+                    curr.resolution_status = "RESOLVED"
+                    curr.blocking = False
+                    curr.requires_human_decision = False
+                else:
+                    curr.status = ConflictStatus("UNRESOLVED")
+                    curr.resolution_status = "UNRESOLVED"
+                    curr.blocking = True
+                    curr.requires_human_decision = True
                 reconciled.append(curr)
                 matched_current_keys.add(curr_key)
 

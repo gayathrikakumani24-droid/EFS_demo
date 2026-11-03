@@ -6,6 +6,7 @@ Crucially: NEVER arbitrarily slices JSON text mid-stream.
 Preserves required behavioral semantics (ports, registers, FSM transitions, handshake signals).
 Prunes lower-priority narrative, verbose comments, and distant source evidence first.
 Logs an explicit overflow warning if required behavioral context exceeds budget.
+Records all reduction decisions in an explicit context_reduction_manifest.
 """
 
 from __future__ import annotations
@@ -51,6 +52,9 @@ class TokenBudgetController:
         Returns:
             (pruned_context, is_exceeded, overflow_warning)
         """
+        context.setdefault("context_reduction_manifest", [])
+        manifest = context["context_reduction_manifest"]
+
         current_tokens = estimate_tokens(context)
         if current_tokens <= max_tokens:
             return context, False, None
@@ -61,12 +65,28 @@ class TokenBudgetController:
         if "ports" in context:
             for p in context["ports"]:
                 if "description" in p and len(str(p["description"])) > 60:
-                    p["description"] = str(p["description"])[:57] + "..."
+                    orig_desc = str(p["description"])
+                    p["description"] = orig_desc[:57] + "..."
+                    manifest.append({
+                        "category": "port_description_trimmed",
+                        "target": p.get("name", "unknown_port"),
+                        "reason": "Token budget reduction",
+                        "original_length": len(orig_desc),
+                        "preserved": p["description"]
+                    })
 
         if "registers" in context:
             for r in context["registers"]:
                 if "description" in r and len(str(r["description"])) > 60:
-                    r["description"] = str(r["description"])[:57] + "..."
+                    orig_desc = str(r["description"])
+                    r["description"] = orig_desc[:57] + "..."
+                    manifest.append({
+                        "category": "register_description_trimmed",
+                        "target": r.get("name", "unknown_reg"),
+                        "reason": "Token budget reduction",
+                        "original_length": len(orig_desc),
+                        "preserved": r["description"]
+                    })
 
         current_tokens = estimate_tokens(context)
         if current_tokens <= max_tokens:
@@ -75,11 +95,24 @@ class TokenBudgetController:
 
         # Step 2: Prune P2 source_evidence & raw source text
         if "source_refs" in context and context["source_refs"]:
-            # Keep only the ref IDs, drop raw text snippets
-            context["source_refs"] = context["source_refs"][:10]
+            if len(context["source_refs"]) > 10:
+                dropped = context["source_refs"][10:]
+                context["source_refs"] = context["source_refs"][:10]
+                manifest.append({
+                    "category": "source_refs_pruned",
+                    "dropped_count": len(dropped),
+                    "dropped_items": dropped,
+                    "reason": "Lower priority P2 source references trimmed to fit budget"
+                })
 
         if "source_evidence" in context and context["source_evidence"]:
+            ev_count = len(context["source_evidence"])
             context["source_evidence"] = []
+            manifest.append({
+                "category": "source_evidence_pruned",
+                "dropped_count": ev_count,
+                "reason": "Raw source evidence text pruned; behavioral models preserved"
+            })
 
         current_tokens = estimate_tokens(context)
         if current_tokens <= max_tokens:
@@ -88,15 +121,25 @@ class TokenBudgetController:
 
         # Step 3: Prune lower priority design plan / notes
         if "implementation_notes" in context:
-            context.pop("implementation_notes", None)
+            notes = context.pop("implementation_notes", None)
+            manifest.append({
+                "category": "implementation_notes_removed",
+                "reason": "Informational design notes removed"
+            })
 
         if "design_plan" in context and isinstance(context["design_plan"], dict):
-            # Keep only architecture overview and interface guidelines
             dp = context["design_plan"]
+            dropped_keys = [k for k in dp.keys() if k not in ("target", "architecture_overview", "interface_strategy")]
             context["design_plan"] = {
                 k: v for k, v in dp.items()
                 if k in ("target", "architecture_overview", "interface_strategy")
             }
+            if dropped_keys:
+                manifest.append({
+                    "category": "design_plan_keys_pruned",
+                    "dropped_keys": dropped_keys,
+                    "reason": "Non-structural design plan sections trimmed"
+                })
 
         current_tokens = estimate_tokens(context)
         if current_tokens <= max_tokens:
@@ -105,7 +148,13 @@ class TokenBudgetController:
 
         # Step 4: Prune secondary submodules (keep only direct target)
         if "connected_submodules" in context and len(context["connected_submodules"]) > 3:
+            dropped_subs = context["connected_submodules"][3:]
             context["connected_submodules"] = context["connected_submodules"][:3]
+            manifest.append({
+                "category": "submodules_pruned",
+                "dropped_count": len(dropped_subs),
+                "reason": "Secondary submodules trimmed; direct target preserved"
+            })
 
         current_tokens = estimate_tokens(context)
         if current_tokens <= max_tokens:

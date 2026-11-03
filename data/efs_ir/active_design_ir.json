@@ -1,31 +1,30 @@
 {
   "metadata": {
-    "design_id": "DSN_66044996",
-    "design_name": "register_mapped_controller",
-    "canonical_id": "EFS_66044996",
-    "display_name": "register-mapped controller",
+    "design_id": "DSN_3d077068",
+    "design_name": "builds_upon_the_original_sme_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
+    "canonical_id": "EFS_3d077068",
+    "display_name": "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
     "aliases": [
-      "register-mapped controller",
-      "register_mapped_controller",
-      "EFS_66044996",
-      "RegisterMappedController",
-      "registerMappedController",
-      "registermappedcontroller",
-      "Register Mapped Controller",
-      "RegisteredMappedController"
+      "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+      "builds_upon_the_original_sme_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
+      "EFS_3d077068",
+      "BuildsUponTheOriginalSmeArchitectureWhileAddingConfigurabilityForMatrixSizesAndIncreasedDataWidth",
+      "buildsUponTheOriginalSmeArchitectureWhileAddingConfigurabilityForMatrixSizesAndIncreasedDataWidth",
+      "buildsupontheoriginalsmearchitecturewhileaddingconfigurabilityformatrixsizesandincreaseddatawidth",
+      "Builds Upon The Original Sme Architecture While Adding Configurability For Matrix Sizes And Increased Data Width"
     ],
     "project_name": "default_project",
     "document_id": "text_spec",
     "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
     "ingestion_id": "ING_881549cb",
-    "generation_run_id": "RUN_1793370441363",
+    "generation_run_id": "RUN_1793682266621",
     "specification_revision": "1.0",
     "ir_schema_version": "1.0",
-    "model_version": 1,
-    "resolution_version": 0,
+    "model_version": 6,
+    "resolution_version": 5,
     "protocol": "generic",
     "protocol_version": "1.0",
-    "top_module": "register_mapped_controller",
+    "top_module": "builds_upon_the_original_sme_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
     "description": "",
     "author": "Hardware GraphRAG",
     "source_documents": [
@@ -42,14 +41,14 @@
         "path": ""
       }
     ],
-    "generation_timestamp": "2026-10-30T19:57:21.364047"
+    "generation_timestamp": "2026-11-03T10:34:26.634806"
   },
   "components": [
     {
-      "component_id": "COMP_2932f207",
-      "name": "register-mapped controller",
+      "component_id": "COMP_86e389f8",
+      "name": "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
       "type": "top_level_design",
-      "description": "Top-Level Composite Design Module: register-mapped controller",
+      "description": "Top-Level Composite Design Module: builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
       "interfaces": [],
       "traceability": {
         "doc_id": "text_spec",
@@ -58,14 +57,14 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'register-mapped controller'",
-        "source_text": "Specification entry for 'register-mapped controller'",
+        "original_text": "Specification entry for 'builds upon the original SME architecture while adding configurability for matrix sizes and increased data width'",
+        "source_text": "Specification entry for 'builds upon the original SME architecture while adding configurability for matrix sizes and increased data width'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       }
     },
     {
-      "component_id": "COMP_4830088f",
+      "component_id": "COMP_3edca5bc",
       "name": "Register_File",
       "type": "register_file",
       "description": "Holds control/status registers.",
@@ -84,7 +83,7 @@
       }
     },
     {
-      "component_id": "COMP_7f28aad4",
+      "component_id": "COMP_7736f777",
       "name": "FSM_Control_Unit",
       "type": "fsm_control_unit",
       "description": "Coordinates handshakes and state logic.",
@@ -103,10 +102,10 @@
       }
     },
     {
-      "component_id": "COMP_5b189c9c",
-      "name": "Specification Core Requirements",
-      "type": "module",
-      "description": "Primary hardware module: Specification Core Requirements",
+      "component_id": "COMP_b43ff24e",
+      "name": "Multiplication",
+      "type": "component",
+      "description": "Component Multiplication",
       "interfaces": [],
       "traceability": {
         "doc_id": "text_spec",
@@ -115,17 +114,744 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'Specification Core Requirements'",
-        "source_text": "Specification entry for 'Specification Core Requirements'",
+        "original_text": "Specification entry for 'Multiplication'",
+        "source_text": "Specification entry for 'Multiplication'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       }
+    },
+    {
+      "component_id": "COMP_e45466cc",
+      "name": "Division",
+      "type": "component",
+      "description": "Component Division",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Division'",
+        "source_text": "Specification entry for 'Division'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_35e9e663",
+      "name": "Inversion",
+      "type": "component",
+      "description": "Component Inversion",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Inversion'",
+        "source_text": "Specification entry for 'Inversion'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_2f793fbf",
+      "name": "Control Processor",
+      "type": "component",
+      "description": "Component Control Processor",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Control Processor'",
+        "source_text": "Specification entry for 'Control Processor'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_7e5e4abf",
+      "name": "Matrix Processing Elements (MPEs)",
+      "type": "component",
+      "description": "Component Matrix Processing Elements (MPEs)",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix Processing Elements (MPEs)'",
+        "source_text": "Specification entry for 'Matrix Processing Elements (MPEs)'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_1ef3bdfa",
+      "name": "Shared Memory Hierarchy",
+      "type": "component",
+      "description": "Component Shared Memory Hierarchy",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Shared Memory Hierarchy'",
+        "source_text": "Specification entry for 'Shared Memory Hierarchy'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_94e91947",
+      "name": "Interconnect Network",
+      "type": "component",
+      "description": "Component Interconnect Network",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Interconnect Network'",
+        "source_text": "Specification entry for 'Interconnect Network'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_997ed4cc",
+      "name": "Global Scheduler",
+      "type": "component",
+      "description": "Component Global Scheduler",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Global Scheduler'",
+        "source_text": "Specification entry for 'Global Scheduler'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_8e1d665e",
+      "name": "Block Division",
+      "type": "component",
+      "description": "Component Block Division",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Block Division'",
+        "source_text": "Specification entry for 'Block Division'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_2d5cab29",
+      "name": "Cyclic Assignment",
+      "type": "component",
+      "description": "Component Cyclic Assignment",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Cyclic Assignment'",
+        "source_text": "Specification entry for 'Cyclic Assignment'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_45519f04",
+      "name": "Register File",
+      "type": "component",
+      "description": "Component Register File",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Register File'",
+        "source_text": "Specification entry for 'Register File'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_c15a5d04",
+      "name": "Matrix ALU",
+      "type": "component",
+      "description": "Component Matrix ALU",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix ALU'",
+        "source_text": "Specification entry for 'Matrix ALU'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_6da03dba",
+      "name": "Control Unit",
+      "type": "component",
+      "description": "Manages execution for and multi-cycle operations",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Control Unit'",
+        "source_text": "Specification entry for 'Control Unit'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_7274fc8a",
+      "name": "Memory Interface",
+      "type": "component",
+      "description": "Component Memory Interface",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Memory Interface'",
+        "source_text": "Specification entry for 'Memory Interface'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_b3b2345a",
+      "name": "Rows (5 bits)",
+      "type": "component",
+      "description": "Component Rows (5 bits)",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Rows (5 bits)'",
+        "source_text": "Specification entry for 'Rows (5 bits)'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_14b78cbc",
+      "name": "Columns (5 bits)",
+      "type": "component",
+      "description": "Component Columns (5 bits)",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Columns (5 bits)'",
+        "source_text": "Specification entry for 'Columns (5 bits)'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_a05bd31a",
+      "name": "Memory Address (32 bits)",
+      "type": "component",
+      "description": "Component Memory Address (32 bits)",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Memory Address (32 bits)'",
+        "source_text": "Specification entry for 'Memory Address (32 bits)'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_e0fcab2c",
+      "name": "Data Block",
+      "type": "component",
+      "description": "Actual matrix elements",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Data Block'",
+        "source_text": "Specification entry for 'Data Block'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_64e3c45d",
+      "name": "Instruction Input",
+      "type": "component",
+      "description": "Component Instruction Input",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Instruction Input'",
+        "source_text": "Specification entry for 'Instruction Input'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_5918e07c",
+      "name": "Data Memory Interface",
+      "type": "component",
+      "description": "Component Data Memory Interface",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Data Memory Interface'",
+        "source_text": "Specification entry for 'Data Memory Interface'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_18d14a66",
+      "name": "AXI4 Memory Interface",
+      "type": "component",
+      "description": "Component AXI4 Memory Interface",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'AXI4 Memory Interface'",
+        "source_text": "Specification entry for 'AXI4 Memory Interface'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_9acf9239",
+      "name": "Configuration Registers",
+      "type": "component",
+      "description": "Component Configuration Registers",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Configuration Registers'",
+        "source_text": "Specification entry for 'Configuration Registers'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_8e0f83d8",
+      "name": "Status Registers",
+      "type": "component",
+      "description": "Component Status Registers",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Status Registers'",
+        "source_text": "Specification entry for 'Status Registers'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_7d23113a",
+      "name": "Interrupt Controller",
+      "type": "component",
+      "description": "Component Interrupt Controller",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Interrupt Controller'",
+        "source_text": "Specification entry for 'Interrupt Controller'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_e7a574c4",
+      "name": "Matrix Registers",
+      "type": "component",
+      "description": "Component Matrix Registers",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix Registers'",
+        "source_text": "Specification entry for 'Matrix Registers'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_20d8485a",
+      "name": "Matrix multiplies throughput",
+      "type": "component",
+      "description": "6.25 million elements per second",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix multiplies throughput'",
+        "source_text": "Specification entry for 'Matrix multiplies throughput'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_5a3c0d5b",
+      "name": "Power consumption",
+      "type": "component",
+      "description": "Component Power consumption",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Power consumption'",
+        "source_text": "Specification entry for 'Power consumption'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_4cf67cdd",
+      "name": "Local Register File",
+      "type": "component",
+      "description": "Component Local Register File",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Local Register File'",
+        "source_text": "Specification entry for 'Local Register File'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_69169587",
+      "name": "Local Tiling Engine",
+      "type": "component",
+      "description": "Component Local Tiling Engine",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Local Tiling Engine'",
+        "source_text": "Specification entry for 'Local Tiling Engine'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_c32bec96",
+      "name": "L1 Matrix Cache",
+      "type": "component",
+      "description": "Component L1 Matrix Cache",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L1 Matrix Cache'",
+        "source_text": "Specification entry for 'L1 Matrix Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_8fe83dcb",
+      "name": "DMA Engine",
+      "type": "component",
+      "description": "Component DMA Engine",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'DMA Engine'",
+        "source_text": "Specification entry for 'DMA Engine'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_9d8d13dd",
+      "name": "Multi-level NoC (Network-on",
+      "type": "component",
+      "description": "Chip) for scalability",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Multi-level NoC (Network-on'",
+        "source_text": "Specification entry for 'Multi-level NoC (Network-on'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_80e2a8de",
+      "name": "MSVD_COLLECTIVE",
+      "type": "component",
+      "description": "Distributed singular value decomposition",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSVD_COLLECTIVE'",
+        "source_text": "Specification entry for 'MSVD_COLLECTIVE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "component_id": "COMP_44dd9094",
+      "name": "Main Memory Interface",
+      "type": "architectural_component",
+      "description": "Architectural component from Specification Core Requirements",
+      "interfaces": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_013",
+        "section": "Specification Core Requirements",
+        "original_text": "DMA Engine      : Autonomous data transfer with main memory",
+        "source_text": "DMA Engine      : Autonomous data transfer with main memory",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
     }
   ],
-  "interfaces": [],
+  "interfaces": [
+    {
+      "interface_id": "IF_3912afd1",
+      "name": "Interconnect_Network_connects_to_Matrix_Processing_Elements_MPEs",
+      "protocol": "interconnect",
+      "role": "",
+      "source_component": "Interconnect Network",
+      "destination_component": "Matrix Processing Elements (MPEs)",
+      "signals": [],
+      "description": "Interconnect Network connects_to Matrix Processing Elements (MPEs) (evidence: Interconnect Network      : High-bandwidth communications fabric connecting cores)",
+      "direction": "Interconnect Network -> Matrix Processing Elements (MPEs)",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_012",
+        "section": "Specification Core Requirements",
+        "original_text": "Interconnect Network      : High-bandwidth communications fabric connecting cores",
+        "source_text": "Interconnect Network      : High-bandwidth communications fabric connecting cores",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    },
+    {
+      "interface_id": "IF_bc78000e",
+      "name": "DMA_Engine_transfers_with_Main_Memory_Interface",
+      "protocol": "interconnect",
+      "role": "",
+      "source_component": "DMA Engine",
+      "destination_component": "Main Memory Interface",
+      "signals": [],
+      "description": "DMA Engine transfers_with Main Memory Interface (evidence: DMA Engine      : Autonomous data transfer with main memory)",
+      "direction": "DMA Engine -> Main Memory Interface",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_013",
+        "section": "Specification Core Requirements",
+        "original_text": "DMA Engine      : Autonomous data transfer with main memory",
+        "source_text": "DMA Engine      : Autonomous data transfer with main memory",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    }
+  ],
   "signals": [
     {
-      "signal_id": "SIG_602cf12a",
+      "signal_id": "SIG_a85e9ff4",
+      "name": "start",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "Signal start",
+      "semantic_role": "control",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'start'",
+        "source_text": "Specification entry for 'start'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_78ad98b9",
+      "name": "done",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "Signal done",
+      "semantic_role": "control",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'done'",
+        "source_text": "Specification entry for 'done'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_1c929b36",
       "name": "clk",
       "width": "1",
       "direction": "input",
@@ -133,9 +859,9 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "consumer": "COMP_7f28aad4",
-      "description": "Clock signal",
+      "owner": "COMP_86e389f8",
+      "consumer": "COMP_7736f777",
+      "description": "input wire clk,               // System clock",
       "semantic_role": "clock",
       "aliases": [
         "Clock"
@@ -152,20 +878,20 @@
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_3697dd92",
+      "signal_id": "SIG_b4a9b782",
       "name": "rst_n",
       "width": "1",
       "direction": "input",
       "datatype": "logic",
       "signedness": false,
       "clock": "clk",
-      "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "description": "Active-low reset",
+      "reset": "Reset",
+      "owner": "COMP_86e389f8",
+      "description": "input wire rst_n,             // Active low reset",
       "semantic_role": "reset",
       "aliases": [
         "Reset"
@@ -182,104 +908,20 @@
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_c6144725",
-      "name": "operand_a",
-      "width": "64",
-      "direction": "input",
-      "datatype": "logic",
-      "signedness": false,
-      "clock": "clk",
-      "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "description": "Matrix A operand input",
-      "semantic_role": "data",
-      "aliases": [],
-      "traceability": {
-        "doc_id": "text_spec",
-        "source_document_id": "text_spec",
-        "source_document": "specification.docx",
-        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
-        "ingestion_id": "ING_881549cb",
-        "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'operand_a'",
-        "source_text": "Specification entry for 'operand_a'",
-        "extraction_method": "resolved_evidence",
-        "confidence": 0.85
-      },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
-    },
-    {
-      "signal_id": "SIG_50161b4b",
-      "name": "operand_b",
-      "width": "64",
-      "direction": "input",
-      "datatype": "logic",
-      "signedness": false,
-      "clock": "clk",
-      "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "description": "Matrix B operand input",
-      "semantic_role": "data",
-      "aliases": [],
-      "traceability": {
-        "doc_id": "text_spec",
-        "source_document_id": "text_spec",
-        "source_document": "specification.docx",
-        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
-        "ingestion_id": "ING_881549cb",
-        "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'operand_b'",
-        "source_text": "Specification entry for 'operand_b'",
-        "extraction_method": "resolved_evidence",
-        "confidence": 0.85
-      },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
-    },
-    {
-      "signal_id": "SIG_71be19b5",
-      "name": "result",
-      "width": "64",
-      "direction": "output",
-      "datatype": "logic",
-      "signedness": false,
-      "clock": "clk",
-      "reset": "rst_n",
-      "owner": "COMP_4830088f",
-      "description": "Matrix addition output",
-      "semantic_role": "data",
-      "aliases": [],
-      "traceability": {
-        "doc_id": "text_spec",
-        "source_document_id": "text_spec",
-        "source_document": "specification.docx",
-        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
-        "ingestion_id": "ING_881549cb",
-        "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'result'",
-        "source_text": "Specification entry for 'result'",
-        "extraction_method": "resolved_evidence",
-        "confidence": 0.85
-      },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
-    },
-    {
-      "signal_id": "SIG_3a54ac08",
-      "name": "done",
+      "signal_id": "SIG_6ad01ccb",
+      "name": "error",
       "width": "1",
       "direction": "output",
       "datatype": "logic",
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_4830088f",
-      "description": "Operation completion flag",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire error,            // Error indicator",
       "semantic_role": "control",
       "aliases": [],
       "traceability": {
@@ -289,25 +931,53 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'done'",
-        "source_text": "Specification entry for 'done'",
+        "original_text": "Specification entry for 'error'",
+        "source_text": "Specification entry for 'error'",
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_367a291f",
-      "name": "s_axi_awvalid",
-      "width": "1",
-      "direction": "input",
+      "signal_id": "SIG_0ce257c2",
+      "name": "axi_araddr",
+      "width": "32",
+      "direction": "output",
       "datatype": "logic",
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "description": "AXI Write Address Valid",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire [31:0] axi_araddr,",
+      "semantic_role": "address",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_araddr'",
+        "source_text": "Specification entry for 'axi_araddr'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_ebc8ade7",
+      "name": "axi_arvalid",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire axi_arvalid,",
       "semantic_role": "valid",
       "aliases": [],
       "traceability": {
@@ -317,25 +987,25 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 's_axi_awvalid'",
-        "source_text": "Specification entry for 's_axi_awvalid'",
+        "original_text": "Specification entry for 'axi_arvalid'",
+        "source_text": "Specification entry for 'axi_arvalid'",
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_bc72dd63",
-      "name": "s_axi_awready",
+      "signal_id": "SIG_0a2faade",
+      "name": "axi_arready",
       "width": "1",
-      "direction": "output",
+      "direction": "input",
       "datatype": "logic",
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_4830088f",
-      "description": "AXI Write Address Ready",
+      "owner": "COMP_86e389f8",
+      "description": "input wire axi_arready,",
       "semantic_role": "ready",
       "aliases": [],
       "traceability": {
@@ -345,25 +1015,25 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 's_axi_awready'",
-        "source_text": "Specification entry for 's_axi_awready'",
+        "original_text": "Specification entry for 'axi_arready'",
+        "source_text": "Specification entry for 'axi_arready'",
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_808384f5",
-      "name": "s_axi_wdata",
-      "width": "32",
+      "signal_id": "SIG_d5b6c623",
+      "name": "axi_rdata",
+      "width": "512",
       "direction": "input",
       "datatype": "logic",
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "description": "AXI Write Data",
+      "owner": "COMP_86e389f8",
+      "description": "input wire [511:0] axi_rdata,",
       "semantic_role": "data",
       "aliases": [],
       "traceability": {
@@ -373,25 +1043,81 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 's_axi_wdata'",
-        "source_text": "Specification entry for 's_axi_wdata'",
+        "original_text": "Specification entry for 'axi_rdata'",
+        "source_text": "Specification entry for 'axi_rdata'",
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_94d32b03",
-      "name": "s_axi_wvalid",
+      "signal_id": "SIG_237dfc1d",
+      "name": "axi_rresp",
+      "width": "2",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "input wire [1:0] axi_rresp,",
+      "semantic_role": "resp",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_rresp'",
+        "source_text": "Specification entry for 'axi_rresp'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_848ff73a",
+      "name": "axi_rlast",
       "width": "1",
       "direction": "input",
       "datatype": "logic",
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_2932f207",
-      "description": "AXI Write Data Valid",
+      "owner": "COMP_86e389f8",
+      "description": "input wire axi_rlast,",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_rlast'",
+        "source_text": "Specification entry for 'axi_rlast'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_74880422",
+      "name": "axi_rvalid",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "input wire axi_rvalid,",
       "semantic_role": "valid",
       "aliases": [],
       "traceability": {
@@ -401,30 +1127,395 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 's_axi_wvalid'",
-        "source_text": "Specification entry for 's_axi_wvalid'",
+        "original_text": "Specification entry for 'axi_rvalid'",
+        "source_text": "Specification entry for 'axi_rvalid'",
         "extraction_method": "resolved_evidence",
         "confidence": 0.85
       },
-      "direction_source": "explicit_spec",
-      "width_source": "explicit_spec"
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_6610c0db",
+      "name": "axi_rready",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire axi_rready,",
+      "semantic_role": "ready",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_rready'",
+        "source_text": "Specification entry for 'axi_rready'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_6c671675",
+      "name": "axi_awaddr",
+      "width": "32",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire [31:0] axi_awaddr,",
+      "semantic_role": "address",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_awaddr'",
+        "source_text": "Specification entry for 'axi_awaddr'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_40c77572",
+      "name": "axi_awvalid",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire axi_awvalid,",
+      "semantic_role": "valid",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_awvalid'",
+        "source_text": "Specification entry for 'axi_awvalid'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_026ab058",
+      "name": "axi_awready",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "input wire axi_awready,",
+      "semantic_role": "ready",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_awready'",
+        "source_text": "Specification entry for 'axi_awready'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_f10ad8ec",
+      "name": "axi_wdata",
+      "width": "512",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire [511:0] axi_wdata,",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_wdata'",
+        "source_text": "Specification entry for 'axi_wdata'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_11409e9e",
+      "name": "axi_wstrb",
+      "width": "64",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire [63:0] axi_wstrb,",
+      "semantic_role": "strb",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_wstrb'",
+        "source_text": "Specification entry for 'axi_wstrb'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_1c311d65",
+      "name": "axi_wlast",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire axi_wlast,",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_wlast'",
+        "source_text": "Specification entry for 'axi_wlast'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_db41e920",
+      "name": "axi_wvalid",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire axi_wvalid,",
+      "semantic_role": "valid",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_wvalid'",
+        "source_text": "Specification entry for 'axi_wvalid'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_b48d1e55",
+      "name": "axi_wready",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "input wire axi_wready,",
+      "semantic_role": "ready",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_wready'",
+        "source_text": "Specification entry for 'axi_wready'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_fb51e8e8",
+      "name": "axi_bresp",
+      "width": "2",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "input wire [1:0] axi_bresp,",
+      "semantic_role": "resp",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_bresp'",
+        "source_text": "Specification entry for 'axi_bresp'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_9ffed71c",
+      "name": "axi_bvalid",
+      "width": "1",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "description": "input wire axi_bvalid,",
+      "semantic_role": "valid",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_bvalid'",
+        "source_text": "Specification entry for 'axi_bvalid'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_63b7621e",
+      "name": "axi_bready",
+      "width": "1",
+      "direction": "output",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_3edca5bc",
+      "description": "output wire axi_bready",
+      "semantic_role": "ready",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_bready'",
+        "source_text": "Specification entry for 'axi_bready'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
+    },
+    {
+      "signal_id": "SIG_4d03901f",
+      "name": "instruction",
+      "width": "64",
+      "direction": "input",
+      "datatype": "logic",
+      "signedness": false,
+      "clock": "clk",
+      "reset": "rst_n",
+      "owner": "COMP_86e389f8",
+      "consumer": "COMP_64e3c45d",
+      "description": "input wire [63:0] instruction, // Instruction input",
+      "semantic_role": "data",
+      "aliases": [],
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'instruction'",
+        "source_text": "Specification entry for 'instruction'",
+        "extraction_method": "resolved_evidence",
+        "confidence": 0.85
+      },
+      "direction_source": "explicit_hdl",
+      "width_source": "explicit_hdl"
     }
   ],
   "clocks": [
     {
-      "signal_id": "SIG_602cf12a"
+      "signal_id": "SIG_1c929b36"
     }
   ],
   "resets": [
     {
-      "signal_id": "SIG_3697dd92"
+      "signal_id": "SIG_b4a9b782"
     }
   ],
   "parameters": [],
   "registers": [
     {
-      "register_id": "REG_ba231edb",
-      "name": "ADDER_CTRL",
+      "register_id": "REG_f8fca374",
+      "name": "M0",
       "address": null,
       "offset": "0x00",
       "offset_source": "inferred",
@@ -433,9 +1524,9 @@
       "access": "RW",
       "reset_value": null,
       "fields": [],
-      "description": "Control register for Matrix Adder",
+      "description": "Register M0",
       "side_effects": "",
-      "owner": "COMP_2932f207",
+      "owner": "COMP_86e389f8",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -443,15 +1534,15 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'ADDER_CTRL'",
-        "source_text": "Specification entry for 'ADDER_CTRL'",
+        "original_text": "Specification entry for 'M0'",
+        "source_text": "Specification entry for 'M0'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       }
     },
     {
-      "register_id": "REG_ce2f46c1",
-      "name": "ADDER_STATUS",
+      "register_id": "REG_cbbdcce9",
+      "name": "M1",
       "address": null,
       "offset": "0x04",
       "offset_source": "inferred",
@@ -460,9 +1551,9 @@
       "access": "RW",
       "reset_value": null,
       "fields": [],
-      "description": "Status register",
+      "description": "Register M1",
       "side_effects": "",
-      "owner": "COMP_2932f207",
+      "owner": "COMP_86e389f8",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -470,23 +1561,1043 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'ADDER_STATUS'",
-        "source_text": "Specification entry for 'ADDER_STATUS'",
+        "original_text": "Specification entry for 'M1'",
+        "source_text": "Specification entry for 'M1'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_542bc5d9",
+      "name": "M2",
+      "address": null,
+      "offset": "0x08",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Register M2",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'M2'",
+        "source_text": "Specification entry for 'M2'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_8706673a",
+      "name": "M3",
+      "address": null,
+      "offset": "0x0C",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Register M3",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'M3'",
+        "source_text": "Specification entry for 'M3'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_2c70dc9e",
+      "name": "M4",
+      "address": null,
+      "offset": "0x10",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Register M4",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'M4'",
+        "source_text": "Specification entry for 'M4'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_fa905436",
+      "name": "M5",
+      "address": null,
+      "offset": "0x14",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Register M5",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'M5'",
+        "source_text": "Specification entry for 'M5'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_377a8737",
+      "name": "M6",
+      "address": null,
+      "offset": "0x18",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Register M6",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'M6'",
+        "source_text": "Specification entry for 'M6'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_78f5fe02",
+      "name": "M7",
+      "address": null,
+      "offset": "0x1C",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Register M7",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'M7'",
+        "source_text": "Specification entry for 'M7'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_ad7854db",
+      "name": "Matrix Registers M0-M7",
+      "address": null,
+      "offset": "0x20",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Matrix Registers: M0-M7 (8 registers in total)",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix Registers M0-M7'",
+        "source_text": "Specification entry for 'Matrix Registers M0-M7'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_84ea33a5",
+      "name": "Configuration Registers",
+      "address": null,
+      "offset": "0x24",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Control matrix engine parameters",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Configuration Registers'",
+        "source_text": "Specification entry for 'Configuration Registers'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_bfc4f37a",
+      "name": "Status Registers",
+      "address": null,
+      "offset": "0x28",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "Report operation progress and error conditions",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Status Registers'",
+        "source_text": "Specification entry for 'Status Registers'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "register_id": "REG_23827a30",
+      "name": "Matrix Registers",
+      "address": null,
+      "offset": "0x2C",
+      "offset_source": "inferred",
+      "width": 32,
+      "access_type": "RW",
+      "access": "RW",
+      "reset_value": null,
+      "fields": [],
+      "description": "M0-M7 (8 registers in total)",
+      "side_effects": "",
+      "owner": "COMP_86e389f8",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix Registers'",
+        "source_text": "Specification entry for 'Matrix Registers'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       }
     }
   ],
-  "instructions": [],
+  "instructions": [
+    {
+      "instruction_id": "INSTR_fad4a359",
+      "name": "MADD",
+      "mnemonic": "MADD",
+      "opcode": "000001",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Addition",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MADD'",
+        "source_text": "Specification entry for 'MADD'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_df775dea",
+      "name": "MSUB",
+      "mnemonic": "MSUB",
+      "opcode": "000010",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Subtraction",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSUB'",
+        "source_text": "Specification entry for 'MSUB'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_7ba8e92d",
+      "name": "MMUL",
+      "mnemonic": "MMUL",
+      "opcode": "000011",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Multiplication",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MMUL'",
+        "source_text": "Specification entry for 'MMUL'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_4cb58df4",
+      "name": "MDIV",
+      "mnemonic": "MDIV",
+      "opcode": "000100",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Element-wise Division",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MDIV'",
+        "source_text": "Specification entry for 'MDIV'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_bfadc22e",
+      "name": "MLOAD",
+      "mnemonic": "MLOAD",
+      "opcode": "000101",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Load Matrix from Memory",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MLOAD'",
+        "source_text": "Specification entry for 'MLOAD'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_a34cce4a",
+      "name": "MSTORE",
+      "mnemonic": "MSTORE",
+      "opcode": "000110",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Store Matrix to Memory",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSTORE'",
+        "source_text": "Specification entry for 'MSTORE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_9e14189d",
+      "name": "MTRANS",
+      "mnemonic": "MTRANS",
+      "opcode": "000111",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Transpose",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MTRANS'",
+        "source_text": "Specification entry for 'MTRANS'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_1d45fb7c",
+      "name": "MZERO",
+      "mnemonic": "MZERO",
+      "opcode": "001000",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Initialize Matrix with Zeros",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MZERO'",
+        "source_text": "Specification entry for 'MZERO'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_f543aa50",
+      "name": "MIDENTITY",
+      "mnemonic": "MIDENTITY",
+      "opcode": "011001",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Initialize Matrix as Identity",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MIDENTITY'",
+        "source_text": "Specification entry for 'MIDENTITY'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_6d2005f2",
+      "name": "MINV",
+      "mnemonic": "MINV",
+      "opcode": "001110",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Inversion",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MINV'",
+        "source_text": "Specification entry for 'MINV'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_dc5ca6a9",
+      "name": "MDET",
+      "mnemonic": "MDET",
+      "opcode": "001111",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Determinant",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MDET'",
+        "source_text": "Specification entry for 'MDET'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_d9a6706a",
+      "name": "MEIG",
+      "mnemonic": "MEIG",
+      "opcode": "011000",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Eigenvalues",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MEIG'",
+        "source_text": "Specification entry for 'MEIG'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_ec463388",
+      "name": "MSVD",
+      "mnemonic": "MSVD",
+      "opcode": "001001",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Matrix Singular Value Decomposition",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSVD'",
+        "source_text": "Specification entry for 'MSVD'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_bfdd8a7e",
+      "name": "MSIZE",
+      "mnemonic": "MSIZE",
+      "opcode": "001010",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Set Matrix Dimensions",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSIZE'",
+        "source_text": "Specification entry for 'MSIZE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_3785b315",
+      "name": "MSLICE",
+      "mnemonic": "MSLICE",
+      "opcode": "001011",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Extract Submatrix",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSLICE'",
+        "source_text": "Specification entry for 'MSLICE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_2d6411e7",
+      "name": "MCONCAT",
+      "mnemonic": "MCONCAT",
+      "opcode": "001100",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Concatenate Matrices",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MCONCAT'",
+        "source_text": "Specification entry for 'MCONCAT'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "instruction_id": "INSTR_c618f980",
+      "name": "MTYPE",
+      "mnemonic": "MTYPE",
+      "opcode": "001101",
+      "format": "",
+      "operands": [],
+      "width": 32,
+      "length": 32,
+      "fields": [],
+      "description": "Change Matrix Element Type",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MTYPE'",
+        "source_text": "Specification entry for 'MTYPE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
   "instruction_formats": [],
-  "opcodes": [],
+  "opcodes": [
+    {
+      "opcode_id": "OPC_8bbb711d",
+      "mnemonic": "MADD",
+      "binary_encoding": "000001",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_fad4a359",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MADD'",
+        "source_text": "Specification entry for 'MADD'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_e7ce23ca",
+      "mnemonic": "MSUB",
+      "binary_encoding": "000010",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_df775dea",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSUB'",
+        "source_text": "Specification entry for 'MSUB'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_959ec042",
+      "mnemonic": "MMUL",
+      "binary_encoding": "000011",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_7ba8e92d",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MMUL'",
+        "source_text": "Specification entry for 'MMUL'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_f73c8062",
+      "mnemonic": "MDIV",
+      "binary_encoding": "000100",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_4cb58df4",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MDIV'",
+        "source_text": "Specification entry for 'MDIV'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_99c96e23",
+      "mnemonic": "MLOAD",
+      "binary_encoding": "000101",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_bfadc22e",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MLOAD'",
+        "source_text": "Specification entry for 'MLOAD'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_f61941c1",
+      "mnemonic": "MSTORE",
+      "binary_encoding": "000110",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_a34cce4a",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSTORE'",
+        "source_text": "Specification entry for 'MSTORE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_1e0a49a3",
+      "mnemonic": "MTRANS",
+      "binary_encoding": "000111",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_9e14189d",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MTRANS'",
+        "source_text": "Specification entry for 'MTRANS'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_3379c2f4",
+      "mnemonic": "MZERO",
+      "binary_encoding": "001000",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_1d45fb7c",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MZERO'",
+        "source_text": "Specification entry for 'MZERO'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_2bf483e8",
+      "mnemonic": "MIDENTITY",
+      "binary_encoding": "011001",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_f543aa50",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MIDENTITY'",
+        "source_text": "Specification entry for 'MIDENTITY'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_421fda7f",
+      "mnemonic": "MINV",
+      "binary_encoding": "001110",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_6d2005f2",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MINV'",
+        "source_text": "Specification entry for 'MINV'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_ba78b0b9",
+      "mnemonic": "MDET",
+      "binary_encoding": "001111",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_dc5ca6a9",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MDET'",
+        "source_text": "Specification entry for 'MDET'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_7321bcab",
+      "mnemonic": "MEIG",
+      "binary_encoding": "011000",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_d9a6706a",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MEIG'",
+        "source_text": "Specification entry for 'MEIG'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_e958dca2",
+      "mnemonic": "MSVD",
+      "binary_encoding": "001001",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_ec463388",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSVD'",
+        "source_text": "Specification entry for 'MSVD'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_26430b54",
+      "mnemonic": "MSIZE",
+      "binary_encoding": "001010",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_bfdd8a7e",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSIZE'",
+        "source_text": "Specification entry for 'MSIZE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_00fea083",
+      "mnemonic": "MSLICE",
+      "binary_encoding": "001011",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_3785b315",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MSLICE'",
+        "source_text": "Specification entry for 'MSLICE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_7a49cfc2",
+      "mnemonic": "MCONCAT",
+      "binary_encoding": "001100",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_2d6411e7",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MCONCAT'",
+        "source_text": "Specification entry for 'MCONCAT'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "opcode_id": "OPC_1b551f94",
+      "mnemonic": "MTYPE",
+      "binary_encoding": "001101",
+      "operation": "",
+      "operands": [],
+      "instruction_id": "INSTR_c618f980",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'MTYPE'",
+        "source_text": "Specification entry for 'MTYPE'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
   "fsms": [
     {
-      "fsm_id": "FSM_9bf2b751",
+      "fsm_id": "FSM_52eb11f5",
       "name": "Inferred_Controller_FSM",
       "states": [
         {
-          "state_id": "ST_f3882699",
+          "state_id": "ST_8c26c05f",
           "name": "IDLE",
           "encoding": "",
           "outputs": {},
@@ -494,7 +2605,7 @@
           "description": ""
         },
         {
-          "state_id": "ST_2cf50c48",
+          "state_id": "ST_59361f2a",
           "name": "EXECUTE",
           "encoding": "",
           "outputs": {},
@@ -502,7 +2613,7 @@
           "description": ""
         },
         {
-          "state_id": "ST_c46ffdf8",
+          "state_id": "ST_91adbbf9",
           "name": "DONE",
           "encoding": "",
           "outputs": {},
@@ -515,11 +2626,11 @@
         "DONE"
       ],
       "reset_state": "IDLE",
-      "reset_behavior": "Active-low reset",
+      "reset_behavior": "Reset : Asynchronous system reset",
       "encoding": "binary",
       "transitions": [
         {
-          "transition_id": "TRANS_38bdba50",
+          "transition_id": "TRANS_926f1464",
           "source_state": "IDLE",
           "target_state": "EXECUTE",
           "condition": "start asserted",
@@ -533,8 +2644,8 @@
             "source_document_id": "text_spec",
             "source_document": "specification",
             "section": "Execution Control",
-            "original_text": "Control signals: done, valid, ready",
-            "source_text": "Control signals: done, valid, ready",
+            "original_text": "Control signals: start, busy, done, trigger",
+            "source_text": "Control signals: start, busy, done, trigger",
             "extraction_method": "source_backed_recovery",
             "confidence": 0.95
           },
@@ -542,7 +2653,7 @@
           "to": "EXECUTE"
         },
         {
-          "transition_id": "TRANS_b763ad6d",
+          "transition_id": "TRANS_466de0be",
           "source_state": "EXECUTE",
           "target_state": "DONE",
           "condition": "done asserted",
@@ -556,8 +2667,8 @@
             "source_document_id": "text_spec",
             "source_document": "specification",
             "section": "Execution Control",
-            "original_text": "Control signals: done, valid, ready",
-            "source_text": "Control signals: done, valid, ready",
+            "original_text": "Control signals: start, busy, done, trigger",
+            "source_text": "Control signals: start, busy, done, trigger",
             "extraction_method": "source_backed_recovery",
             "confidence": 0.95
           },
@@ -565,7 +2676,7 @@
           "to": "DONE"
         },
         {
-          "transition_id": "TRANS_74a00645",
+          "transition_id": "TRANS_39f21a75",
           "source_state": "DONE",
           "target_state": "IDLE",
           "condition": "done deasserted",
@@ -579,8 +2690,8 @@
             "source_document_id": "text_spec",
             "source_document": "specification",
             "section": "Execution Control",
-            "original_text": "Control signals: done, valid, ready",
-            "source_text": "Control signals: done, valid, ready",
+            "original_text": "Control signals: start, busy, done, trigger",
+            "source_text": "Control signals: start, busy, done, trigger",
             "extraction_method": "source_backed_recovery",
             "confidence": 0.95
           },
@@ -595,8 +2706,8 @@
         "source_document_id": "text_spec",
         "source_document": "specification",
         "section": "Execution Control",
-        "original_text": "Control signals: done, valid, ready",
-        "source_text": "Control signals: done, valid, ready",
+        "original_text": "Control signals: start, busy, done, trigger",
+        "source_text": "Control signals: start, busy, done, trigger",
         "extraction_method": "source_backed_recovery",
         "confidence": 0.95
       }
@@ -605,13 +2716,161 @@
   "transactions": [],
   "functional_behavior": [
     {
-      "flow_id": "FLOW_3b950213",
+      "flow_id": "FLOW_67bc8384",
+      "name": "Multiplication_supports_infrastructure_builds_upon_the_original_SME_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
+      "components": [
+        "Multiplication",
+        "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width"
+      ],
+      "interfaces": [],
+      "ordered_steps": [
+        {
+          "step_id": "FSTEP_9e81aef2",
+          "component": "Multiplication",
+          "action_description": "Multiplication supports_infrastructure builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+          "condition": "evidence: This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+          "expected_events": [],
+          "state_transitions": [],
+          "signal_behavior": "",
+          "timing_expectations": ""
+        }
+      ],
+      "conditions": "",
+      "expected_events": [],
+      "state_transitions": [],
+      "signal_behavior": "",
+      "timing_expectations": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_003",
+        "section": "Specification Core Requirements",
+        "original_text": "This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+        "source_text": "This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    },
+    {
+      "flow_id": "FLOW_a061a78e",
+      "name": "Control_Processor_orchestrates_Matrix_Processing_Elements_MPEs",
+      "components": [
+        "Control Processor",
+        "Matrix Processing Elements (MPEs)"
+      ],
+      "interfaces": [],
+      "ordered_steps": [
+        {
+          "step_id": "FSTEP_7f8aec9a",
+          "component": "Control Processor",
+          "action_description": "Control Processor orchestrates Matrix Processing Elements (MPEs)",
+          "condition": "evidence: Control Processor      : Orchestrates overall operation and task distribution",
+          "expected_events": [],
+          "state_transitions": [],
+          "signal_behavior": "",
+          "timing_expectations": ""
+        }
+      ],
+      "conditions": "",
+      "expected_events": [],
+      "state_transitions": [],
+      "signal_behavior": "",
+      "timing_expectations": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_012",
+        "section": "Specification Core Requirements",
+        "original_text": "Control Processor      : Orchestrates overall operation and task distribution",
+        "source_text": "Control Processor      : Orchestrates overall operation and task distribution",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    },
+    {
+      "flow_id": "FLOW_e83efe06",
+      "name": "Global_Scheduler_distributes_to_Matrix_Processing_Elements_MPEs",
+      "components": [
+        "Global Scheduler",
+        "Matrix Processing Elements (MPEs)"
+      ],
+      "interfaces": [],
+      "ordered_steps": [
+        {
+          "step_id": "FSTEP_0a77c4c4",
+          "component": "Global Scheduler",
+          "action_description": "Global Scheduler distributes_to Matrix Processing Elements (MPEs)",
+          "condition": "evidence: Global Scheduler      : Distributes matrix workloads across available cores",
+          "expected_events": [],
+          "state_transitions": [],
+          "signal_behavior": "",
+          "timing_expectations": ""
+        }
+      ],
+      "conditions": "",
+      "expected_events": [],
+      "state_transitions": [],
+      "signal_behavior": "",
+      "timing_expectations": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_012",
+        "section": "Specification Core Requirements",
+        "original_text": "Global Scheduler      : Distributes matrix workloads across available cores",
+        "source_text": "Global Scheduler      : Distributes matrix workloads across available cores",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    },
+    {
+      "flow_id": "FLOW_45fafb7c",
+      "name": "Division_distributes_to_Columns_5_bits",
+      "components": [
+        "Division",
+        "Columns (5 bits)"
+      ],
+      "interfaces": [],
+      "ordered_steps": [
+        {
+          "step_id": "FSTEP_1f66f119",
+          "component": "Division",
+          "action_description": "Division distributes_to Columns (5 bits)",
+          "condition": "evidence: Row/Column Division      : Distributes complete rows or columns across cores",
+          "expected_events": [],
+          "state_transitions": [],
+          "signal_behavior": "",
+          "timing_expectations": ""
+        }
+      ],
+      "conditions": "",
+      "expected_events": [],
+      "state_transitions": [],
+      "signal_behavior": "",
+      "timing_expectations": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification",
+        "block_id": "REQ_BLK_014",
+        "section": "Specification Core Requirements",
+        "original_text": "Row/Column Division      : Distributes complete rows or columns across cores",
+        "source_text": "Row/Column Division      : Distributes complete rows or columns across cores",
+        "extraction_method": "source_backed_recovery",
+        "confidence": null
+      }
+    },
+    {
+      "flow_id": "FLOW_e8e88cd8",
       "name": "Inferred_Controller_FSM_Flow",
       "components": [],
       "interfaces": [],
       "ordered_steps": [
         {
-          "step_id": "FSTEP_e5bd4598",
+          "step_id": "FSTEP_7c2ed6a3",
           "action_description": "State transition: IDLE -> EXECUTE",
           "condition": "start asserted",
           "expected_events": [],
@@ -622,7 +2881,7 @@
           "timing_expectations": ""
         },
         {
-          "step_id": "FSTEP_06303665",
+          "step_id": "FSTEP_c9b2c4c7",
           "action_description": "State transition: EXECUTE -> DONE",
           "condition": "done asserted",
           "expected_events": [],
@@ -633,7 +2892,7 @@
           "timing_expectations": ""
         },
         {
-          "step_id": "FSTEP_e2b7d837",
+          "step_id": "FSTEP_efca5a5a",
           "action_description": "State transition: DONE -> IDLE",
           "condition": "done deasserted",
           "expected_events": [],
@@ -658,8 +2917,8 @@
         "source_document_id": "text_spec",
         "source_document": "specification",
         "section": "Execution Control",
-        "original_text": "Control signals: done, valid, ready",
-        "source_text": "Control signals: done, valid, ready",
+        "original_text": "Control signals: start, busy, done, trigger",
+        "source_text": "Control signals: start, busy, done, trigger",
         "extraction_method": "source_backed_recovery",
         "confidence": 0.95
       }
@@ -667,65 +2926,399 @@
   ],
   "memory_regions": [
     {
-      "region_id": "MEMREG_a67f3a48",
-      "name": "Memory_Region_1",
-      "type": "memory_resource",
+      "region_id": "MEMREG_2ec208db",
+      "name": "Shared Memory Hierarchy",
+      "type": "memory_region",
       "base_address": "",
-      "size": "unspecified",
+      "size": "",
       "depth": 0,
       "width": 0,
-      "description": "Recovered from: - DMA Controller",
+      "description": "Memory domain Shared Memory Hierarchy",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
-        "source_document": "specification",
-        "block_id": "REQ_BLK_002",
-        "section": "Specification Core Requirements",
-        "original_text": "- DMA Controller",
-        "source_text": "- DMA Controller",
-        "extraction_method": "source_backed_recovery",
-        "confidence": null
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Shared Memory Hierarchy'",
+        "source_text": "Specification entry for 'Shared Memory Hierarchy'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "region_id": "MEMREG_4746b535",
+      "name": "L1 Matrix Cache",
+      "type": "memory_region",
+      "base_address": "",
+      "size": "512KB",
+      "depth": 0,
+      "width": 0,
+      "description": "Memory domain L1 Matrix Cache",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L1 Matrix Cache'",
+        "source_text": "Specification entry for 'L1 Matrix Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "region_id": "MEMREG_44f1b24a",
+      "name": "L2 Shared Cache",
+      "type": "memory_region",
+      "base_address": "",
+      "size": "4MB",
+      "depth": 0,
+      "width": 0,
+      "description": "Memory domain L2 Shared Cache",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L2 Shared Cache'",
+        "source_text": "Specification entry for 'L2 Shared Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "region_id": "MEMREG_2d83ad37",
+      "name": "L3 Global Cache",
+      "type": "memory_region",
+      "base_address": "",
+      "size": "32MB",
+      "depth": 0,
+      "width": 0,
+      "description": "Memory domain L3 Global Cache",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L3 Global Cache'",
+        "source_text": "Specification entry for 'L3 Global Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
       }
     }
   ],
   "memory": [
     {
-      "region_id": "MEMREG_a67f3a48",
-      "name": "Memory_Region_1",
-      "type": "memory_resource",
+      "region_id": "MEMREG_2ec208db",
+      "name": "Shared Memory Hierarchy",
+      "type": "memory_region",
       "base_address": "",
-      "size": "unspecified",
+      "size": "",
       "depth": 0,
       "width": 0,
-      "description": "Recovered from: - DMA Controller",
+      "description": "Memory domain Shared Memory Hierarchy",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
-        "source_document": "specification",
-        "block_id": "REQ_BLK_002",
-        "section": "Specification Core Requirements",
-        "original_text": "- DMA Controller",
-        "source_text": "- DMA Controller",
-        "extraction_method": "source_backed_recovery",
-        "confidence": null
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Shared Memory Hierarchy'",
+        "source_text": "Specification entry for 'Shared Memory Hierarchy'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "region_id": "MEMREG_4746b535",
+      "name": "L1 Matrix Cache",
+      "type": "memory_region",
+      "base_address": "",
+      "size": "512KB",
+      "depth": 0,
+      "width": 0,
+      "description": "Memory domain L1 Matrix Cache",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L1 Matrix Cache'",
+        "source_text": "Specification entry for 'L1 Matrix Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "region_id": "MEMREG_44f1b24a",
+      "name": "L2 Shared Cache",
+      "type": "memory_region",
+      "base_address": "",
+      "size": "4MB",
+      "depth": 0,
+      "width": 0,
+      "description": "Memory domain L2 Shared Cache",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L2 Shared Cache'",
+        "source_text": "Specification entry for 'L2 Shared Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "region_id": "MEMREG_2d83ad37",
+      "name": "L3 Global Cache",
+      "type": "memory_region",
+      "base_address": "",
+      "size": "32MB",
+      "depth": 0,
+      "width": 0,
+      "description": "Memory domain L3 Global Cache",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'L3 Global Cache'",
+        "source_text": "Specification entry for 'L3 Global Cache'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
       }
     }
   ],
-  "protocol_rules": [],
-  "timing_rules": [],
-  "timing_requirements": [],
-  "performance_requirements": [],
+  "protocol_rules": [
+    {
+      "rule_id": "PRULE_abf06040",
+      "name": "link, to a chapter or appendix, or to a glossary entry, or to the section of the document that defines thecolored term/Timing diagrams p.25",
+      "type": "general",
+      "description": "Figure 1: Key to timing diagram conventions",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_7524d6138e",
+        "original_text": "Figure 1: Key to timing diagram conventions",
+        "source_text": "Figure 1: Key to timing diagram conventions",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.5909788608551025
+      }
+    },
+    {
+      "rule_id": "PRULE_0a150d00",
+      "name": "link, to a chapter or appendix, or to a glossary entry, or to the section of the document that defines thecolored term/Timing diagrams p.25",
+      "type": "general",
+      "description": "Figure 1: Key to timing diagram conventions",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_1d983acc26",
+        "original_text": "Figure 1: Key to timing diagram conventions",
+        "source_text": "Figure 1: Key to timing diagram conventions",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.5909788608551025
+      }
+    },
+    {
+      "rule_id": "PRULE_79a4a143",
+      "name": "link, to a chapter or appendix, or to a glossary entry, or to the section of the document that defines thecolored term/Timing diagrams p.25",
+      "type": "general",
+      "description": "Figure 1: Key to timing diagram conventions",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_bfff8e0fd3",
+        "original_text": "Figure 1: Key to timing diagram conventions",
+        "source_text": "Figure 1: Key to timing diagram conventions",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.5909788608551025
+      }
+    }
+  ],
+  "timing_rules": [
+    {
+      "rule_id": "TIME_66a620dd",
+      "name": "",
+      "type": "cycle_relationship",
+      "cycle_relationship": "O(rows \u00d7 cols) cycles",
+      "clock_relationship": "",
+      "clock_signal": "",
+      "ordering": "",
+      "minimum_delay": "",
+      "maximum_delay": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'timing'",
+        "source_text": "Specification entry for 'timing'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "timing_requirements": [
+    {
+      "rule_id": "TIME_66a620dd",
+      "name": "",
+      "type": "cycle_relationship",
+      "cycle_relationship": "O(rows \u00d7 cols) cycles",
+      "clock_relationship": "",
+      "clock_signal": "",
+      "ordering": "",
+      "minimum_delay": "",
+      "maximum_delay": "",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'timing'",
+        "source_text": "Specification entry for 'timing'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "performance_requirements": [
+    {
+      "perf_id": "PERF_fcff1e26",
+      "metric": "Maximum clock frequency",
+      "target_value": "1Ghz",
+      "condition": "Performance target Maximum clock frequency = 1Ghz ",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Maximum clock frequency'",
+        "source_text": "Specification entry for 'Maximum clock frequency'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_52b6e48e",
+      "metric": "Matrix multiplies throughput",
+      "target_value": "6.25 million elements per second",
+      "condition": "Performance target Matrix multiplies throughput = 6.25 million elements per second ",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix multiplies throughput'",
+        "source_text": "Specification entry for 'Matrix multiplies throughput'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_92c8e0db",
+      "metric": "Power consumption",
+      "target_value": "Less than 100mW",
+      "condition": "Performance target Power consumption = Less than 100mW ",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Power consumption'",
+        "source_text": "Specification entry for 'Power consumption'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_17445179",
+      "metric": "Maximum clock frequency",
+      "target_value": "1Ghz",
+      "condition": "Performance target Maximum clock frequency = 1Ghz ",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Maximum clock frequency'",
+        "source_text": "Specification entry for 'Maximum clock frequency'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_7967f9fa",
+      "metric": "Matrix multiplies throughput",
+      "target_value": "6.25 million elements per second",
+      "condition": "Performance target Matrix multiplies throughput = 6.25 million elements per second ",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Matrix multiplies throughput'",
+        "source_text": "Specification entry for 'Matrix multiplies throughput'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    },
+    {
+      "perf_id": "PERF_3db35f25",
+      "metric": "Power consumption",
+      "target_value": "Less than 100mW",
+      "condition": "Performance target Power consumption = Less than 100mW ",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'Power consumption'",
+        "source_text": "Specification entry for 'Power consumption'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      }
+    }
+  ],
   "errors": [],
   "constraints": [
     {
-      "constraint_id": "CONST_2c83792a",
+      "constraint_id": "CONST_56698d55",
       "type": "stability",
       "source_objects": [
-        "s_axi_awvalid"
+        "axi_arvalid"
       ],
       "target_objects": [],
-      "condition": "asserted(s_axi_awvalid)",
-      "expected_behavior": "stable(s_axi_awvalid) until handshaked",
+      "condition": "asserted(axi_arvalid)",
+      "expected_behavior": "stable(axi_arvalid) until handshaked",
       "severity": "CRITICAL",
       "protocol": "generic",
       "traceability": {
@@ -735,22 +3328,22 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 's_axi_awvalid'",
-        "source_text": "Specification entry for 's_axi_awvalid'",
+        "original_text": "Specification entry for 'axi_arvalid'",
+        "source_text": "Specification entry for 'axi_arvalid'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       },
       "confidence": 1.0
     },
     {
-      "constraint_id": "CONST_8acf4d7d",
+      "constraint_id": "CONST_02c338e3",
       "type": "stability",
       "source_objects": [
-        "s_axi_wvalid"
+        "axi_rvalid"
       ],
       "target_objects": [],
-      "condition": "asserted(s_axi_wvalid)",
-      "expected_behavior": "stable(s_axi_wvalid) until handshaked",
+      "condition": "asserted(axi_rvalid)",
+      "expected_behavior": "stable(axi_rvalid) until handshaked",
       "severity": "CRITICAL",
       "protocol": "generic",
       "traceability": {
@@ -760,8 +3353,83 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 's_axi_wvalid'",
-        "source_text": "Specification entry for 's_axi_wvalid'",
+        "original_text": "Specification entry for 'axi_rvalid'",
+        "source_text": "Specification entry for 'axi_rvalid'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      },
+      "confidence": 1.0
+    },
+    {
+      "constraint_id": "CONST_36a19523",
+      "type": "stability",
+      "source_objects": [
+        "axi_awvalid"
+      ],
+      "target_objects": [],
+      "condition": "asserted(axi_awvalid)",
+      "expected_behavior": "stable(axi_awvalid) until handshaked",
+      "severity": "CRITICAL",
+      "protocol": "generic",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_awvalid'",
+        "source_text": "Specification entry for 'axi_awvalid'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      },
+      "confidence": 1.0
+    },
+    {
+      "constraint_id": "CONST_6edd8a3a",
+      "type": "stability",
+      "source_objects": [
+        "axi_wvalid"
+      ],
+      "target_objects": [],
+      "condition": "asserted(axi_wvalid)",
+      "expected_behavior": "stable(axi_wvalid) until handshaked",
+      "severity": "CRITICAL",
+      "protocol": "generic",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_wvalid'",
+        "source_text": "Specification entry for 'axi_wvalid'",
+        "extraction_method": "heuristic_extracted",
+        "confidence": 0.85
+      },
+      "confidence": 1.0
+    },
+    {
+      "constraint_id": "CONST_67aa62f9",
+      "type": "stability",
+      "source_objects": [
+        "axi_bvalid"
+      ],
+      "target_objects": [],
+      "condition": "asserted(axi_bvalid)",
+      "expected_behavior": "stable(axi_bvalid) until handshaked",
+      "severity": "CRITICAL",
+      "protocol": "generic",
+      "traceability": {
+        "doc_id": "text_spec",
+        "source_document_id": "text_spec",
+        "source_document": "specification.docx",
+        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
+        "ingestion_id": "ING_881549cb",
+        "chunk_id": "SPEC_EXTRACTION",
+        "original_text": "Specification entry for 'axi_bvalid'",
+        "source_text": "Specification entry for 'axi_bvalid'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       },
@@ -769,12 +3437,67 @@
     }
   ],
   "requirements": [],
-  "relationships": [],
+  "relationships": [
+    {
+      "source": "Multiplication",
+      "target": "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+      "relation": "supports_infrastructure",
+      "category": "interface",
+      "signals": [],
+      "direction": "Multiplication -> builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+      "evidence": "This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width"
+    },
+    {
+      "source": "Control Processor",
+      "target": "Matrix Processing Elements (MPEs)",
+      "relation": "orchestrates",
+      "category": "hardware_relationship",
+      "signals": [],
+      "direction": "Control Processor -> Matrix Processing Elements (MPEs)",
+      "evidence": "Control Processor      : Orchestrates overall operation and task distribution"
+    },
+    {
+      "source": "Interconnect Network",
+      "target": "Matrix Processing Elements (MPEs)",
+      "relation": "connects_to",
+      "category": "interface",
+      "signals": [],
+      "direction": "Interconnect Network -> Matrix Processing Elements (MPEs)",
+      "evidence": "Interconnect Network      : High-bandwidth communications fabric connecting cores"
+    },
+    {
+      "source": "Global Scheduler",
+      "target": "Matrix Processing Elements (MPEs)",
+      "relation": "distributes_to",
+      "category": "hardware_relationship",
+      "signals": [],
+      "direction": "Global Scheduler -> Matrix Processing Elements (MPEs)",
+      "evidence": "Global Scheduler      : Distributes matrix workloads across available cores"
+    },
+    {
+      "source": "DMA Engine",
+      "target": "Main Memory Interface",
+      "relation": "transfers_with",
+      "category": "interface",
+      "signals": [],
+      "direction": "DMA Engine -> Main Memory Interface",
+      "evidence": "DMA Engine      : Autonomous data transfer with main memory"
+    },
+    {
+      "source": "Division",
+      "target": "Columns (5 bits)",
+      "relation": "distributes_to",
+      "category": "hardware_relationship",
+      "signals": [],
+      "direction": "Division -> Columns (5 bits)",
+      "evidence": "Row/Column Division      : Distributes complete rows or columns across cores"
+    }
+  ],
   "validation": {
     "status": "PASSED",
-    "design_id": "DSN_66044996",
-    "canonical_id": "EFS_66044996",
-    "generation_run_id": "RUN_1793370441363",
+    "design_id": "DSN_3d077068",
+    "canonical_id": "EFS_3d077068",
+    "generation_run_id": "RUN_1793682266621",
     "document_id": "text_spec",
     "ingestion_id": "ING_881549cb",
     "summary": {
@@ -785,134 +3508,959 @@
     },
     "findings": []
   },
-  "resolutions": [],
+  "resolutions": [
+    {
+      "resolution_id": "RES_e4213c06",
+      "conflict_id": "CONF_a08fba50",
+      "target_entity": "MINV",
+      "property": "opcode",
+      "resolution_type": "CUSTOM_REQUIREMENT",
+      "proposed_change": "MINV.opcode = 001110",
+      "rationale": "User custom requirement override: 'MINV.opcode = 001110'",
+      "reason": "User custom requirement override: 'MINV.opcode = 001110'",
+      "affected_requirements": [
+        "MINV"
+      ],
+      "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+      "source_values": [
+        "000110"
+      ],
+      "proposed_value": "001110",
+      "resolved_value": "001110",
+      "original_value": "000110",
+      "field_name": "opcode",
+      "resolution_source": "human",
+      "validation_status": "PASSED",
+      "approval_status": "APPROVED",
+      "approved_by": "human_designer",
+      "created_at": "2026-11-03T10:36:34.561028",
+      "metadata": {},
+      "issue_id": "CONF_a08fba50",
+      "issue_type": "CUSTOM_REQUIREMENT",
+      "original_evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+      "resolution": "MINV.opcode = 001110",
+      "source": "human_designer",
+      "approved_by_user": true
+    },
+    {
+      "resolution_id": "RES_ae24fafb",
+      "conflict_id": "CONF_7d7d797f",
+      "target_entity": "MDET",
+      "property": "opcode",
+      "resolution_type": "CUSTOM_REQUIREMENT",
+      "proposed_change": "MDET.opcode = 001111",
+      "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
+      "reason": "User custom requirement override: 'MDET.opcode = 001111'",
+      "affected_requirements": [
+        "MDET"
+      ],
+      "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+      "source_values": [
+        "000111"
+      ],
+      "proposed_value": "001111",
+      "resolved_value": "001111",
+      "original_value": "000111",
+      "field_name": "opcode",
+      "resolution_source": "human",
+      "validation_status": "PASSED",
+      "approval_status": "APPROVED",
+      "approved_by": "human_designer",
+      "created_at": "2026-11-03T10:36:53.179139",
+      "metadata": {},
+      "issue_id": "CONF_7d7d797f",
+      "issue_type": "CUSTOM_REQUIREMENT",
+      "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+      "resolution": "MDET.opcode = 001111",
+      "source": "human_designer",
+      "approved_by_user": true
+    },
+    {
+      "resolution_id": "RES_b5f21448",
+      "conflict_id": "CONF_8e7fb526",
+      "target_entity": "MEIG",
+      "property": "opcode",
+      "resolution_type": "CUSTOM_REQUIREMENT",
+      "proposed_change": "MEIG.opcode = 011000",
+      "rationale": "User custom requirement override: 'MEIG.opcode = 011000'",
+      "reason": "User custom requirement override: 'MEIG.opcode = 011000'",
+      "affected_requirements": [
+        "MEIG"
+      ],
+      "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+      "source_values": [
+        "001000"
+      ],
+      "proposed_value": "011000",
+      "resolved_value": "011000",
+      "original_value": "001000",
+      "field_name": "opcode",
+      "resolution_source": "human",
+      "validation_status": "PASSED",
+      "approval_status": "APPROVED",
+      "approved_by": "human_designer",
+      "created_at": "2026-11-03T10:37:07.101649",
+      "metadata": {},
+      "issue_id": "CONF_8e7fb526",
+      "issue_type": "CUSTOM_REQUIREMENT",
+      "original_evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+      "resolution": "MEIG.opcode = 011000",
+      "source": "human_designer",
+      "approved_by_user": true
+    },
+    {
+      "resolution_id": "RES_8e0ee5e7",
+      "conflict_id": "CONF_933db94d",
+      "target_entity": "MIDENTITY",
+      "property": "opcode",
+      "resolution_type": "CUSTOM_REQUIREMENT",
+      "proposed_change": "MIDENTITY.opcode = 011001",
+      "rationale": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
+      "reason": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
+      "affected_requirements": [
+        "MIDENTITY"
+      ],
+      "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+      "source_values": [
+        "001001"
+      ],
+      "proposed_value": "011001",
+      "resolved_value": "011001",
+      "original_value": "001001",
+      "field_name": "opcode",
+      "resolution_source": "human",
+      "validation_status": "PASSED",
+      "approval_status": "APPROVED",
+      "approved_by": "human_designer",
+      "created_at": "2026-11-03T10:37:21.698709",
+      "metadata": {},
+      "issue_id": "CONF_933db94d",
+      "issue_type": "CUSTOM_REQUIREMENT",
+      "original_evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+      "resolution": "MIDENTITY.opcode = 011001",
+      "source": "human_designer",
+      "approved_by_user": true
+    }
+  ],
   "examples": [],
   "ambiguities": [],
   "conflicts": [
     {
-      "conflict_id": "CONF_b23d6028",
-      "id": "CONF_b23d6028",
-      "category": "HARDWARE_COMPLETENESS_GAP",
-      "type": "HARDWARE_COMPLETENESS_GAP",
+      "conflict_id": "CONF_a08fba50",
+      "id": "CONF_a08fba50",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
-      "blocking": true,
-      "status": "UNRESOLVED",
-      "title": "Missing Inter-Module Relationships",
-      "description": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
-      "explanation": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
-      "impact": "PlantUML architecture diagrams and RTL interconnect require explicit module relationships.",
-      "why_it_matters": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MINV, MSTORE",
+      "description": "Duplicate opcode assignment detected for value 000110",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
       "entities": [
-        "Module_Relationships"
+        "MINV",
+        "MSTORE"
       ],
       "affected_entities": [
-        "Module_Relationships"
+        "MINV",
+        "MSTORE"
       ],
       "target_entities": [
-        "Module_Relationships"
+        "MINV",
+        "MSTORE"
       ],
-      "property": "interfaces",
+      "property": "opcode",
       "properties": [
-        "interfaces"
+        "opcode"
       ],
-      "conflicting_values": [],
-      "source_references": [
-        {
-          "entity": "Module_Relationships",
-          "source": "Hardware Completeness Validator",
-          "section": "Category: Module_Relationships",
-          "value": "Unresolved in source specification"
-        }
+      "conflicting_values": [
+        "000110"
       ],
+      "source_references": [],
       "current_values": {
-        "Module_Relationships": "MISSING"
+        "MSTORE": "000110",
+        "MINV": "000110"
       },
-      "source_objects": [],
-      "evidence": "The Matrix Adder connects to an AXI4-Lite slave control interface.",
-      "suggestions": [
-        "Specify module connectivity in HITL."
+      "source_objects": [
+        "OPC_f61941c1",
+        "OPC_421fda7f"
       ],
+      "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+      "suggestions": [],
       "resolution_candidates": [],
-      "candidates": [],
-      "resolution_status": "UNRESOLVED",
-      "requires_human_decision": true,
-      "resolved_reason": "",
-      "semantic_key": "MISSING_SPECIFICATION:HARDWARE_COMPLETENESS_GAP:interfaces:MODULE_RELATIONSHIPS:missing",
-      "generation_run_id": "",
-      "created_at": "2026-10-30T19:57:21.413843",
-      "traceability": {
-        "extraction_method": "unknown",
-        "confidence": null
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MSTORE",
+        "current_value": "000110",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MSTORE' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "diagnostic_type": "MISSING_SPECIFICATION"
+      "resolution": {
+        "resolution_id": "RES_e4213c06",
+        "conflict_id": "CONF_a08fba50",
+        "target_entity": "MINV",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MINV.opcode = 001110",
+        "rationale": "User custom requirement override: 'MINV.opcode = 001110'",
+        "reason": "User custom requirement override: 'MINV.opcode = 001110'",
+        "affected_requirements": [
+          "MINV"
+        ],
+        "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+        "source_values": [
+          "000110"
+        ],
+        "proposed_value": "001110",
+        "resolved_value": "001110",
+        "original_value": "000110",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:36:34.561028",
+        "metadata": {},
+        "issue_id": "CONF_a08fba50",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+        "resolution": "MINV.opcode = 001110",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_e4213c06",
+      "candidates": [
+        "MINV",
+        "MSTORE"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MINV,MSTORE:000110",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834034",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_7d7d797f",
+      "id": "CONF_7d7d797f",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MDET, MTRANS",
+      "description": "Duplicate opcode assignment detected for value 000111",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "MDET",
+        "MTRANS"
+      ],
+      "affected_entities": [
+        "MDET",
+        "MTRANS"
+      ],
+      "target_entities": [
+        "MDET",
+        "MTRANS"
+      ],
+      "property": "opcode",
+      "properties": [
+        "opcode"
+      ],
+      "conflicting_values": [
+        "000111"
+      ],
+      "source_references": [],
+      "current_values": {
+        "MTRANS": "000111",
+        "MDET": "000111"
+      },
+      "source_objects": [
+        "OPC_1e0a49a3",
+        "OPC_ba78b0b9"
+      ],
+      "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MTRANS",
+        "current_value": "000111",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MTRANS' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
+      },
+      "resolution": {
+        "resolution_id": "RES_ae24fafb",
+        "conflict_id": "CONF_7d7d797f",
+        "target_entity": "MDET",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MDET.opcode = 001111",
+        "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
+        "reason": "User custom requirement override: 'MDET.opcode = 001111'",
+        "affected_requirements": [
+          "MDET"
+        ],
+        "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+        "source_values": [
+          "000111"
+        ],
+        "proposed_value": "001111",
+        "resolved_value": "001111",
+        "original_value": "000111",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:36:53.179139",
+        "metadata": {},
+        "issue_id": "CONF_7d7d797f",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+        "resolution": "MDET.opcode = 001111",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_ae24fafb",
+      "candidates": [
+        "MDET",
+        "MTRANS"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MDET,MTRANS:000111",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834124",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_8e7fb526",
+      "id": "CONF_8e7fb526",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MEIG, MZERO",
+      "description": "Duplicate opcode assignment detected for value 001000",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "MEIG",
+        "MZERO"
+      ],
+      "affected_entities": [
+        "MEIG",
+        "MZERO"
+      ],
+      "target_entities": [
+        "MEIG",
+        "MZERO"
+      ],
+      "property": "opcode",
+      "properties": [
+        "opcode"
+      ],
+      "conflicting_values": [
+        "001000"
+      ],
+      "source_references": [],
+      "current_values": {
+        "MZERO": "001000",
+        "MEIG": "001000"
+      },
+      "source_objects": [
+        "OPC_3379c2f4",
+        "OPC_7321bcab"
+      ],
+      "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MZERO",
+        "current_value": "001000",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MZERO' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
+      },
+      "resolution": {
+        "resolution_id": "RES_b5f21448",
+        "conflict_id": "CONF_8e7fb526",
+        "target_entity": "MEIG",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MEIG.opcode = 011000",
+        "rationale": "User custom requirement override: 'MEIG.opcode = 011000'",
+        "reason": "User custom requirement override: 'MEIG.opcode = 011000'",
+        "affected_requirements": [
+          "MEIG"
+        ],
+        "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+        "source_values": [
+          "001000"
+        ],
+        "proposed_value": "011000",
+        "resolved_value": "011000",
+        "original_value": "001000",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:37:07.101649",
+        "metadata": {},
+        "issue_id": "CONF_8e7fb526",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+        "resolution": "MEIG.opcode = 011000",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_b5f21448",
+      "candidates": [
+        "MEIG",
+        "MZERO"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MEIG,MZERO:001000",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834185",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_933db94d",
+      "id": "CONF_933db94d",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MIDENTITY, MSVD",
+      "description": "Duplicate opcode assignment detected for value 001001",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "affected_entities": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "target_entities": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "property": "opcode",
+      "properties": [
+        "opcode"
+      ],
+      "conflicting_values": [
+        "001001"
+      ],
+      "source_references": [],
+      "current_values": {
+        "MIDENTITY": "001001",
+        "MSVD": "001001"
+      },
+      "source_objects": [
+        "OPC_2bf483e8",
+        "OPC_e958dca2"
+      ],
+      "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MSVD",
+        "current_value": "001001",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MSVD' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
+      },
+      "resolution": {
+        "resolution_id": "RES_8e0ee5e7",
+        "conflict_id": "CONF_933db94d",
+        "target_entity": "MIDENTITY",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MIDENTITY.opcode = 011001",
+        "rationale": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
+        "reason": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
+        "affected_requirements": [
+          "MIDENTITY"
+        ],
+        "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+        "source_values": [
+          "001001"
+        ],
+        "proposed_value": "011001",
+        "resolved_value": "011001",
+        "original_value": "001001",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:37:21.698709",
+        "metadata": {},
+        "issue_id": "CONF_933db94d",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+        "resolution": "MIDENTITY.opcode = 011001",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_8e0ee5e7",
+      "candidates": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MIDENTITY,MSVD:001001",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834253",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
     }
   ],
   "contradictions": [
     {
-      "conflict_id": "CONF_b23d6028",
-      "id": "CONF_b23d6028",
-      "category": "HARDWARE_COMPLETENESS_GAP",
-      "type": "HARDWARE_COMPLETENESS_GAP",
+      "conflict_id": "CONF_a08fba50",
+      "id": "CONF_a08fba50",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
-      "blocking": true,
-      "status": "UNRESOLVED",
-      "title": "Missing Inter-Module Relationships",
-      "description": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
-      "explanation": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
-      "impact": "PlantUML architecture diagrams and RTL interconnect require explicit module relationships.",
-      "why_it_matters": "The specification explicitly establishes inter-module relationships, but no interconnecting relationships are represented in the EFS IR.",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MINV, MSTORE",
+      "description": "Duplicate opcode assignment detected for value 000110",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
       "entities": [
-        "Module_Relationships"
+        "MINV",
+        "MSTORE"
       ],
       "affected_entities": [
-        "Module_Relationships"
+        "MINV",
+        "MSTORE"
       ],
       "target_entities": [
-        "Module_Relationships"
+        "MINV",
+        "MSTORE"
       ],
-      "property": "interfaces",
+      "property": "opcode",
       "properties": [
-        "interfaces"
+        "opcode"
       ],
-      "conflicting_values": [],
-      "source_references": [
-        {
-          "entity": "Module_Relationships",
-          "source": "Hardware Completeness Validator",
-          "section": "Category: Module_Relationships",
-          "value": "Unresolved in source specification"
-        }
+      "conflicting_values": [
+        "000110"
       ],
+      "source_references": [],
       "current_values": {
-        "Module_Relationships": "MISSING"
+        "MSTORE": "000110",
+        "MINV": "000110"
       },
-      "source_objects": [],
-      "evidence": "The Matrix Adder connects to an AXI4-Lite slave control interface.",
-      "suggestions": [
-        "Specify module connectivity in HITL."
+      "source_objects": [
+        "OPC_f61941c1",
+        "OPC_421fda7f"
       ],
+      "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+      "suggestions": [],
       "resolution_candidates": [],
-      "candidates": [],
-      "resolution_status": "UNRESOLVED",
-      "requires_human_decision": true,
-      "resolved_reason": "",
-      "semantic_key": "MISSING_SPECIFICATION:HARDWARE_COMPLETENESS_GAP:interfaces:MODULE_RELATIONSHIPS:missing",
-      "generation_run_id": "",
-      "created_at": "2026-10-30T19:57:21.413843",
-      "traceability": {
-        "extraction_method": "unknown",
-        "confidence": null
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MSTORE",
+        "current_value": "000110",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MSTORE' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "diagnostic_type": "MISSING_SPECIFICATION"
+      "resolution": {
+        "resolution_id": "RES_e4213c06",
+        "conflict_id": "CONF_a08fba50",
+        "target_entity": "MINV",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MINV.opcode = 001110",
+        "rationale": "User custom requirement override: 'MINV.opcode = 001110'",
+        "reason": "User custom requirement override: 'MINV.opcode = 001110'",
+        "affected_requirements": [
+          "MINV"
+        ],
+        "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+        "source_values": [
+          "000110"
+        ],
+        "proposed_value": "001110",
+        "resolved_value": "001110",
+        "original_value": "000110",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:36:34.561028",
+        "metadata": {},
+        "issue_id": "CONF_a08fba50",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+        "resolution": "MINV.opcode = 001110",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_e4213c06",
+      "candidates": [
+        "MINV",
+        "MSTORE"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MINV,MSTORE:000110",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834034",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_7d7d797f",
+      "id": "CONF_7d7d797f",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MDET, MTRANS",
+      "description": "Duplicate opcode assignment detected for value 000111",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "MDET",
+        "MTRANS"
+      ],
+      "affected_entities": [
+        "MDET",
+        "MTRANS"
+      ],
+      "target_entities": [
+        "MDET",
+        "MTRANS"
+      ],
+      "property": "opcode",
+      "properties": [
+        "opcode"
+      ],
+      "conflicting_values": [
+        "000111"
+      ],
+      "source_references": [],
+      "current_values": {
+        "MTRANS": "000111",
+        "MDET": "000111"
+      },
+      "source_objects": [
+        "OPC_1e0a49a3",
+        "OPC_ba78b0b9"
+      ],
+      "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MTRANS",
+        "current_value": "000111",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MTRANS' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
+      },
+      "resolution": {
+        "resolution_id": "RES_ae24fafb",
+        "conflict_id": "CONF_7d7d797f",
+        "target_entity": "MDET",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MDET.opcode = 001111",
+        "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
+        "reason": "User custom requirement override: 'MDET.opcode = 001111'",
+        "affected_requirements": [
+          "MDET"
+        ],
+        "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+        "source_values": [
+          "000111"
+        ],
+        "proposed_value": "001111",
+        "resolved_value": "001111",
+        "original_value": "000111",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:36:53.179139",
+        "metadata": {},
+        "issue_id": "CONF_7d7d797f",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+        "resolution": "MDET.opcode = 001111",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_ae24fafb",
+      "candidates": [
+        "MDET",
+        "MTRANS"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MDET,MTRANS:000111",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834124",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_8e7fb526",
+      "id": "CONF_8e7fb526",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MEIG, MZERO",
+      "description": "Duplicate opcode assignment detected for value 001000",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "MEIG",
+        "MZERO"
+      ],
+      "affected_entities": [
+        "MEIG",
+        "MZERO"
+      ],
+      "target_entities": [
+        "MEIG",
+        "MZERO"
+      ],
+      "property": "opcode",
+      "properties": [
+        "opcode"
+      ],
+      "conflicting_values": [
+        "001000"
+      ],
+      "source_references": [],
+      "current_values": {
+        "MZERO": "001000",
+        "MEIG": "001000"
+      },
+      "source_objects": [
+        "OPC_3379c2f4",
+        "OPC_7321bcab"
+      ],
+      "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MZERO",
+        "current_value": "001000",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MZERO' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
+      },
+      "resolution": {
+        "resolution_id": "RES_b5f21448",
+        "conflict_id": "CONF_8e7fb526",
+        "target_entity": "MEIG",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MEIG.opcode = 011000",
+        "rationale": "User custom requirement override: 'MEIG.opcode = 011000'",
+        "reason": "User custom requirement override: 'MEIG.opcode = 011000'",
+        "affected_requirements": [
+          "MEIG"
+        ],
+        "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+        "source_values": [
+          "001000"
+        ],
+        "proposed_value": "011000",
+        "resolved_value": "011000",
+        "original_value": "001000",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:37:07.101649",
+        "metadata": {},
+        "issue_id": "CONF_8e7fb526",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MEIG, MZERO share opcode '001000'.",
+        "resolution": "MEIG.opcode = 011000",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_b5f21448",
+      "candidates": [
+        "MEIG",
+        "MZERO"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MEIG,MZERO:001000",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834185",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
+    },
+    {
+      "conflict_id": "CONF_933db94d",
+      "id": "CONF_933db94d",
+      "category": "DUPLICATE_OPCODE",
+      "type": "DUPLICATE_OPCODE",
+      "severity": "CRITICAL",
+      "blocking": false,
+      "status": "RESOLVED",
+      "title": "Duplicate Opcode: MIDENTITY, MSVD",
+      "description": "Duplicate opcode assignment detected for value 001001",
+      "explanation": "",
+      "impact": "",
+      "why_it_matters": "Specification ambiguity requires human resolution.",
+      "entities": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "affected_entities": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "target_entities": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "property": "opcode",
+      "properties": [
+        "opcode"
+      ],
+      "conflicting_values": [
+        "001001"
+      ],
+      "source_references": [],
+      "current_values": {
+        "MIDENTITY": "001001",
+        "MSVD": "001001"
+      },
+      "source_objects": [
+        "OPC_2bf483e8",
+        "OPC_e958dca2"
+      ],
+      "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+      "suggestions": [],
+      "resolution_candidates": [],
+      "ai_proposal": {
+        "type": "CHANGE_VALUE",
+        "target": "MSVD",
+        "current_value": "001001",
+        "proposed_value": "001110",
+        "reason": "Assigns 'MSVD' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
+      },
+      "resolution": {
+        "resolution_id": "RES_8e0ee5e7",
+        "conflict_id": "CONF_933db94d",
+        "target_entity": "MIDENTITY",
+        "property": "opcode",
+        "resolution_type": "CUSTOM_REQUIREMENT",
+        "proposed_change": "MIDENTITY.opcode = 011001",
+        "rationale": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
+        "reason": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
+        "affected_requirements": [
+          "MIDENTITY"
+        ],
+        "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+        "source_values": [
+          "001001"
+        ],
+        "proposed_value": "011001",
+        "resolved_value": "011001",
+        "original_value": "001001",
+        "field_name": "opcode",
+        "resolution_source": "human",
+        "validation_status": "PASSED",
+        "approval_status": "APPROVED",
+        "approved_by": "human_designer",
+        "created_at": "2026-11-03T10:37:21.698709",
+        "metadata": {},
+        "issue_id": "CONF_933db94d",
+        "issue_type": "CUSTOM_REQUIREMENT",
+        "original_evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
+        "resolution": "MIDENTITY.opcode = 011001",
+        "source": "human_designer",
+        "approved_by_user": true
+      },
+      "resolution_id": "RES_8e0ee5e7",
+      "candidates": [
+        "MIDENTITY",
+        "MSVD"
+      ],
+      "resolution_status": "RESOLVED",
+      "requires_human_decision": false,
+      "resolved_reason": "Approved resolution applied by designer.",
+      "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MIDENTITY,MSVD:001001",
+      "generation_run_id": "RUN_1793682266621",
+      "created_at": "2026-11-03T10:34:26.834253",
+      "traceability": {
+        "extraction_method": "programmatic_check",
+        "confidence": 1.0
+      },
+      "diagnostic_type": "SPEC_CONFLICT"
     }
   ],
   "extraction_quality": {
-    "extraction_status": "success",
+    "extraction_status": "partial",
     "source_completeness": "partial",
     "ir_completeness": "partial",
-    "missing_information": [
-      "fsms"
-    ]
+    "missing_information": []
   },
   "extraction_coverage": {}
 }
