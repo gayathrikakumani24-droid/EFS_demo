@@ -123,6 +123,10 @@ def resolve_dependencies(
     comp_type_lower = (getattr(target_comp, "type", "") or "").lower()
     is_decoder = "decoder" in comp_name_lower or "decoder" in comp_type_lower
 
+    # Sub-Module Bus Isolation Rule: Internal compute/decoder sub-blocks must not inherit external protocol buses
+    if not is_top_level and not any(k in comp_name_lower for k in ("axi", "dma", "bus", "memory", "mem_iface", "bridge")):
+        signals = [s for s in signals if not any(s.name.lower().startswith(pfx) for pfx in ("axi_", "ahb_", "apb_", "wb_", "dma_"))]
+
     # Gather registers owned by target
     registers: List[EFSRegister] = []
     if not is_decoder:

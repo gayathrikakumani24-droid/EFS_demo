@@ -1,30 +1,29 @@
 {
   "metadata": {
-    "design_id": "DSN_3d077068",
-    "design_name": "builds_upon_the_original_sme_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
-    "canonical_id": "EFS_3d077068",
-    "display_name": "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+    "design_id": "DSN_b812b682",
+    "design_name": "multi_core_matrix_system",
+    "canonical_id": "EFS_b812b682",
+    "display_name": "multi_core_matrix_system",
     "aliases": [
-      "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-      "builds_upon_the_original_sme_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
-      "EFS_3d077068",
-      "BuildsUponTheOriginalSmeArchitectureWhileAddingConfigurabilityForMatrixSizesAndIncreasedDataWidth",
-      "buildsUponTheOriginalSmeArchitectureWhileAddingConfigurabilityForMatrixSizesAndIncreasedDataWidth",
-      "buildsupontheoriginalsmearchitecturewhileaddingconfigurabilityformatrixsizesandincreaseddatawidth",
-      "Builds Upon The Original Sme Architecture While Adding Configurability For Matrix Sizes And Increased Data Width"
+      "multi_core_matrix_system",
+      "EFS_b812b682",
+      "MultiCoreMatrixSystem",
+      "multiCoreMatrixSystem",
+      "multicorematrixsystem",
+      "Multi Core Matrix System"
     ],
     "project_name": "default_project",
     "document_id": "text_spec",
     "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
     "ingestion_id": "ING_881549cb",
-    "generation_run_id": "RUN_1793682266621",
+    "generation_run_id": "RUN_1793809853247",
     "specification_revision": "1.0",
     "ir_schema_version": "1.0",
     "model_version": 6,
     "resolution_version": 5,
     "protocol": "generic",
     "protocol_version": "1.0",
-    "top_module": "builds_upon_the_original_sme_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
+    "top_module": "multi_core_matrix_system",
     "description": "",
     "author": "Hardware GraphRAG",
     "source_documents": [
@@ -41,14 +40,14 @@
         "path": ""
       }
     ],
-    "generation_timestamp": "2026-11-03T10:34:26.634806"
+    "generation_timestamp": "2026-11-04T22:00:53.249339"
   },
   "components": [
     {
-      "component_id": "COMP_86e389f8",
-      "name": "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+      "component_id": "COMP_0b029bc1",
+      "name": "multi_core_matrix_system",
       "type": "top_level_design",
-      "description": "Top-Level Composite Design Module: builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
+      "description": "Top-Level Composite Design Module: multi_core_matrix_system",
       "interfaces": [],
       "traceability": {
         "doc_id": "text_spec",
@@ -57,52 +56,14 @@
         "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
         "ingestion_id": "ING_881549cb",
         "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'builds upon the original SME architecture while adding configurability for matrix sizes and increased data width'",
-        "source_text": "Specification entry for 'builds upon the original SME architecture while adding configurability for matrix sizes and increased data width'",
+        "original_text": "Specification entry for 'multi_core_matrix_system'",
+        "source_text": "Specification entry for 'multi_core_matrix_system'",
         "extraction_method": "heuristic_extracted",
         "confidence": 0.85
       }
     },
     {
-      "component_id": "COMP_3edca5bc",
-      "name": "Register_File",
-      "type": "register_file",
-      "description": "Holds control/status registers.",
-      "interfaces": [],
-      "traceability": {
-        "doc_id": "text_spec",
-        "source_document_id": "text_spec",
-        "source_document": "specification.docx",
-        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
-        "ingestion_id": "ING_881549cb",
-        "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'Register_File'",
-        "source_text": "Specification entry for 'Register_File'",
-        "extraction_method": "heuristic_extracted",
-        "confidence": 0.85
-      }
-    },
-    {
-      "component_id": "COMP_7736f777",
-      "name": "FSM_Control_Unit",
-      "type": "fsm_control_unit",
-      "description": "Coordinates handshakes and state logic.",
-      "interfaces": [],
-      "traceability": {
-        "doc_id": "text_spec",
-        "source_document_id": "text_spec",
-        "source_document": "specification.docx",
-        "document_hash": "881549cb778011d61038b56f76081552dde735e3e81a6883ef69af945acd8645",
-        "ingestion_id": "ING_881549cb",
-        "chunk_id": "SPEC_EXTRACTION",
-        "original_text": "Specification entry for 'FSM_Control_Unit'",
-        "source_text": "Specification entry for 'FSM_Control_Unit'",
-        "extraction_method": "heuristic_extracted",
-        "confidence": 0.85
-      }
-    },
-    {
-      "component_id": "COMP_b43ff24e",
+      "component_id": "COMP_a650d38f",
       "name": "Multiplication",
       "type": "component",
       "description": "Component Multiplication",
@@ -121,7 +82,7 @@
       }
     },
     {
-      "component_id": "COMP_e45466cc",
+      "component_id": "COMP_ee71dd1f",
       "name": "Division",
       "type": "component",
       "description": "Component Division",
@@ -140,7 +101,7 @@
       }
     },
     {
-      "component_id": "COMP_35e9e663",
+      "component_id": "COMP_35b536fc",
       "name": "Inversion",
       "type": "component",
       "description": "Component Inversion",
@@ -159,7 +120,7 @@
       }
     },
     {
-      "component_id": "COMP_2f793fbf",
+      "component_id": "COMP_9ba7333d",
       "name": "Control Processor",
       "type": "component",
       "description": "Component Control Processor",
@@ -178,7 +139,7 @@
       }
     },
     {
-      "component_id": "COMP_7e5e4abf",
+      "component_id": "COMP_5e1da397",
       "name": "Matrix Processing Elements (MPEs)",
       "type": "component",
       "description": "Component Matrix Processing Elements (MPEs)",
@@ -197,7 +158,7 @@
       }
     },
     {
-      "component_id": "COMP_1ef3bdfa",
+      "component_id": "COMP_704eeeee",
       "name": "Shared Memory Hierarchy",
       "type": "component",
       "description": "Component Shared Memory Hierarchy",
@@ -216,7 +177,7 @@
       }
     },
     {
-      "component_id": "COMP_94e91947",
+      "component_id": "COMP_e25ec7cb",
       "name": "Interconnect Network",
       "type": "component",
       "description": "Component Interconnect Network",
@@ -235,7 +196,7 @@
       }
     },
     {
-      "component_id": "COMP_997ed4cc",
+      "component_id": "COMP_44feffd8",
       "name": "Global Scheduler",
       "type": "component",
       "description": "Component Global Scheduler",
@@ -254,7 +215,7 @@
       }
     },
     {
-      "component_id": "COMP_8e1d665e",
+      "component_id": "COMP_8475000b",
       "name": "Block Division",
       "type": "component",
       "description": "Component Block Division",
@@ -273,7 +234,7 @@
       }
     },
     {
-      "component_id": "COMP_2d5cab29",
+      "component_id": "COMP_aaa313b4",
       "name": "Cyclic Assignment",
       "type": "component",
       "description": "Component Cyclic Assignment",
@@ -292,7 +253,7 @@
       }
     },
     {
-      "component_id": "COMP_45519f04",
+      "component_id": "COMP_9b5b2617",
       "name": "Register File",
       "type": "component",
       "description": "Component Register File",
@@ -311,7 +272,7 @@
       }
     },
     {
-      "component_id": "COMP_c15a5d04",
+      "component_id": "COMP_b0826cda",
       "name": "Matrix ALU",
       "type": "component",
       "description": "Component Matrix ALU",
@@ -330,7 +291,7 @@
       }
     },
     {
-      "component_id": "COMP_6da03dba",
+      "component_id": "COMP_cd2c6792",
       "name": "Control Unit",
       "type": "component",
       "description": "Manages execution for and multi-cycle operations",
@@ -349,7 +310,7 @@
       }
     },
     {
-      "component_id": "COMP_7274fc8a",
+      "component_id": "COMP_c6fa7377",
       "name": "Memory Interface",
       "type": "component",
       "description": "Component Memory Interface",
@@ -368,7 +329,7 @@
       }
     },
     {
-      "component_id": "COMP_b3b2345a",
+      "component_id": "COMP_3efabc10",
       "name": "Rows (5 bits)",
       "type": "component",
       "description": "Component Rows (5 bits)",
@@ -387,7 +348,7 @@
       }
     },
     {
-      "component_id": "COMP_14b78cbc",
+      "component_id": "COMP_0a0cde3c",
       "name": "Columns (5 bits)",
       "type": "component",
       "description": "Component Columns (5 bits)",
@@ -406,7 +367,7 @@
       }
     },
     {
-      "component_id": "COMP_a05bd31a",
+      "component_id": "COMP_d70782fc",
       "name": "Memory Address (32 bits)",
       "type": "component",
       "description": "Component Memory Address (32 bits)",
@@ -425,7 +386,7 @@
       }
     },
     {
-      "component_id": "COMP_e0fcab2c",
+      "component_id": "COMP_ebefb19a",
       "name": "Data Block",
       "type": "component",
       "description": "Actual matrix elements",
@@ -444,7 +405,7 @@
       }
     },
     {
-      "component_id": "COMP_64e3c45d",
+      "component_id": "COMP_2f055664",
       "name": "Instruction Input",
       "type": "component",
       "description": "Component Instruction Input",
@@ -463,7 +424,7 @@
       }
     },
     {
-      "component_id": "COMP_5918e07c",
+      "component_id": "COMP_951bbb24",
       "name": "Data Memory Interface",
       "type": "component",
       "description": "Component Data Memory Interface",
@@ -482,7 +443,7 @@
       }
     },
     {
-      "component_id": "COMP_18d14a66",
+      "component_id": "COMP_eadb46d3",
       "name": "AXI4 Memory Interface",
       "type": "component",
       "description": "Component AXI4 Memory Interface",
@@ -501,7 +462,7 @@
       }
     },
     {
-      "component_id": "COMP_9acf9239",
+      "component_id": "COMP_3d211d61",
       "name": "Configuration Registers",
       "type": "component",
       "description": "Component Configuration Registers",
@@ -520,7 +481,7 @@
       }
     },
     {
-      "component_id": "COMP_8e0f83d8",
+      "component_id": "COMP_3776f0a3",
       "name": "Status Registers",
       "type": "component",
       "description": "Component Status Registers",
@@ -539,7 +500,7 @@
       }
     },
     {
-      "component_id": "COMP_7d23113a",
+      "component_id": "COMP_7b8d9fbc",
       "name": "Interrupt Controller",
       "type": "component",
       "description": "Component Interrupt Controller",
@@ -558,7 +519,7 @@
       }
     },
     {
-      "component_id": "COMP_e7a574c4",
+      "component_id": "COMP_2fa2d636",
       "name": "Matrix Registers",
       "type": "component",
       "description": "Component Matrix Registers",
@@ -577,7 +538,7 @@
       }
     },
     {
-      "component_id": "COMP_20d8485a",
+      "component_id": "COMP_43a57a72",
       "name": "Matrix multiplies throughput",
       "type": "component",
       "description": "6.25 million elements per second",
@@ -596,7 +557,7 @@
       }
     },
     {
-      "component_id": "COMP_5a3c0d5b",
+      "component_id": "COMP_0a1ea6d3",
       "name": "Power consumption",
       "type": "component",
       "description": "Component Power consumption",
@@ -615,7 +576,7 @@
       }
     },
     {
-      "component_id": "COMP_4cf67cdd",
+      "component_id": "COMP_894e1996",
       "name": "Local Register File",
       "type": "component",
       "description": "Component Local Register File",
@@ -634,7 +595,7 @@
       }
     },
     {
-      "component_id": "COMP_69169587",
+      "component_id": "COMP_0212057e",
       "name": "Local Tiling Engine",
       "type": "component",
       "description": "Component Local Tiling Engine",
@@ -653,7 +614,7 @@
       }
     },
     {
-      "component_id": "COMP_c32bec96",
+      "component_id": "COMP_619c66f8",
       "name": "L1 Matrix Cache",
       "type": "component",
       "description": "Component L1 Matrix Cache",
@@ -672,7 +633,7 @@
       }
     },
     {
-      "component_id": "COMP_8fe83dcb",
+      "component_id": "COMP_06905853",
       "name": "DMA Engine",
       "type": "component",
       "description": "Component DMA Engine",
@@ -691,7 +652,7 @@
       }
     },
     {
-      "component_id": "COMP_9d8d13dd",
+      "component_id": "COMP_ac977f31",
       "name": "Multi-level NoC (Network-on",
       "type": "component",
       "description": "Chip) for scalability",
@@ -710,7 +671,7 @@
       }
     },
     {
-      "component_id": "COMP_80e2a8de",
+      "component_id": "COMP_9bd73adf",
       "name": "MSVD_COLLECTIVE",
       "type": "component",
       "description": "Distributed singular value decomposition",
@@ -729,7 +690,7 @@
       }
     },
     {
-      "component_id": "COMP_44dd9094",
+      "component_id": "COMP_8e5285a7",
       "name": "Main Memory Interface",
       "type": "architectural_component",
       "description": "Architectural component from Specification Core Requirements",
@@ -749,7 +710,7 @@
   ],
   "interfaces": [
     {
-      "interface_id": "IF_3912afd1",
+      "interface_id": "IF_469e75ef",
       "name": "Interconnect_Network_connects_to_Matrix_Processing_Elements_MPEs",
       "protocol": "interconnect",
       "role": "",
@@ -771,7 +732,7 @@
       }
     },
     {
-      "interface_id": "IF_bc78000e",
+      "interface_id": "IF_76e32239",
       "name": "DMA_Engine_transfers_with_Main_Memory_Interface",
       "protocol": "interconnect",
       "role": "",
@@ -795,7 +756,7 @@
   ],
   "signals": [
     {
-      "signal_id": "SIG_a85e9ff4",
+      "signal_id": "SIG_d1d4838e",
       "name": "start",
       "width": "1",
       "direction": "input",
@@ -803,7 +764,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "Signal start",
       "semantic_role": "control",
       "aliases": [],
@@ -823,7 +784,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_78ad98b9",
+      "signal_id": "SIG_93401c05",
       "name": "done",
       "width": "1",
       "direction": "output",
@@ -831,7 +792,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "Signal done",
       "semantic_role": "control",
       "aliases": [],
@@ -851,7 +812,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_1c929b36",
+      "signal_id": "SIG_cd00cd53",
       "name": "clk",
       "width": "1",
       "direction": "input",
@@ -859,8 +820,8 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
-      "consumer": "COMP_7736f777",
+      "owner": "COMP_0b029bc1",
+      "consumer": "COMP_7b8d9fbc",
       "description": "input wire clk,               // System clock",
       "semantic_role": "clock",
       "aliases": [
@@ -882,7 +843,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_b4a9b782",
+      "signal_id": "SIG_8d03cc3b",
       "name": "rst_n",
       "width": "1",
       "direction": "input",
@@ -890,7 +851,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "Reset",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire rst_n,             // Active low reset",
       "semantic_role": "reset",
       "aliases": [
@@ -912,7 +873,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_6ad01ccb",
+      "signal_id": "SIG_35f7b2aa",
       "name": "error",
       "width": "1",
       "direction": "output",
@@ -920,7 +881,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire error,            // Error indicator",
       "semantic_role": "control",
       "aliases": [],
@@ -940,7 +901,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_0ce257c2",
+      "signal_id": "SIG_73034bf1",
       "name": "axi_araddr",
       "width": "32",
       "direction": "output",
@@ -948,7 +909,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire [31:0] axi_araddr,",
       "semantic_role": "address",
       "aliases": [],
@@ -968,7 +929,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_ebc8ade7",
+      "signal_id": "SIG_64e02906",
       "name": "axi_arvalid",
       "width": "1",
       "direction": "output",
@@ -976,7 +937,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire axi_arvalid,",
       "semantic_role": "valid",
       "aliases": [],
@@ -996,7 +957,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_0a2faade",
+      "signal_id": "SIG_d1eaa5db",
       "name": "axi_arready",
       "width": "1",
       "direction": "input",
@@ -1004,7 +965,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire axi_arready,",
       "semantic_role": "ready",
       "aliases": [],
@@ -1024,7 +985,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_d5b6c623",
+      "signal_id": "SIG_d3a8b91b",
       "name": "axi_rdata",
       "width": "512",
       "direction": "input",
@@ -1032,7 +993,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire [511:0] axi_rdata,",
       "semantic_role": "data",
       "aliases": [],
@@ -1052,7 +1013,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_237dfc1d",
+      "signal_id": "SIG_f4274622",
       "name": "axi_rresp",
       "width": "2",
       "direction": "input",
@@ -1060,7 +1021,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire [1:0] axi_rresp,",
       "semantic_role": "resp",
       "aliases": [],
@@ -1080,7 +1041,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_848ff73a",
+      "signal_id": "SIG_47bdaa6d",
       "name": "axi_rlast",
       "width": "1",
       "direction": "input",
@@ -1088,7 +1049,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire axi_rlast,",
       "semantic_role": "data",
       "aliases": [],
@@ -1108,7 +1069,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_74880422",
+      "signal_id": "SIG_81ca50ee",
       "name": "axi_rvalid",
       "width": "1",
       "direction": "input",
@@ -1116,7 +1077,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire axi_rvalid,",
       "semantic_role": "valid",
       "aliases": [],
@@ -1136,7 +1097,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_6610c0db",
+      "signal_id": "SIG_fa992e19",
       "name": "axi_rready",
       "width": "1",
       "direction": "output",
@@ -1144,7 +1105,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire axi_rready,",
       "semantic_role": "ready",
       "aliases": [],
@@ -1164,7 +1125,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_6c671675",
+      "signal_id": "SIG_a9eefaed",
       "name": "axi_awaddr",
       "width": "32",
       "direction": "output",
@@ -1172,7 +1133,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire [31:0] axi_awaddr,",
       "semantic_role": "address",
       "aliases": [],
@@ -1192,7 +1153,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_40c77572",
+      "signal_id": "SIG_5ea614a6",
       "name": "axi_awvalid",
       "width": "1",
       "direction": "output",
@@ -1200,7 +1161,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire axi_awvalid,",
       "semantic_role": "valid",
       "aliases": [],
@@ -1220,7 +1181,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_026ab058",
+      "signal_id": "SIG_9eba0636",
       "name": "axi_awready",
       "width": "1",
       "direction": "input",
@@ -1228,7 +1189,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire axi_awready,",
       "semantic_role": "ready",
       "aliases": [],
@@ -1248,7 +1209,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_f10ad8ec",
+      "signal_id": "SIG_8d63a899",
       "name": "axi_wdata",
       "width": "512",
       "direction": "output",
@@ -1256,7 +1217,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire [511:0] axi_wdata,",
       "semantic_role": "data",
       "aliases": [],
@@ -1276,7 +1237,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_11409e9e",
+      "signal_id": "SIG_0ff491fd",
       "name": "axi_wstrb",
       "width": "64",
       "direction": "output",
@@ -1284,7 +1245,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire [63:0] axi_wstrb,",
       "semantic_role": "strb",
       "aliases": [],
@@ -1304,7 +1265,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_1c311d65",
+      "signal_id": "SIG_86cd6d0e",
       "name": "axi_wlast",
       "width": "1",
       "direction": "output",
@@ -1312,7 +1273,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire axi_wlast,",
       "semantic_role": "data",
       "aliases": [],
@@ -1332,7 +1293,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_db41e920",
+      "signal_id": "SIG_ad0f7d54",
       "name": "axi_wvalid",
       "width": "1",
       "direction": "output",
@@ -1340,7 +1301,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire axi_wvalid,",
       "semantic_role": "valid",
       "aliases": [],
@@ -1360,7 +1321,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_b48d1e55",
+      "signal_id": "SIG_c55e1aa2",
       "name": "axi_wready",
       "width": "1",
       "direction": "input",
@@ -1368,7 +1329,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire axi_wready,",
       "semantic_role": "ready",
       "aliases": [],
@@ -1388,7 +1349,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_fb51e8e8",
+      "signal_id": "SIG_be75a8e5",
       "name": "axi_bresp",
       "width": "2",
       "direction": "input",
@@ -1396,7 +1357,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire [1:0] axi_bresp,",
       "semantic_role": "resp",
       "aliases": [],
@@ -1416,7 +1377,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_9ffed71c",
+      "signal_id": "SIG_09fd2f55",
       "name": "axi_bvalid",
       "width": "1",
       "direction": "input",
@@ -1424,7 +1385,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "description": "input wire axi_bvalid,",
       "semantic_role": "valid",
       "aliases": [],
@@ -1444,7 +1405,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_63b7621e",
+      "signal_id": "SIG_79b1d4de",
       "name": "axi_bready",
       "width": "1",
       "direction": "output",
@@ -1452,7 +1413,7 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_3edca5bc",
+      "owner": "COMP_9b5b2617",
       "description": "output wire axi_bready",
       "semantic_role": "ready",
       "aliases": [],
@@ -1472,7 +1433,7 @@
       "width_source": "explicit_hdl"
     },
     {
-      "signal_id": "SIG_4d03901f",
+      "signal_id": "SIG_b5b8707d",
       "name": "instruction",
       "width": "64",
       "direction": "input",
@@ -1480,8 +1441,8 @@
       "signedness": false,
       "clock": "clk",
       "reset": "rst_n",
-      "owner": "COMP_86e389f8",
-      "consumer": "COMP_64e3c45d",
+      "owner": "COMP_0b029bc1",
+      "consumer": "COMP_2f055664",
       "description": "input wire [63:0] instruction, // Instruction input",
       "semantic_role": "data",
       "aliases": [],
@@ -1503,18 +1464,18 @@
   ],
   "clocks": [
     {
-      "signal_id": "SIG_1c929b36"
+      "signal_id": "SIG_cd00cd53"
     }
   ],
   "resets": [
     {
-      "signal_id": "SIG_b4a9b782"
+      "signal_id": "SIG_8d03cc3b"
     }
   ],
   "parameters": [],
   "registers": [
     {
-      "register_id": "REG_f8fca374",
+      "register_id": "REG_ef9db7ad",
       "name": "M0",
       "address": null,
       "offset": "0x00",
@@ -1526,7 +1487,7 @@
       "fields": [],
       "description": "Register M0",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1541,7 +1502,7 @@
       }
     },
     {
-      "register_id": "REG_cbbdcce9",
+      "register_id": "REG_baf3a0fe",
       "name": "M1",
       "address": null,
       "offset": "0x04",
@@ -1553,7 +1514,7 @@
       "fields": [],
       "description": "Register M1",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1568,7 +1529,7 @@
       }
     },
     {
-      "register_id": "REG_542bc5d9",
+      "register_id": "REG_919a8c2d",
       "name": "M2",
       "address": null,
       "offset": "0x08",
@@ -1580,7 +1541,7 @@
       "fields": [],
       "description": "Register M2",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1595,7 +1556,7 @@
       }
     },
     {
-      "register_id": "REG_8706673a",
+      "register_id": "REG_e7cbeae9",
       "name": "M3",
       "address": null,
       "offset": "0x0C",
@@ -1607,7 +1568,7 @@
       "fields": [],
       "description": "Register M3",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1622,7 +1583,7 @@
       }
     },
     {
-      "register_id": "REG_2c70dc9e",
+      "register_id": "REG_7fb7cbe2",
       "name": "M4",
       "address": null,
       "offset": "0x10",
@@ -1634,7 +1595,7 @@
       "fields": [],
       "description": "Register M4",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1649,7 +1610,7 @@
       }
     },
     {
-      "register_id": "REG_fa905436",
+      "register_id": "REG_07e9bac9",
       "name": "M5",
       "address": null,
       "offset": "0x14",
@@ -1661,7 +1622,7 @@
       "fields": [],
       "description": "Register M5",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1676,7 +1637,7 @@
       }
     },
     {
-      "register_id": "REG_377a8737",
+      "register_id": "REG_9937245c",
       "name": "M6",
       "address": null,
       "offset": "0x18",
@@ -1688,7 +1649,7 @@
       "fields": [],
       "description": "Register M6",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1703,7 +1664,7 @@
       }
     },
     {
-      "register_id": "REG_78f5fe02",
+      "register_id": "REG_a9b3f44f",
       "name": "M7",
       "address": null,
       "offset": "0x1C",
@@ -1715,7 +1676,7 @@
       "fields": [],
       "description": "Register M7",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1730,7 +1691,7 @@
       }
     },
     {
-      "register_id": "REG_ad7854db",
+      "register_id": "REG_4bd479c2",
       "name": "Matrix Registers M0-M7",
       "address": null,
       "offset": "0x20",
@@ -1742,7 +1703,7 @@
       "fields": [],
       "description": "Matrix Registers: M0-M7 (8 registers in total)",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1757,7 +1718,7 @@
       }
     },
     {
-      "register_id": "REG_84ea33a5",
+      "register_id": "REG_732795c8",
       "name": "Configuration Registers",
       "address": null,
       "offset": "0x24",
@@ -1769,7 +1730,7 @@
       "fields": [],
       "description": "Control matrix engine parameters",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1784,7 +1745,7 @@
       }
     },
     {
-      "register_id": "REG_bfc4f37a",
+      "register_id": "REG_07347435",
       "name": "Status Registers",
       "address": null,
       "offset": "0x28",
@@ -1796,7 +1757,7 @@
       "fields": [],
       "description": "Report operation progress and error conditions",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1811,7 +1772,7 @@
       }
     },
     {
-      "register_id": "REG_23827a30",
+      "register_id": "REG_64ce2398",
       "name": "Matrix Registers",
       "address": null,
       "offset": "0x2C",
@@ -1823,7 +1784,7 @@
       "fields": [],
       "description": "M0-M7 (8 registers in total)",
       "side_effects": "",
-      "owner": "COMP_86e389f8",
+      "owner": "COMP_0b029bc1",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -1840,7 +1801,7 @@
   ],
   "instructions": [
     {
-      "instruction_id": "INSTR_fad4a359",
+      "instruction_id": "INSTR_9f606df9",
       "name": "MADD",
       "mnemonic": "MADD",
       "opcode": "000001",
@@ -1864,7 +1825,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_df775dea",
+      "instruction_id": "INSTR_659ae6df",
       "name": "MSUB",
       "mnemonic": "MSUB",
       "opcode": "000010",
@@ -1888,7 +1849,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_7ba8e92d",
+      "instruction_id": "INSTR_a6a1305d",
       "name": "MMUL",
       "mnemonic": "MMUL",
       "opcode": "000011",
@@ -1912,7 +1873,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_4cb58df4",
+      "instruction_id": "INSTR_04bb2871",
       "name": "MDIV",
       "mnemonic": "MDIV",
       "opcode": "000100",
@@ -1936,7 +1897,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_bfadc22e",
+      "instruction_id": "INSTR_bd8ce69f",
       "name": "MLOAD",
       "mnemonic": "MLOAD",
       "opcode": "000101",
@@ -1960,7 +1921,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_a34cce4a",
+      "instruction_id": "INSTR_658277ef",
       "name": "MSTORE",
       "mnemonic": "MSTORE",
       "opcode": "000110",
@@ -1984,7 +1945,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_9e14189d",
+      "instruction_id": "INSTR_307d9ebd",
       "name": "MTRANS",
       "mnemonic": "MTRANS",
       "opcode": "000111",
@@ -2008,7 +1969,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_1d45fb7c",
+      "instruction_id": "INSTR_ffc4eed3",
       "name": "MZERO",
       "mnemonic": "MZERO",
       "opcode": "001000",
@@ -2032,7 +1993,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_f543aa50",
+      "instruction_id": "INSTR_d3a795c6",
       "name": "MIDENTITY",
       "mnemonic": "MIDENTITY",
       "opcode": "011001",
@@ -2056,7 +2017,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_6d2005f2",
+      "instruction_id": "INSTR_e5cfe7c9",
       "name": "MINV",
       "mnemonic": "MINV",
       "opcode": "001110",
@@ -2080,7 +2041,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_dc5ca6a9",
+      "instruction_id": "INSTR_aa06563b",
       "name": "MDET",
       "mnemonic": "MDET",
       "opcode": "001111",
@@ -2104,7 +2065,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_d9a6706a",
+      "instruction_id": "INSTR_cc7dccc3",
       "name": "MEIG",
       "mnemonic": "MEIG",
       "opcode": "011000",
@@ -2128,7 +2089,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_ec463388",
+      "instruction_id": "INSTR_48a0b689",
       "name": "MSVD",
       "mnemonic": "MSVD",
       "opcode": "001001",
@@ -2152,7 +2113,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_bfdd8a7e",
+      "instruction_id": "INSTR_d87aae98",
       "name": "MSIZE",
       "mnemonic": "MSIZE",
       "opcode": "001010",
@@ -2176,7 +2137,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_3785b315",
+      "instruction_id": "INSTR_a1bd2ec7",
       "name": "MSLICE",
       "mnemonic": "MSLICE",
       "opcode": "001011",
@@ -2200,7 +2161,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_2d6411e7",
+      "instruction_id": "INSTR_510c2341",
       "name": "MCONCAT",
       "mnemonic": "MCONCAT",
       "opcode": "001100",
@@ -2224,7 +2185,7 @@
       }
     },
     {
-      "instruction_id": "INSTR_c618f980",
+      "instruction_id": "INSTR_c0721f10",
       "name": "MTYPE",
       "mnemonic": "MTYPE",
       "opcode": "001101",
@@ -2251,12 +2212,12 @@
   "instruction_formats": [],
   "opcodes": [
     {
-      "opcode_id": "OPC_8bbb711d",
+      "opcode_id": "OPC_82313a49",
       "mnemonic": "MADD",
       "binary_encoding": "000001",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_fad4a359",
+      "instruction_id": "INSTR_9f606df9",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2271,12 +2232,12 @@
       }
     },
     {
-      "opcode_id": "OPC_e7ce23ca",
+      "opcode_id": "OPC_8d0692a2",
       "mnemonic": "MSUB",
       "binary_encoding": "000010",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_df775dea",
+      "instruction_id": "INSTR_659ae6df",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2291,12 +2252,12 @@
       }
     },
     {
-      "opcode_id": "OPC_959ec042",
+      "opcode_id": "OPC_0bea554c",
       "mnemonic": "MMUL",
       "binary_encoding": "000011",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_7ba8e92d",
+      "instruction_id": "INSTR_a6a1305d",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2311,12 +2272,12 @@
       }
     },
     {
-      "opcode_id": "OPC_f73c8062",
+      "opcode_id": "OPC_bbe77f82",
       "mnemonic": "MDIV",
       "binary_encoding": "000100",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_4cb58df4",
+      "instruction_id": "INSTR_04bb2871",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2331,12 +2292,12 @@
       }
     },
     {
-      "opcode_id": "OPC_99c96e23",
+      "opcode_id": "OPC_7b62c14d",
       "mnemonic": "MLOAD",
       "binary_encoding": "000101",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_bfadc22e",
+      "instruction_id": "INSTR_bd8ce69f",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2351,12 +2312,12 @@
       }
     },
     {
-      "opcode_id": "OPC_f61941c1",
+      "opcode_id": "OPC_55aa7ee6",
       "mnemonic": "MSTORE",
       "binary_encoding": "000110",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_a34cce4a",
+      "instruction_id": "INSTR_658277ef",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2371,12 +2332,12 @@
       }
     },
     {
-      "opcode_id": "OPC_1e0a49a3",
+      "opcode_id": "OPC_ade4b09b",
       "mnemonic": "MTRANS",
       "binary_encoding": "000111",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_9e14189d",
+      "instruction_id": "INSTR_307d9ebd",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2391,12 +2352,12 @@
       }
     },
     {
-      "opcode_id": "OPC_3379c2f4",
+      "opcode_id": "OPC_e4c158a5",
       "mnemonic": "MZERO",
       "binary_encoding": "001000",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_1d45fb7c",
+      "instruction_id": "INSTR_ffc4eed3",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2411,12 +2372,12 @@
       }
     },
     {
-      "opcode_id": "OPC_2bf483e8",
+      "opcode_id": "OPC_487e57b2",
       "mnemonic": "MIDENTITY",
       "binary_encoding": "011001",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_f543aa50",
+      "instruction_id": "INSTR_d3a795c6",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2431,12 +2392,12 @@
       }
     },
     {
-      "opcode_id": "OPC_421fda7f",
+      "opcode_id": "OPC_eef521e9",
       "mnemonic": "MINV",
       "binary_encoding": "001110",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_6d2005f2",
+      "instruction_id": "INSTR_e5cfe7c9",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2451,12 +2412,12 @@
       }
     },
     {
-      "opcode_id": "OPC_ba78b0b9",
+      "opcode_id": "OPC_19b9362d",
       "mnemonic": "MDET",
       "binary_encoding": "001111",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_dc5ca6a9",
+      "instruction_id": "INSTR_aa06563b",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2471,12 +2432,12 @@
       }
     },
     {
-      "opcode_id": "OPC_7321bcab",
+      "opcode_id": "OPC_dd2f528f",
       "mnemonic": "MEIG",
       "binary_encoding": "011000",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_d9a6706a",
+      "instruction_id": "INSTR_cc7dccc3",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2491,12 +2452,12 @@
       }
     },
     {
-      "opcode_id": "OPC_e958dca2",
+      "opcode_id": "OPC_53a73dac",
       "mnemonic": "MSVD",
       "binary_encoding": "001001",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_ec463388",
+      "instruction_id": "INSTR_48a0b689",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2511,12 +2472,12 @@
       }
     },
     {
-      "opcode_id": "OPC_26430b54",
+      "opcode_id": "OPC_39200034",
       "mnemonic": "MSIZE",
       "binary_encoding": "001010",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_bfdd8a7e",
+      "instruction_id": "INSTR_d87aae98",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2531,12 +2492,12 @@
       }
     },
     {
-      "opcode_id": "OPC_00fea083",
+      "opcode_id": "OPC_2074e962",
       "mnemonic": "MSLICE",
       "binary_encoding": "001011",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_3785b315",
+      "instruction_id": "INSTR_a1bd2ec7",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2551,12 +2512,12 @@
       }
     },
     {
-      "opcode_id": "OPC_7a49cfc2",
+      "opcode_id": "OPC_1f7fa3d4",
       "mnemonic": "MCONCAT",
       "binary_encoding": "001100",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_2d6411e7",
+      "instruction_id": "INSTR_510c2341",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2571,12 +2532,12 @@
       }
     },
     {
-      "opcode_id": "OPC_1b551f94",
+      "opcode_id": "OPC_90bcac5d",
       "mnemonic": "MTYPE",
       "binary_encoding": "001101",
       "operation": "",
       "operands": [],
-      "instruction_id": "INSTR_c618f980",
+      "instruction_id": "INSTR_c0721f10",
       "traceability": {
         "doc_id": "text_spec",
         "source_document_id": "text_spec",
@@ -2593,11 +2554,11 @@
   ],
   "fsms": [
     {
-      "fsm_id": "FSM_52eb11f5",
+      "fsm_id": "FSM_1bd8f6b2",
       "name": "Inferred_Controller_FSM",
       "states": [
         {
-          "state_id": "ST_8c26c05f",
+          "state_id": "ST_d9224cb3",
           "name": "IDLE",
           "encoding": "",
           "outputs": {},
@@ -2605,7 +2566,7 @@
           "description": ""
         },
         {
-          "state_id": "ST_59361f2a",
+          "state_id": "ST_62278fbe",
           "name": "EXECUTE",
           "encoding": "",
           "outputs": {},
@@ -2613,7 +2574,7 @@
           "description": ""
         },
         {
-          "state_id": "ST_91adbbf9",
+          "state_id": "ST_19732864",
           "name": "DONE",
           "encoding": "",
           "outputs": {},
@@ -2630,7 +2591,7 @@
       "encoding": "binary",
       "transitions": [
         {
-          "transition_id": "TRANS_926f1464",
+          "transition_id": "TRANS_ebcf8ee3",
           "source_state": "IDLE",
           "target_state": "EXECUTE",
           "condition": "start asserted",
@@ -2653,7 +2614,7 @@
           "to": "EXECUTE"
         },
         {
-          "transition_id": "TRANS_466de0be",
+          "transition_id": "TRANS_003d7e3c",
           "source_state": "EXECUTE",
           "target_state": "DONE",
           "condition": "done asserted",
@@ -2676,7 +2637,7 @@
           "to": "DONE"
         },
         {
-          "transition_id": "TRANS_39f21a75",
+          "transition_id": "TRANS_7eafef18",
           "source_state": "DONE",
           "target_state": "IDLE",
           "condition": "done deasserted",
@@ -2716,44 +2677,7 @@
   "transactions": [],
   "functional_behavior": [
     {
-      "flow_id": "FLOW_67bc8384",
-      "name": "Multiplication_supports_infrastructure_builds_upon_the_original_SME_architecture_while_adding_configurability_for_matrix_sizes_and_increased_data_width",
-      "components": [
-        "Multiplication",
-        "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width"
-      ],
-      "interfaces": [],
-      "ordered_steps": [
-        {
-          "step_id": "FSTEP_9e81aef2",
-          "component": "Multiplication",
-          "action_description": "Multiplication supports_infrastructure builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-          "condition": "evidence: This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-          "expected_events": [],
-          "state_transitions": [],
-          "signal_behavior": "",
-          "timing_expectations": ""
-        }
-      ],
-      "conditions": "",
-      "expected_events": [],
-      "state_transitions": [],
-      "signal_behavior": "",
-      "timing_expectations": "",
-      "traceability": {
-        "doc_id": "text_spec",
-        "source_document_id": "text_spec",
-        "source_document": "specification",
-        "block_id": "REQ_BLK_003",
-        "section": "Specification Core Requirements",
-        "original_text": "This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-        "source_text": "This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-        "extraction_method": "source_backed_recovery",
-        "confidence": null
-      }
-    },
-    {
-      "flow_id": "FLOW_a061a78e",
+      "flow_id": "FLOW_c6e40126",
       "name": "Control_Processor_orchestrates_Matrix_Processing_Elements_MPEs",
       "components": [
         "Control Processor",
@@ -2762,7 +2686,7 @@
       "interfaces": [],
       "ordered_steps": [
         {
-          "step_id": "FSTEP_7f8aec9a",
+          "step_id": "FSTEP_d838b197",
           "component": "Control Processor",
           "action_description": "Control Processor orchestrates Matrix Processing Elements (MPEs)",
           "condition": "evidence: Control Processor      : Orchestrates overall operation and task distribution",
@@ -2790,7 +2714,7 @@
       }
     },
     {
-      "flow_id": "FLOW_e83efe06",
+      "flow_id": "FLOW_c4bb8bb0",
       "name": "Global_Scheduler_distributes_to_Matrix_Processing_Elements_MPEs",
       "components": [
         "Global Scheduler",
@@ -2799,7 +2723,7 @@
       "interfaces": [],
       "ordered_steps": [
         {
-          "step_id": "FSTEP_0a77c4c4",
+          "step_id": "FSTEP_f853e332",
           "component": "Global Scheduler",
           "action_description": "Global Scheduler distributes_to Matrix Processing Elements (MPEs)",
           "condition": "evidence: Global Scheduler      : Distributes matrix workloads across available cores",
@@ -2827,7 +2751,7 @@
       }
     },
     {
-      "flow_id": "FLOW_45fafb7c",
+      "flow_id": "FLOW_dc9b12ab",
       "name": "Division_distributes_to_Columns_5_bits",
       "components": [
         "Division",
@@ -2836,7 +2760,7 @@
       "interfaces": [],
       "ordered_steps": [
         {
-          "step_id": "FSTEP_1f66f119",
+          "step_id": "FSTEP_b4445f45",
           "component": "Division",
           "action_description": "Division distributes_to Columns (5 bits)",
           "condition": "evidence: Row/Column Division      : Distributes complete rows or columns across cores",
@@ -2864,13 +2788,13 @@
       }
     },
     {
-      "flow_id": "FLOW_e8e88cd8",
+      "flow_id": "FLOW_f2bdd6a1",
       "name": "Inferred_Controller_FSM_Flow",
       "components": [],
       "interfaces": [],
       "ordered_steps": [
         {
-          "step_id": "FSTEP_7c2ed6a3",
+          "step_id": "FSTEP_16f72904",
           "action_description": "State transition: IDLE -> EXECUTE",
           "condition": "start asserted",
           "expected_events": [],
@@ -2881,7 +2805,7 @@
           "timing_expectations": ""
         },
         {
-          "step_id": "FSTEP_c9b2c4c7",
+          "step_id": "FSTEP_aa503af4",
           "action_description": "State transition: EXECUTE -> DONE",
           "condition": "done asserted",
           "expected_events": [],
@@ -2892,7 +2816,7 @@
           "timing_expectations": ""
         },
         {
-          "step_id": "FSTEP_efca5a5a",
+          "step_id": "FSTEP_43447703",
           "action_description": "State transition: DONE -> IDLE",
           "condition": "done deasserted",
           "expected_events": [],
@@ -2926,7 +2850,7 @@
   ],
   "memory_regions": [
     {
-      "region_id": "MEMREG_2ec208db",
+      "region_id": "MEMREG_67e70fac",
       "name": "Shared Memory Hierarchy",
       "type": "memory_region",
       "base_address": "",
@@ -2948,7 +2872,7 @@
       }
     },
     {
-      "region_id": "MEMREG_4746b535",
+      "region_id": "MEMREG_94c1003a",
       "name": "L1 Matrix Cache",
       "type": "memory_region",
       "base_address": "",
@@ -2970,7 +2894,7 @@
       }
     },
     {
-      "region_id": "MEMREG_44f1b24a",
+      "region_id": "MEMREG_4b8a3f8f",
       "name": "L2 Shared Cache",
       "type": "memory_region",
       "base_address": "",
@@ -2992,7 +2916,7 @@
       }
     },
     {
-      "region_id": "MEMREG_2d83ad37",
+      "region_id": "MEMREG_0d9889e9",
       "name": "L3 Global Cache",
       "type": "memory_region",
       "base_address": "",
@@ -3016,7 +2940,7 @@
   ],
   "memory": [
     {
-      "region_id": "MEMREG_2ec208db",
+      "region_id": "MEMREG_67e70fac",
       "name": "Shared Memory Hierarchy",
       "type": "memory_region",
       "base_address": "",
@@ -3038,7 +2962,7 @@
       }
     },
     {
-      "region_id": "MEMREG_4746b535",
+      "region_id": "MEMREG_94c1003a",
       "name": "L1 Matrix Cache",
       "type": "memory_region",
       "base_address": "",
@@ -3060,7 +2984,7 @@
       }
     },
     {
-      "region_id": "MEMREG_44f1b24a",
+      "region_id": "MEMREG_4b8a3f8f",
       "name": "L2 Shared Cache",
       "type": "memory_region",
       "base_address": "",
@@ -3082,7 +3006,7 @@
       }
     },
     {
-      "region_id": "MEMREG_2d83ad37",
+      "region_id": "MEMREG_0d9889e9",
       "name": "L3 Global Cache",
       "type": "memory_region",
       "base_address": "",
@@ -3106,51 +3030,65 @@
   ],
   "protocol_rules": [
     {
-      "rule_id": "PRULE_abf06040",
-      "name": "link, to a chapter or appendix, or to a glossary entry, or to the section of the document that defines thecolored term/Timing diagrams p.25",
+      "rule_id": "PRULE_9abe72bb",
+      "name": "write transaction that is progressing to its final destination/write transaction that is progressing to its final destination p.93",
       "type": "general",
-      "description": "Figure 1: Key to timing diagram conventions",
+      "description": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
       "details": {},
       "traceability": {
-        "chunk_id": "chunk_7524d6138e",
-        "original_text": "Figure 1: Key to timing diagram conventions",
-        "source_text": "Figure 1: Key to timing diagram conventions",
+        "chunk_id": "chunk_18959ea2eb",
+        "original_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
+        "source_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
         "extraction_method": "graphrag_retrieval",
-        "confidence": 0.5909788608551025
+        "confidence": 0.5904223918914795
       }
     },
     {
-      "rule_id": "PRULE_0a150d00",
-      "name": "link, to a chapter or appendix, or to a glossary entry, or to the section of the document that defines thecolored term/Timing diagrams p.25",
+      "rule_id": "PRULE_fce70165",
+      "name": "write transaction that is progressing to its final destination/write transaction that is progressing to its final destination p.93",
       "type": "general",
-      "description": "Figure 1: Key to timing diagram conventions",
+      "description": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
       "details": {},
       "traceability": {
-        "chunk_id": "chunk_1d983acc26",
-        "original_text": "Figure 1: Key to timing diagram conventions",
-        "source_text": "Figure 1: Key to timing diagram conventions",
+        "chunk_id": "chunk_7c7899bd2e",
+        "original_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
+        "source_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
         "extraction_method": "graphrag_retrieval",
-        "confidence": 0.5909788608551025
+        "confidence": 0.5904223918914795
       }
     },
     {
-      "rule_id": "PRULE_79a4a143",
-      "name": "link, to a chapter or appendix, or to a glossary entry, or to the section of the document that defines thecolored term/Timing diagrams p.25",
+      "rule_id": "PRULE_8e31ce15",
+      "name": "write transaction that is progressing to its final destination/write transaction that is progressing to its final destination p.93",
       "type": "general",
-      "description": "Figure 1: Key to timing diagram conventions",
+      "description": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
       "details": {},
       "traceability": {
-        "chunk_id": "chunk_bfff8e0fd3",
-        "original_text": "Figure 1: Key to timing diagram conventions",
-        "source_text": "Figure 1: Key to timing diagram conventions",
+        "chunk_id": "chunk_4fc848196c",
+        "original_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
+        "source_text": "If read data is obtained from a write transaction:\nIt must be obtained from the most recent version of the write.\nThe data must not be cached to service a later read.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nWrite transactions can be merged.\nFor a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This data is indistinguishable from the read and write transactions propagating to arrive at the final destination at the same time. Read data that is returned in this manner does not indicate that the write transaction is visible at the final destination.\nWrite-Through No-Allocate\nThe required behavior for the Write-Through No-Allocate memory type is:\nThe write response can be obtained from an intermediate point.\nWrite transactions must be made visible at the final destination in a timely manner, as defined in the glossary. There is no mechanism to determine when a write transaction is visible at the final destination.\nRead data can be obtained from an intermediate cached copy.\nTransactions are Modifiable, see A5.2.2 Modifiable transactions.\nRead data can be prefetched.\nWrite transactions can be merged.",
         "extraction_method": "graphrag_retrieval",
-        "confidence": 0.5909788608551025
+        "confidence": 0.5904223918914795
+      }
+    },
+    {
+      "rule_id": "PRULE_0ab2f63f",
+      "name": "destination is permitted to wait for VALID to be asserted before asserting the corresponding READY/destination is permitted to wait for VALID to be asserted before asserting the corresponding READY p.54",
+      "type": "handshake",
+      "description": "If READY is asserted, it is permitted to deassert READY before VALID is asserted.\nIn Figure A3.4, both the source and destination happen to indicate that they can transfer the address, data, or control information after edge 1. In this case, the transfer occurs at the rising clock edge when the assertion of both VALID and READY can be recognized. These assertions mean that the transfer occurs at edge 2.\nA3.2. Channel handshake",
+      "details": {},
+      "traceability": {
+        "chunk_id": "chunk_bbddb4d02e",
+        "original_text": "If READY is asserted, it is permitted to deassert READY before VALID is asserted.\nIn Figure A3.4, both the source and destination happen to indicate that they can transfer the address, data, or control information after edge 1. In this case, the transfer occurs at the rising clock edge when the assertion of both VALID and READY can be recognized. These assertions mean that the transfer occurs at edge 2.\nA3.2. Channel handshake",
+        "source_text": "If READY is asserted, it is permitted to deassert READY before VALID is asserted.\nIn Figure A3.4, both the source and destination happen to indicate that they can transfer the address, data, or control information after edge 1. In this case, the transfer occurs at the rising clock edge when the assertion of both VALID and READY can be recognized. These assertions mean that the transfer occurs at edge 2.\nA3.2. Channel handshake",
+        "extraction_method": "graphrag_retrieval",
+        "confidence": 0.5881671905517578
       }
     }
   ],
   "timing_rules": [
     {
-      "rule_id": "TIME_66a620dd",
+      "rule_id": "TIME_9ddeca2c",
       "name": "",
       "type": "cycle_relationship",
       "cycle_relationship": "O(rows \u00d7 cols) cycles",
@@ -3175,7 +3113,7 @@
   ],
   "timing_requirements": [
     {
-      "rule_id": "TIME_66a620dd",
+      "rule_id": "TIME_9ddeca2c",
       "name": "",
       "type": "cycle_relationship",
       "cycle_relationship": "O(rows \u00d7 cols) cycles",
@@ -3200,7 +3138,7 @@
   ],
   "performance_requirements": [
     {
-      "perf_id": "PERF_fcff1e26",
+      "perf_id": "PERF_2f9ca807",
       "metric": "Maximum clock frequency",
       "target_value": "1Ghz",
       "condition": "Performance target Maximum clock frequency = 1Ghz ",
@@ -3218,7 +3156,7 @@
       }
     },
     {
-      "perf_id": "PERF_52b6e48e",
+      "perf_id": "PERF_e2278628",
       "metric": "Matrix multiplies throughput",
       "target_value": "6.25 million elements per second",
       "condition": "Performance target Matrix multiplies throughput = 6.25 million elements per second ",
@@ -3236,7 +3174,7 @@
       }
     },
     {
-      "perf_id": "PERF_92c8e0db",
+      "perf_id": "PERF_504dce14",
       "metric": "Power consumption",
       "target_value": "Less than 100mW",
       "condition": "Performance target Power consumption = Less than 100mW ",
@@ -3254,7 +3192,7 @@
       }
     },
     {
-      "perf_id": "PERF_17445179",
+      "perf_id": "PERF_ecd62fda",
       "metric": "Maximum clock frequency",
       "target_value": "1Ghz",
       "condition": "Performance target Maximum clock frequency = 1Ghz ",
@@ -3272,7 +3210,7 @@
       }
     },
     {
-      "perf_id": "PERF_7967f9fa",
+      "perf_id": "PERF_5d30b5de",
       "metric": "Matrix multiplies throughput",
       "target_value": "6.25 million elements per second",
       "condition": "Performance target Matrix multiplies throughput = 6.25 million elements per second ",
@@ -3290,7 +3228,7 @@
       }
     },
     {
-      "perf_id": "PERF_3db35f25",
+      "perf_id": "PERF_9600f38b",
       "metric": "Power consumption",
       "target_value": "Less than 100mW",
       "condition": "Performance target Power consumption = Less than 100mW ",
@@ -3311,7 +3249,7 @@
   "errors": [],
   "constraints": [
     {
-      "constraint_id": "CONST_56698d55",
+      "constraint_id": "CONST_7572e629",
       "type": "stability",
       "source_objects": [
         "axi_arvalid"
@@ -3336,7 +3274,7 @@
       "confidence": 1.0
     },
     {
-      "constraint_id": "CONST_02c338e3",
+      "constraint_id": "CONST_7a2c4714",
       "type": "stability",
       "source_objects": [
         "axi_rvalid"
@@ -3361,7 +3299,7 @@
       "confidence": 1.0
     },
     {
-      "constraint_id": "CONST_36a19523",
+      "constraint_id": "CONST_d8de666e",
       "type": "stability",
       "source_objects": [
         "axi_awvalid"
@@ -3386,7 +3324,7 @@
       "confidence": 1.0
     },
     {
-      "constraint_id": "CONST_6edd8a3a",
+      "constraint_id": "CONST_0a92907a",
       "type": "stability",
       "source_objects": [
         "axi_wvalid"
@@ -3411,7 +3349,7 @@
       "confidence": 1.0
     },
     {
-      "constraint_id": "CONST_67aa62f9",
+      "constraint_id": "CONST_f6e58b0f",
       "type": "stability",
       "source_objects": [
         "axi_bvalid"
@@ -3438,15 +3376,6 @@
   ],
   "requirements": [],
   "relationships": [
-    {
-      "source": "Multiplication",
-      "target": "builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-      "relation": "supports_infrastructure",
-      "category": "interface",
-      "signals": [],
-      "direction": "Multiplication -> builds upon the original SME architecture while adding configurability for matrix sizes and increased data width",
-      "evidence": "This document specifies a small compute unit designed to perform matrix operations (multiplication, addition, subtraction, and division) based on assembly code instructions. This enhanced matrix compute unit supports arbitrary matrix dimensions and 64-bit numerical precision. The design builds upon the original SME architecture while adding configurability for matrix sizes and increased data width"
-    },
     {
       "source": "Control Processor",
       "target": "Matrix Processing Elements (MPEs)",
@@ -3495,9 +3424,9 @@
   ],
   "validation": {
     "status": "PASSED",
-    "design_id": "DSN_3d077068",
-    "canonical_id": "EFS_3d077068",
-    "generation_run_id": "RUN_1793682266621",
+    "design_id": "DSN_b812b682",
+    "canonical_id": "EFS_b812b682",
+    "generation_run_id": "RUN_1793809853247",
     "document_id": "text_spec",
     "ingestion_id": "ING_881549cb",
     "summary": {
@@ -3510,8 +3439,8 @@
   },
   "resolutions": [
     {
-      "resolution_id": "RES_e4213c06",
-      "conflict_id": "CONF_a08fba50",
+      "resolution_id": "RES_df2efdaf",
+      "conflict_id": "CONF_b7d31f16",
       "target_entity": "MINV",
       "property": "opcode",
       "resolution_type": "CUSTOM_REQUIREMENT",
@@ -3533,9 +3462,9 @@
       "validation_status": "PASSED",
       "approval_status": "APPROVED",
       "approved_by": "human_designer",
-      "created_at": "2026-11-03T10:36:34.561028",
+      "created_at": "2026-11-04T21:09:34.423359",
       "metadata": {},
-      "issue_id": "CONF_a08fba50",
+      "issue_id": "CONF_b7d31f16",
       "issue_type": "CUSTOM_REQUIREMENT",
       "original_evidence": "Instructions MINV, MSTORE share opcode '000110'.",
       "resolution": "MINV.opcode = 001110",
@@ -3543,41 +3472,8 @@
       "approved_by_user": true
     },
     {
-      "resolution_id": "RES_ae24fafb",
-      "conflict_id": "CONF_7d7d797f",
-      "target_entity": "MDET",
-      "property": "opcode",
-      "resolution_type": "CUSTOM_REQUIREMENT",
-      "proposed_change": "MDET.opcode = 001111",
-      "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
-      "reason": "User custom requirement override: 'MDET.opcode = 001111'",
-      "affected_requirements": [
-        "MDET"
-      ],
-      "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
-      "source_values": [
-        "000111"
-      ],
-      "proposed_value": "001111",
-      "resolved_value": "001111",
-      "original_value": "000111",
-      "field_name": "opcode",
-      "resolution_source": "human",
-      "validation_status": "PASSED",
-      "approval_status": "APPROVED",
-      "approved_by": "human_designer",
-      "created_at": "2026-11-03T10:36:53.179139",
-      "metadata": {},
-      "issue_id": "CONF_7d7d797f",
-      "issue_type": "CUSTOM_REQUIREMENT",
-      "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
-      "resolution": "MDET.opcode = 001111",
-      "source": "human_designer",
-      "approved_by_user": true
-    },
-    {
-      "resolution_id": "RES_b5f21448",
-      "conflict_id": "CONF_8e7fb526",
+      "resolution_id": "RES_6c9000d3",
+      "conflict_id": "CONF_b7d31f16",
       "target_entity": "MEIG",
       "property": "opcode",
       "resolution_type": "CUSTOM_REQUIREMENT",
@@ -3599,9 +3495,9 @@
       "validation_status": "PASSED",
       "approval_status": "APPROVED",
       "approved_by": "human_designer",
-      "created_at": "2026-11-03T10:37:07.101649",
+      "created_at": "2026-11-04T21:09:58.536820",
       "metadata": {},
-      "issue_id": "CONF_8e7fb526",
+      "issue_id": "CONF_b7d31f16",
       "issue_type": "CUSTOM_REQUIREMENT",
       "original_evidence": "Instructions MEIG, MZERO share opcode '001000'.",
       "resolution": "MEIG.opcode = 011000",
@@ -3609,8 +3505,8 @@
       "approved_by_user": true
     },
     {
-      "resolution_id": "RES_8e0ee5e7",
-      "conflict_id": "CONF_933db94d",
+      "resolution_id": "RES_509e20c4",
+      "conflict_id": "CONF_b7d31f16",
       "target_entity": "MIDENTITY",
       "property": "opcode",
       "resolution_type": "CUSTOM_REQUIREMENT",
@@ -3632,12 +3528,45 @@
       "validation_status": "PASSED",
       "approval_status": "APPROVED",
       "approved_by": "human_designer",
-      "created_at": "2026-11-03T10:37:21.698709",
+      "created_at": "2026-11-04T21:11:06.540036",
       "metadata": {},
-      "issue_id": "CONF_933db94d",
+      "issue_id": "CONF_b7d31f16",
       "issue_type": "CUSTOM_REQUIREMENT",
       "original_evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
       "resolution": "MIDENTITY.opcode = 011001",
+      "source": "human_designer",
+      "approved_by_user": true
+    },
+    {
+      "resolution_id": "RES_53d6bbcf",
+      "conflict_id": "CONF_b7d31f16",
+      "target_entity": "MDET",
+      "property": "opcode",
+      "resolution_type": "CUSTOM_REQUIREMENT",
+      "proposed_change": "MDET.opcode = 001111",
+      "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
+      "reason": "User custom requirement override: 'MDET.opcode = 001111'",
+      "affected_requirements": [
+        "MDET"
+      ],
+      "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+      "source_values": [
+        "000111"
+      ],
+      "proposed_value": "001111",
+      "resolved_value": "001111",
+      "original_value": "000111",
+      "field_name": "opcode",
+      "resolution_source": "human",
+      "validation_status": "PASSED",
+      "approval_status": "APPROVED",
+      "approved_by": "human_designer",
+      "created_at": "2026-11-04T21:11:29.217303",
+      "metadata": {},
+      "issue_id": "CONF_b7d31f16",
+      "issue_type": "CUSTOM_REQUIREMENT",
+      "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+      "resolution": "MDET.opcode = 001111",
       "source": "human_designer",
       "approved_by_user": true
     }
@@ -3646,8 +3575,8 @@
   "ambiguities": [],
   "conflicts": [
     {
-      "conflict_id": "CONF_a08fba50",
-      "id": "CONF_a08fba50",
+      "conflict_id": "CONF_b7d31f16",
+      "id": "CONF_b7d31f16",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -3683,8 +3612,8 @@
         "MINV": "000110"
       },
       "source_objects": [
-        "OPC_f61941c1",
-        "OPC_421fda7f"
+        "OPC_55aa7ee6",
+        "OPC_eef521e9"
       ],
       "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
       "suggestions": [],
@@ -3697,39 +3626,39 @@
         "reason": "Assigns 'MSTORE' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
       "resolution": {
-        "resolution_id": "RES_e4213c06",
-        "conflict_id": "CONF_a08fba50",
-        "target_entity": "MINV",
+        "resolution_id": "RES_53d6bbcf",
+        "conflict_id": "CONF_b7d31f16",
+        "target_entity": "MDET",
         "property": "opcode",
         "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MINV.opcode = 001110",
-        "rationale": "User custom requirement override: 'MINV.opcode = 001110'",
-        "reason": "User custom requirement override: 'MINV.opcode = 001110'",
+        "proposed_change": "MDET.opcode = 001111",
+        "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
+        "reason": "User custom requirement override: 'MDET.opcode = 001111'",
         "affected_requirements": [
-          "MINV"
+          "MDET"
         ],
-        "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+        "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
         "source_values": [
-          "000110"
+          "000111"
         ],
-        "proposed_value": "001110",
-        "resolved_value": "001110",
-        "original_value": "000110",
+        "proposed_value": "001111",
+        "resolved_value": "001111",
+        "original_value": "000111",
         "field_name": "opcode",
         "resolution_source": "human",
         "validation_status": "PASSED",
         "approval_status": "APPROVED",
         "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:36:34.561028",
+        "created_at": "2026-11-04T21:11:29.217303",
         "metadata": {},
-        "issue_id": "CONF_a08fba50",
+        "issue_id": "CONF_b7d31f16",
         "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MINV, MSTORE share opcode '000110'.",
-        "resolution": "MINV.opcode = 001110",
+        "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+        "resolution": "MDET.opcode = 001111",
         "source": "human_designer",
         "approved_by_user": true
       },
-      "resolution_id": "RES_e4213c06",
+      "resolution_id": "RES_53d6bbcf",
       "candidates": [
         "MINV",
         "MSTORE"
@@ -3738,8 +3667,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MINV,MSTORE:000110",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834034",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396114",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -3747,8 +3676,8 @@
       "diagnostic_type": "SPEC_CONFLICT"
     },
     {
-      "conflict_id": "CONF_7d7d797f",
-      "id": "CONF_7d7d797f",
+      "conflict_id": "CONF_383118b5",
+      "id": "CONF_383118b5",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -3784,8 +3713,8 @@
         "MDET": "000111"
       },
       "source_objects": [
-        "OPC_1e0a49a3",
-        "OPC_ba78b0b9"
+        "OPC_ade4b09b",
+        "OPC_19b9362d"
       ],
       "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
       "suggestions": [],
@@ -3797,40 +3726,6 @@
         "proposed_value": "001110",
         "reason": "Assigns 'MTRANS' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "resolution": {
-        "resolution_id": "RES_ae24fafb",
-        "conflict_id": "CONF_7d7d797f",
-        "target_entity": "MDET",
-        "property": "opcode",
-        "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MDET.opcode = 001111",
-        "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
-        "reason": "User custom requirement override: 'MDET.opcode = 001111'",
-        "affected_requirements": [
-          "MDET"
-        ],
-        "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
-        "source_values": [
-          "000111"
-        ],
-        "proposed_value": "001111",
-        "resolved_value": "001111",
-        "original_value": "000111",
-        "field_name": "opcode",
-        "resolution_source": "human",
-        "validation_status": "PASSED",
-        "approval_status": "APPROVED",
-        "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:36:53.179139",
-        "metadata": {},
-        "issue_id": "CONF_7d7d797f",
-        "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
-        "resolution": "MDET.opcode = 001111",
-        "source": "human_designer",
-        "approved_by_user": true
-      },
-      "resolution_id": "RES_ae24fafb",
       "candidates": [
         "MDET",
         "MTRANS"
@@ -3839,8 +3734,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MDET,MTRANS:000111",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834124",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396247",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -3848,8 +3743,8 @@
       "diagnostic_type": "SPEC_CONFLICT"
     },
     {
-      "conflict_id": "CONF_8e7fb526",
-      "id": "CONF_8e7fb526",
+      "conflict_id": "CONF_1a243964",
+      "id": "CONF_1a243964",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -3885,8 +3780,8 @@
         "MEIG": "001000"
       },
       "source_objects": [
-        "OPC_3379c2f4",
-        "OPC_7321bcab"
+        "OPC_e4c158a5",
+        "OPC_dd2f528f"
       ],
       "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
       "suggestions": [],
@@ -3898,40 +3793,6 @@
         "proposed_value": "001110",
         "reason": "Assigns 'MZERO' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "resolution": {
-        "resolution_id": "RES_b5f21448",
-        "conflict_id": "CONF_8e7fb526",
-        "target_entity": "MEIG",
-        "property": "opcode",
-        "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MEIG.opcode = 011000",
-        "rationale": "User custom requirement override: 'MEIG.opcode = 011000'",
-        "reason": "User custom requirement override: 'MEIG.opcode = 011000'",
-        "affected_requirements": [
-          "MEIG"
-        ],
-        "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
-        "source_values": [
-          "001000"
-        ],
-        "proposed_value": "011000",
-        "resolved_value": "011000",
-        "original_value": "001000",
-        "field_name": "opcode",
-        "resolution_source": "human",
-        "validation_status": "PASSED",
-        "approval_status": "APPROVED",
-        "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:37:07.101649",
-        "metadata": {},
-        "issue_id": "CONF_8e7fb526",
-        "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MEIG, MZERO share opcode '001000'.",
-        "resolution": "MEIG.opcode = 011000",
-        "source": "human_designer",
-        "approved_by_user": true
-      },
-      "resolution_id": "RES_b5f21448",
       "candidates": [
         "MEIG",
         "MZERO"
@@ -3940,8 +3801,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MEIG,MZERO:001000",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834185",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396345",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -3949,8 +3810,8 @@
       "diagnostic_type": "SPEC_CONFLICT"
     },
     {
-      "conflict_id": "CONF_933db94d",
-      "id": "CONF_933db94d",
+      "conflict_id": "CONF_9047ef1f",
+      "id": "CONF_9047ef1f",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -3986,8 +3847,8 @@
         "MSVD": "001001"
       },
       "source_objects": [
-        "OPC_2bf483e8",
-        "OPC_e958dca2"
+        "OPC_487e57b2",
+        "OPC_53a73dac"
       ],
       "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
       "suggestions": [],
@@ -3999,40 +3860,6 @@
         "proposed_value": "001110",
         "reason": "Assigns 'MSVD' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "resolution": {
-        "resolution_id": "RES_8e0ee5e7",
-        "conflict_id": "CONF_933db94d",
-        "target_entity": "MIDENTITY",
-        "property": "opcode",
-        "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MIDENTITY.opcode = 011001",
-        "rationale": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
-        "reason": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
-        "affected_requirements": [
-          "MIDENTITY"
-        ],
-        "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
-        "source_values": [
-          "001001"
-        ],
-        "proposed_value": "011001",
-        "resolved_value": "011001",
-        "original_value": "001001",
-        "field_name": "opcode",
-        "resolution_source": "human",
-        "validation_status": "PASSED",
-        "approval_status": "APPROVED",
-        "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:37:21.698709",
-        "metadata": {},
-        "issue_id": "CONF_933db94d",
-        "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
-        "resolution": "MIDENTITY.opcode = 011001",
-        "source": "human_designer",
-        "approved_by_user": true
-      },
-      "resolution_id": "RES_8e0ee5e7",
       "candidates": [
         "MIDENTITY",
         "MSVD"
@@ -4041,8 +3868,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MIDENTITY,MSVD:001001",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834253",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396418",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -4052,8 +3879,8 @@
   ],
   "contradictions": [
     {
-      "conflict_id": "CONF_a08fba50",
-      "id": "CONF_a08fba50",
+      "conflict_id": "CONF_b7d31f16",
+      "id": "CONF_b7d31f16",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -4089,8 +3916,8 @@
         "MINV": "000110"
       },
       "source_objects": [
-        "OPC_f61941c1",
-        "OPC_421fda7f"
+        "OPC_55aa7ee6",
+        "OPC_eef521e9"
       ],
       "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
       "suggestions": [],
@@ -4103,39 +3930,39 @@
         "reason": "Assigns 'MSTORE' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
       "resolution": {
-        "resolution_id": "RES_e4213c06",
-        "conflict_id": "CONF_a08fba50",
-        "target_entity": "MINV",
+        "resolution_id": "RES_53d6bbcf",
+        "conflict_id": "CONF_b7d31f16",
+        "target_entity": "MDET",
         "property": "opcode",
         "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MINV.opcode = 001110",
-        "rationale": "User custom requirement override: 'MINV.opcode = 001110'",
-        "reason": "User custom requirement override: 'MINV.opcode = 001110'",
+        "proposed_change": "MDET.opcode = 001111",
+        "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
+        "reason": "User custom requirement override: 'MDET.opcode = 001111'",
         "affected_requirements": [
-          "MINV"
+          "MDET"
         ],
-        "evidence": "Instructions MINV, MSTORE share opcode '000110'.",
+        "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
         "source_values": [
-          "000110"
+          "000111"
         ],
-        "proposed_value": "001110",
-        "resolved_value": "001110",
-        "original_value": "000110",
+        "proposed_value": "001111",
+        "resolved_value": "001111",
+        "original_value": "000111",
         "field_name": "opcode",
         "resolution_source": "human",
         "validation_status": "PASSED",
         "approval_status": "APPROVED",
         "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:36:34.561028",
+        "created_at": "2026-11-04T21:11:29.217303",
         "metadata": {},
-        "issue_id": "CONF_a08fba50",
+        "issue_id": "CONF_b7d31f16",
         "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MINV, MSTORE share opcode '000110'.",
-        "resolution": "MINV.opcode = 001110",
+        "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
+        "resolution": "MDET.opcode = 001111",
         "source": "human_designer",
         "approved_by_user": true
       },
-      "resolution_id": "RES_e4213c06",
+      "resolution_id": "RES_53d6bbcf",
       "candidates": [
         "MINV",
         "MSTORE"
@@ -4144,8 +3971,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MINV,MSTORE:000110",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834034",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396114",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -4153,8 +3980,8 @@
       "diagnostic_type": "SPEC_CONFLICT"
     },
     {
-      "conflict_id": "CONF_7d7d797f",
-      "id": "CONF_7d7d797f",
+      "conflict_id": "CONF_383118b5",
+      "id": "CONF_383118b5",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -4190,8 +4017,8 @@
         "MDET": "000111"
       },
       "source_objects": [
-        "OPC_1e0a49a3",
-        "OPC_ba78b0b9"
+        "OPC_ade4b09b",
+        "OPC_19b9362d"
       ],
       "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
       "suggestions": [],
@@ -4203,40 +4030,6 @@
         "proposed_value": "001110",
         "reason": "Assigns 'MTRANS' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "resolution": {
-        "resolution_id": "RES_ae24fafb",
-        "conflict_id": "CONF_7d7d797f",
-        "target_entity": "MDET",
-        "property": "opcode",
-        "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MDET.opcode = 001111",
-        "rationale": "User custom requirement override: 'MDET.opcode = 001111'",
-        "reason": "User custom requirement override: 'MDET.opcode = 001111'",
-        "affected_requirements": [
-          "MDET"
-        ],
-        "evidence": "Instructions MDET, MTRANS share opcode '000111'.",
-        "source_values": [
-          "000111"
-        ],
-        "proposed_value": "001111",
-        "resolved_value": "001111",
-        "original_value": "000111",
-        "field_name": "opcode",
-        "resolution_source": "human",
-        "validation_status": "PASSED",
-        "approval_status": "APPROVED",
-        "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:36:53.179139",
-        "metadata": {},
-        "issue_id": "CONF_7d7d797f",
-        "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MDET, MTRANS share opcode '000111'.",
-        "resolution": "MDET.opcode = 001111",
-        "source": "human_designer",
-        "approved_by_user": true
-      },
-      "resolution_id": "RES_ae24fafb",
       "candidates": [
         "MDET",
         "MTRANS"
@@ -4245,8 +4038,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MDET,MTRANS:000111",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834124",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396247",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -4254,8 +4047,8 @@
       "diagnostic_type": "SPEC_CONFLICT"
     },
     {
-      "conflict_id": "CONF_8e7fb526",
-      "id": "CONF_8e7fb526",
+      "conflict_id": "CONF_1a243964",
+      "id": "CONF_1a243964",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -4291,8 +4084,8 @@
         "MEIG": "001000"
       },
       "source_objects": [
-        "OPC_3379c2f4",
-        "OPC_7321bcab"
+        "OPC_e4c158a5",
+        "OPC_dd2f528f"
       ],
       "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
       "suggestions": [],
@@ -4304,40 +4097,6 @@
         "proposed_value": "001110",
         "reason": "Assigns 'MZERO' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "resolution": {
-        "resolution_id": "RES_b5f21448",
-        "conflict_id": "CONF_8e7fb526",
-        "target_entity": "MEIG",
-        "property": "opcode",
-        "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MEIG.opcode = 011000",
-        "rationale": "User custom requirement override: 'MEIG.opcode = 011000'",
-        "reason": "User custom requirement override: 'MEIG.opcode = 011000'",
-        "affected_requirements": [
-          "MEIG"
-        ],
-        "evidence": "Instructions MEIG, MZERO share opcode '001000'.",
-        "source_values": [
-          "001000"
-        ],
-        "proposed_value": "011000",
-        "resolved_value": "011000",
-        "original_value": "001000",
-        "field_name": "opcode",
-        "resolution_source": "human",
-        "validation_status": "PASSED",
-        "approval_status": "APPROVED",
-        "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:37:07.101649",
-        "metadata": {},
-        "issue_id": "CONF_8e7fb526",
-        "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MEIG, MZERO share opcode '001000'.",
-        "resolution": "MEIG.opcode = 011000",
-        "source": "human_designer",
-        "approved_by_user": true
-      },
-      "resolution_id": "RES_b5f21448",
       "candidates": [
         "MEIG",
         "MZERO"
@@ -4346,8 +4105,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MEIG,MZERO:001000",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834185",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396345",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0
@@ -4355,8 +4114,8 @@
       "diagnostic_type": "SPEC_CONFLICT"
     },
     {
-      "conflict_id": "CONF_933db94d",
-      "id": "CONF_933db94d",
+      "conflict_id": "CONF_9047ef1f",
+      "id": "CONF_9047ef1f",
       "category": "DUPLICATE_OPCODE",
       "type": "DUPLICATE_OPCODE",
       "severity": "CRITICAL",
@@ -4392,8 +4151,8 @@
         "MSVD": "001001"
       },
       "source_objects": [
-        "OPC_2bf483e8",
-        "OPC_e958dca2"
+        "OPC_487e57b2",
+        "OPC_53a73dac"
       ],
       "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
       "suggestions": [],
@@ -4405,40 +4164,6 @@
         "proposed_value": "001110",
         "reason": "Assigns 'MSVD' to unused binary encoding '001110' to ensure unambiguous instruction decoding."
       },
-      "resolution": {
-        "resolution_id": "RES_8e0ee5e7",
-        "conflict_id": "CONF_933db94d",
-        "target_entity": "MIDENTITY",
-        "property": "opcode",
-        "resolution_type": "CUSTOM_REQUIREMENT",
-        "proposed_change": "MIDENTITY.opcode = 011001",
-        "rationale": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
-        "reason": "User custom requirement override: 'MIDENTITY.opcode = 011001'",
-        "affected_requirements": [
-          "MIDENTITY"
-        ],
-        "evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
-        "source_values": [
-          "001001"
-        ],
-        "proposed_value": "011001",
-        "resolved_value": "011001",
-        "original_value": "001001",
-        "field_name": "opcode",
-        "resolution_source": "human",
-        "validation_status": "PASSED",
-        "approval_status": "APPROVED",
-        "approved_by": "human_designer",
-        "created_at": "2026-11-03T10:37:21.698709",
-        "metadata": {},
-        "issue_id": "CONF_933db94d",
-        "issue_type": "CUSTOM_REQUIREMENT",
-        "original_evidence": "Instructions MIDENTITY, MSVD share opcode '001001'.",
-        "resolution": "MIDENTITY.opcode = 011001",
-        "source": "human_designer",
-        "approved_by_user": true
-      },
-      "resolution_id": "RES_8e0ee5e7",
       "candidates": [
         "MIDENTITY",
         "MSVD"
@@ -4447,8 +4172,8 @@
       "requires_human_decision": false,
       "resolved_reason": "Approved resolution applied by designer.",
       "semantic_key": "SPEC_CONFLICT:DUPLICATE_OPCODE:opcode:MIDENTITY,MSVD:001001",
-      "generation_run_id": "RUN_1793682266621",
-      "created_at": "2026-11-03T10:34:26.834253",
+      "generation_run_id": "RUN_1793809853247",
+      "created_at": "2026-11-04T22:00:53.396418",
       "traceability": {
         "extraction_method": "programmatic_check",
         "confidence": 1.0

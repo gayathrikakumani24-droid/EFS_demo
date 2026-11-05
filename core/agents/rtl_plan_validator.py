@@ -258,7 +258,25 @@ class RTLPlanValidator:
             if isinstance(cp_dict, dict):
                 spec_signals = cp_dict.get("target_signals", cp_dict.get("signals", []))
         elif self.efs_ir and getattr(self.efs_ir, "signals", None):
-            spec_signals = self.efs_ir.signals
+            plan_mod = str(plan_dict.get("module_name", "")).strip().lower()
+            target_comp = None
+            if getattr(self.efs_ir, "components", None):
+                target_comp = next((c for c in self.efs_ir.components if c.name.strip().lower() == plan_mod or c.component_id.strip().lower() == plan_mod), None)
+
+            is_top = (
+                not target_comp or
+                getattr(target_comp, "type", "").lower() in ("top_level", "top_level_design", "top_module", "system", "container") or
+                (self.efs_ir.metadata and (
+                    (getattr(target_comp, "name", "") or "").lower() == (getattr(self.efs_ir.metadata, "top_module", None) or "").lower() or
+                    (getattr(target_comp, "name", "") or "").lower() == (getattr(self.efs_ir.metadata, "design_name", None) or "").lower()
+                ))
+            )
+            if not is_top and target_comp:
+                from core.retrieval.dependency_resolver import resolve_dependencies
+                deps = resolve_dependencies(target_comp, self.efs_ir)
+                spec_signals = deps.signals
+            else:
+                spec_signals = self.efs_ir.signals
 
         checked_ports_count = len(plan_ports)
         for sig in spec_signals:

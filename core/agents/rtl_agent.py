@@ -240,6 +240,7 @@ def plan_rtl(design_spec: str, target: Any = "Verilog", efs_ir: Optional[EFSIR] 
 
     # Determine target component name from context_pack if available
     target_comp_name = "" if target in ("Verilog", "SystemVerilog", "VHDL", "Assertions", "UVM") else str(target)
+    target_lang = target if target in ("Verilog", "SystemVerilog", "VHDL", "Assertions", "UVM") else "Verilog"
     if context_pack:
         tc = getattr(context_pack, "target_component", {})
         if isinstance(tc, dict) and tc.get("name"):
@@ -375,6 +376,9 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
    - An output behavior or required protocol event is undefined or cannot be mapped to supplied signals.
    - Signal direction, width, or polarity conflicts exist across sources.
 3. Do NOT invent signal names or expressions for missing behavior. Set "expression": null and "is_fully_defined": false for incomplete conditions.
+4. For instruction decoders or command parsers (modules with an 'instruction' or 'cmd' input and decoded field outputs):
+   - Map each output field directly to the corresponding sliced bits of the input word in datapath continuous assignments or combinational logic.
+   - Do NOT invent multi-cycle memory execution states (such as LOAD, STORE, or CONFIG) unless explicitly defined in the module interface.
 
 === COMPILED GENERATION CONTEXT ===
 {efs_ir_summary}
@@ -391,6 +395,9 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
             output_tokens=output_tokens
         )
         if plan_res and isinstance(plan_res, dict) and plan_res.get("ports"):
+            if compiled_rtl.get("output_assignments"):
+                plan_res.setdefault("output_assignments", {}).update(compiled_rtl["output_assignments"])
+                plan_res.setdefault("output_driving_strategy", {}).update({k: "continuous" for k in compiled_rtl["output_assignments"]})
             plan_res["module_name"] = sanitize_module_name(plan_res.get("module_name", target_module_name))
             if plan_res.get("internal_registers"):
                 plan_res["internal_registers"] = sanitize_hardware_registers(plan_res["internal_registers"])
@@ -913,7 +920,7 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
 
     plan_obj = RTLGenerationPlan(
         module_name=target_module_name if target_module_name not in ("target_module", "hardware_module", "custom_module") else spec_parsed.get("module_name", target_module_name),
-        target_language=target if isinstance(target, str) else "Verilog",
+        target_language=target_lang,
         architecture_class=arch_res.primary_class.value,
         parameters=[PlanParameter.from_dict(p) for p in (spec_parsed.get("parameters") or compiled_rtl.get("parameters") or [])],
         ports=[PlanPort.from_dict(p) for p in ports],
@@ -933,6 +940,8 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
     )
     plan = plan_obj.to_dict()
     plan["spec_text"] = design_spec
+    if compiled_rtl.get("output_assignments"):
+        plan["output_assignments"] = compiled_rtl["output_assignments"]
 
     val = validate_rtl_plan(plan, efs_ir=efs_ir, context_pack=context_pack, spec_text=design_spec)
     plan["specification_status"] = {
@@ -1231,7 +1240,25 @@ def validate_rtl_plan(rtl_plan: Dict[str, Any], efs_ir: Optional[EFSIR] = None, 
     if scoped_signals:
         validation_signals = scoped_signals
     elif not context_pack and efs_ir and efs_ir.signals:
-        validation_signals = efs_ir.signals
+        plan_mod = str(rtl_plan.get("module_name", "")).strip().lower()
+        target_comp = None
+        if getattr(efs_ir, "components", None):
+            target_comp = next((c for c in efs_ir.components if c.name.strip().lower() == plan_mod or c.component_id.strip().lower() == plan_mod), None)
+
+        is_top = (
+            not target_comp or
+            getattr(target_comp, "type", "").lower() in ("top_level", "top_level_design", "top_module", "system", "container") or
+            (efs_ir.metadata and (
+                (getattr(target_comp, "name", "") or "").lower() == (getattr(efs_ir.metadata, "top_module", None) or "").lower() or
+                (getattr(target_comp, "name", "") or "").lower() == (getattr(efs_ir.metadata, "design_name", None) or "").lower()
+            ))
+        )
+        if not is_top and target_comp:
+            from core.retrieval.dependency_resolver import resolve_dependencies
+            deps = resolve_dependencies(target_comp, efs_ir)
+            validation_signals = deps.signals
+        else:
+            validation_signals = efs_ir.signals
 
     if validation_signals:
         plan_ports = rtl_plan.get("ports", [])

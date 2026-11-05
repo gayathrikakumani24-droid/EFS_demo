@@ -2960,12 +2960,140 @@ class ConflictResolutionEngine:
         return (RegisterRequirementStatus.NOT_APPLICABLE, [], "No source evidence of register definitions found in specification.")
 
     @classmethod
+    def classify_fsm_requirement(
+        cls,
+        efs_ir: EFSIR,
+        doc_ir: Optional[Any] = None,
+        evidence_index: Optional[Any] = None,
+        spec_text: str = "",
+        plan: Optional[Dict[str, Any]] = None,
+        req_model: Optional[Dict[str, Any]] = None
+    ) -> Tuple[bool, List[Any], str]:
+        """
+        Determine whether the uploaded specification explicitly defines or requires an FSM.
+        FSM information is NOT mandatory for IR generation.
+        Returns:
+            (is_required_by_source, evidence_blocks, reason_string)
+        """
+        import re
+
+        # 1. Collect candidate source text blocks/chunks
+        source_texts: List[Tuple[str, Any]] = []
+        if evidence_index and hasattr(evidence_index, "blocks"):
+            for b in evidence_index.blocks:
+                t = getattr(b, "text", "") or ""
+                if t:
+                    source_texts.append((t, b))
+        elif doc_ir and hasattr(doc_ir, "blocks"):
+            for b in doc_ir.blocks:
+                t = getattr(b, "text", "") or ""
+                if t:
+                    source_texts.append((t, b))
+        elif evidence_index and hasattr(evidence_index, "chunks"):
+            for c in evidence_index.chunks:
+                t = getattr(c, "text", "") or ""
+                if t:
+                    source_texts.append((t, c))
+        else:
+            try:
+                from core.registry import get_registry
+                reg = get_registry()
+                curr_dids = [d.document_id for d in getattr(efs_ir.metadata, "source_documents", []) if getattr(d, "document_id", None)] if (efs_ir and efs_ir.metadata) else []
+                chunks = reg.get_scoped_chunks(curr_dids)
+                for c in chunks:
+                    t = getattr(c, "text", "") or ""
+                    if t:
+                        source_texts.append((t, c))
+            except Exception:
+                pass
+
+        if not source_texts and spec_text:
+            source_texts.append((spec_text, None))
+
+        # 2. Check req_model explicit FSM structures
+        if req_model and isinstance(req_model, dict):
+            f_info = req_model.get("fsm_info") or {}
+            if isinstance(f_info, dict) and (f_info.get("states") or f_info.get("transitions")):
+                return True, [], "Requirement model explicitly defines FSM states/transitions."
+            if req_model.get("states") or req_model.get("transitions"):
+                return True, [], "Requirement model explicitly defines states/transitions."
+
+        # 3. Check EFS IR source-grounded functional behaviors, requirements, timing rules
+        if efs_ir:
+            for fb in getattr(efs_ir, "functional_behavior", []) or []:
+                desc = (getattr(fb, "description", "") or "").lower()
+                if any(k in desc for k in ("state machine", "fsm", "finite state", "next_state", "current_state")):
+                    return True, [], f"EFS IR functional behavior describes state machine: '{getattr(fb, 'description', '')[:60]}'."
+            for req in getattr(efs_ir, "requirements", []) or []:
+                stmt = (getattr(req, "statement", "") or "").lower()
+                if any(k in stmt for k in ("state machine", "fsm", "finite state", "next_state", "current_state")):
+                    return True, [], f"EFS IR requirement specifies state machine: '{getattr(req, 'statement', '')[:60]}'."
+            for tr in getattr(efs_ir, "timing_rules", []) or []:
+                rule_desc = (getattr(tr, "cycle_relationship", "") or "").lower()
+                if any(k in rule_desc for k in ("state machine", "fsm", "transitions from", "transitions to")):
+                    return True, [], f"EFS IR timing rule specifies state machine transition: '{getattr(tr, 'cycle_relationship', '')[:60]}'."
+
+        EXPLICIT_FSM_PHRASES = [
+            "finite state machine", "state machine", "fsm controller",
+            "control fsm", "primary fsm", "state progression", "operating states",
+            "operating state", "fsm states", "fsm state", "state transition", "state transitions",
+            "next_state", "current_state", "state_reg"
+        ]
+
+        explicit_ev_list: List[Any] = []
+        matched_reasons: List[str] = []
+
+        for text, block_obj in source_texts:
+            text_lower = text.lower()
+
+            # Filter out negative phrasing (e.g. "without state machine", "no fsm", "purely combinational")
+            cleaned_text = re.sub(
+                r"\b(?:no|without|neither|not\s+use|does\s+not\s+have|does\s+not\s+require|lacks)\s+[^.;\n]*?\b(?:fsm|state\s+machine|states?)\b",
+                " ",
+                text_lower
+            )
+
+            is_explicit = False
+            reason = ""
+
+            for phrase in EXPLICIT_FSM_PHRASES:
+                if phrase in cleaned_text:
+                    is_explicit = True
+                    reason = f"contains explicit phrase '{phrase}'"
+                    break
+
+            if not is_explicit:
+                if re.search(r"\b(?:fsm\s+)?states\s*:\s*[A-Za-z0-9_]+", cleaned_text):
+                    is_explicit = True
+                    reason = "contains explicit FSM states list"
+                elif re.search(r"\b(?:fsm\s+)?transitions\s*:\s*[A-Za-z0-9_]+", cleaned_text):
+                    is_explicit = True
+                    reason = "contains explicit FSM transitions list"
+                elif re.search(r"\btransitions?\s+from\s+[A-Za-z0-9_]+\s+to\s+[A-Za-z0-9_]+\b", cleaned_text):
+                    is_explicit = True
+                    reason = "contains state transition description"
+                elif re.search(r"\b(?:switches\s+to|advances\s+to|enters)\s+(?:the\s+)?[A-Za-z0-9_]+\s+state\b", cleaned_text):
+                    is_explicit = True
+                    reason = "contains state transition action"
+
+            if is_explicit:
+                explicit_ev_list.append(block_obj if block_obj else text)
+                matched_reasons.append(reason)
+
+        if explicit_ev_list:
+            reason_str = "; ".join(matched_reasons[:2])
+            return True, explicit_ev_list, f"Source explicitly requires FSM ({reason_str})."
+
+        return False, [], "No source evidence of FSM requirements in specification."
+
+    @classmethod
     def validate_hardware_completeness(
         cls,
         efs_ir: EFSIR,
         plan: Optional[Dict[str, Any]] = None,
         doc_ir: Optional[Any] = None,
-        evidence_index: Optional[Any] = None
+        evidence_index: Optional[Any] = None,
+        spec_text: str = ""
     ) -> List[EFSConflict]:
         """
         Upfront completeness check ensuring the EFS IR has sufficient hardware
@@ -3122,11 +3250,11 @@ class ConflictResolutionEngine:
 
         # 2. Clock and Reset check (applicable to sequential hardware designs)
         from core.efs_ir.behavioral_analyzer import GenericBehavioralAnalyzer
-        spec_text = ""
-        if doc_ir:
-            spec_text = " ".join(getattr(b, "text", "") or "" for b in getattr(doc_ir, "blocks", []))
-        elif evidence_index:
-            spec_text = " ".join(getattr(c, "text", "") or "" for c in getattr(evidence_index, "chunks", []))
+        if not spec_text:
+            if doc_ir:
+                spec_text = " ".join(getattr(b, "text", "") or "" for b in getattr(doc_ir, "blocks", []))
+            elif evidence_index:
+                spec_text = " ".join(getattr(c, "text", "") or "" for c in getattr(evidence_index, "chunks", []))
 
         is_seq = GenericBehavioralAnalyzer.is_sequential_design(efs_ir, req_model=plan, spec_text=spec_text)
         if is_seq:
@@ -3375,8 +3503,13 @@ class ConflictResolutionEngine:
             logger.info(f"Registers: required_and_present ({len(efs_ir.registers)} registers defined)")
 
         # 5. FSM check:
-        # Distinguish explicit, partial (control signals exist), inferred, unresolved.
-        # Do not invent fake ACK transitions.
+        # FSM information is NOT mandatory for IR generation.
+        # If the uploaded specification contains no FSM information, do NOT raise a conflict.
+        is_fsm_required, fsm_ev_list, fsm_reason = cls.classify_fsm_requirement(
+            efs_ir=efs_ir, doc_ir=doc_ir, evidence_index=evidence_index, spec_text=spec_text, plan=plan, req_model=plan
+        )
+        logger.info(f"VALIDATOR FSM check: required_by_source={is_fsm_required}, reason={fsm_reason}")
+
         p_fsm = (plan.get("fsm_architecture") or plan.get("state_machine") or plan.get("fsm")) if (plan and isinstance(plan, dict)) else None
         plan_mentions_fsm = False
         if isinstance(p_fsm, dict):
@@ -3388,8 +3521,9 @@ class ConflictResolutionEngine:
                 plan_mentions_fsm = True
         elif isinstance(p_fsm, list) and len(p_fsm) > 0:
             plan_mentions_fsm = True
+
         has_fsm_in_ir = bool(efs_ir.fsms and len(efs_ir.fsms) > 0)
-        if (plan_mentions_fsm or is_seq) and not has_fsm_in_ir:
+        if (plan_mentions_fsm or is_seq) and not has_fsm_in_ir and is_fsm_required:
             GenericBehavioralAnalyzer.analyze_and_complete_behavior(
                 efs_ir,
                 req_model=None,
@@ -3399,17 +3533,32 @@ class ConflictResolutionEngine:
             )
             has_fsm_in_ir = bool(efs_ir.fsms and len(efs_ir.fsms) > 0)
 
-        if has_fsm_in_ir:
+        # Clean up any empty FSMs (0 states) if source specification does not require an FSM
+        if efs_ir.fsms:
+            valid_fsms = []
             for fsm in efs_ir.fsms:
                 if not fsm.states or len(fsm.states) == 0:
-                    _add_completeness_conflict(
-                        f"FSM '{fsm.name or 'Primary'}' Has No States",
-                        f"FSM '{fsm.name or 'Primary'}' is defined but contains no states in source.",
-                        "RTL FSM synthesis requires at least two states.",
-                        ["Define states in HITL."],
-                        "fsm_states", "FSM"
-                    )
+                    if is_fsm_required:
+                        ev_text = fsm_ev_list[0].text if (fsm_ev_list and hasattr(fsm_ev_list[0], 'text')) else (str(fsm_ev_list[0]) if fsm_ev_list else "")
+                        _add_completeness_conflict(
+                            f"FSM '{fsm.name or 'Primary'}' Has No States",
+                            f"FSM '{fsm.name or 'Primary'}' is defined but contains no states in source.",
+                            "RTL FSM synthesis requires at least two states.",
+                            ["Define states in HITL."],
+                            "fsm_states", "FSM",
+                            evidence_text=ev_text
+                        )
+                        valid_fsms.append(fsm)
+                    else:
+                        logger.info(f"FSM: Removed empty FSM '{fsm.name}' since uploaded specification has no FSM information.")
                 else:
+                    valid_fsms.append(fsm)
+            efs_ir.fsms = valid_fsms
+            has_fsm_in_ir = bool(efs_ir.fsms and len(efs_ir.fsms) > 0)
+
+        if has_fsm_in_ir:
+            for fsm in efs_ir.fsms:
+                if fsm.states and len(fsm.states) > 0:
                     # Validate transition state references
                     state_names_and_ids = {s.name.lower() for s in fsm.states} | {s.state_id.lower() for s in fsm.states}
                     for trans in fsm.transitions:
@@ -3431,14 +3580,18 @@ class ConflictResolutionEngine:
                                 ["Correct transition target state reference."],
                                 "fsm_transition", "FSM"
                             )
-        elif plan_mentions_fsm:
+        elif is_fsm_required:
+            ev_text = fsm_ev_list[0].text if (fsm_ev_list and hasattr(fsm_ev_list[0], 'text')) else (str(fsm_ev_list[0]) if fsm_ev_list else "")
             _add_completeness_conflict(
                 "Missing FSM Definition",
-                "The design plan references a state machine but neither states nor control signals were found in source.",
+                f"The specification explicitly requires a state machine ({fsm_reason}), but neither states nor control signals could be resolved in the EFS IR.",
                 "RTL FSM generation requires state declarations.",
                 ["Define FSM states and transitions in HITL."],
-                "fsm", "FSM"
+                "fsm", "FSM",
+                evidence_text=ev_text
             )
+        else:
+            logger.info("FSM: not_applicable (FSM information is not mandatory and uploaded specification does not have FSM information; no conflict raised).")
 
         # 6. Memory Interfaces check
         # Memory is required ONLY if the design specification or architectural components

@@ -1,0 +1,17 @@
+{
+  "spec_type": "protocol_engine",
+  "system_prompt": "You are an expert digital design engineer specializing in standard bus interfaces and stream protocol engines (e.g., AXI, APB, UART, SPI). Generate clean, synthesizable protocol controllers in SystemVerilog conforming strictly to standard handshake rules. Never violate the rule that valid must not wait for ready, and once asserted, valid must remain high until the transfer completes.",
+  "guidelines": [
+    "A transaction occurs strictly on (valid && ready && posedge clk).",
+    "Once valid is asserted, it must remain asserted and payload must remain stable until ready is asserted.",
+    "Do not combinatorially assert valid depending on ready.",
+    "Handle backpressure gracefully by holding data or throttling upstream."
+  ],
+  "few_shot_examples": [
+    {
+      "title": "Stream Handshake Protocol Skid Buffer",
+      "spec": "Module: stream_skid_buffer\nInterface: s_valid, s_ready, s_data [31:0], m_valid, m_ready, m_data [31:0], clk, rst_n\nFunction: Decouples ready and valid paths using a single-element registered buffer without throughput loss.",
+      "verilog": "module stream_skid_buffer (\n    input  logic        clk,\n    input  logic        rst_n,\n    input  logic        s_valid,\n    output logic        s_ready,\n    input  logic [31:0] s_data,\n    output logic        m_valid,\n    input  logic        m_ready,\n    output logic [31:0] m_data\n);\n\n    logic [31:0] buf_data;\n    logic        buf_valid;\n\n    always_ff @(posedge clk or negedge rst_n) begin\n        if (!rst_n) begin\n            buf_data  <= 32'd0;\n            buf_valid <= 1'b0;\n        end else begin\n            if (s_valid && s_ready) begin\n                buf_data  <= s_data;\n                buf_valid <= 1'b1;\n            end else if (m_valid && m_ready) begin\n                buf_valid <= 1'b0;\n            end\n        end\n    end\n\n    assign s_ready = !buf_valid || m_ready;\n    assign m_valid = buf_valid;\n    assign m_data  = buf_data;\n\nendmodule"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "spec_type": "datapath_pipeline",
+  "system_prompt": "You are an expert digital design engineer specializing in high-throughput pipelined datapaths. Generate clean, synthesizable pipelined architectures in SystemVerilog with matched register stages for data and control/valid tokens. Ensure no combinational feedthrough across pipeline stages and preserve exact numerical widths.",
+  "guidelines": [
+    "Separate pipeline stages with clocked registers in always_ff blocks.",
+    "Propagate valid/enable signals alongside data payloads at every pipeline register boundary.",
+    "Properly size intermediate arithmetic registers to prevent unintentional truncation.",
+    "Reset all pipeline control/valid registers to 0 on active reset."
+  ],
+  "few_shot_examples": [
+    {
+      "title": "2-Stage Pipelined MAC Unit",
+      "spec": "Module: mac_pipeline\nStage 1: Multiplies operand a [15:0] and b [15:0] into mult_reg [31:0].\nStage 2: Adds mult_reg to operand c [31:0] into result [31:0].\nPipeline latency is 2 clock cycles. Valid token in_valid is propagated to out_valid.",
+      "verilog": "module mac_pipeline (\n    input  logic        clk,\n    input  logic        rst_n,\n    input  logic        in_valid,\n    input  logic [15:0] a,\n    input  logic [15:0] b,\n    input  logic [31:0] c,\n    output logic        out_valid,\n    output logic [31:0] result\n);\n\n    // Stage 1 registers\n    logic [31:0] stage1_mult;\n    logic [31:0] stage1_c;\n    logic        stage1_valid;\n\n    // Stage 2 registers\n    logic [31:0] stage2_result;\n    logic        stage2_valid;\n\n    always_ff @(posedge clk or negedge rst_n) begin\n        if (!rst_n) begin\n            stage1_mult  <= 32'd0;\n            stage1_c     <= 32'd0;\n            stage1_valid <= 1'b0;\n            stage2_result <= 32'd0;\n            stage2_valid <= 1'b0;\n        end else begin\n            // Stage 1 execute\n            if (in_valid) begin\n                stage1_mult <= a * b;\n                stage1_c    <= c;\n            end\n            stage1_valid <= in_valid;\n\n            // Stage 2 execute\n            if (stage1_valid) begin\n                stage2_result <= stage1_mult + stage1_c;\n            end\n            stage2_valid  <= stage1_valid;\n        end\n    end\n\n    assign result    = stage2_result;\n    assign out_valid = stage2_valid;\n\nendmodule"
+    }
+  ]
+}

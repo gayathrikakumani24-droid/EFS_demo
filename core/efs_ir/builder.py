@@ -258,6 +258,10 @@ class EFSIRBuilder:
             parts = s.split()
             while parts and parts[0].lower() in ("the", "a", "an"):
                 parts = parts[1:]
+            # If the candidate contains descriptive sentence verbs or is overly long, reject as title
+            sentence_verbs = {"builds", "implements", "provides", "consists", "contains", "describes", "defines", "supports", "uses"}
+            if len(parts) > 6 or any(w.lower() in sentence_verbs for w in parts[:3]):
+                return ""
             return " ".join(parts).strip()
 
         GENERIC_TITLES = {
@@ -301,9 +305,17 @@ class EFSIRBuilder:
                 raw_display_name = _req_text_design_name
 
         if not raw_display_name and self.design_spec:
-            name_match = re.search(r"#\s*Hardware Design Specification:\s*([A-Za-z0-9_\-\s]+)", self.design_spec)
+            # 1. First check explicit Verilog module declaration header
+            mod_decl_match = re.search(r"\bmodule\s+([a-zA-Z0-9_]+)\s*(?:#\s*\(|\()", self.design_spec)
+            if mod_decl_match:
+                name_match = mod_decl_match
+            else:
+                # 2. Check explicit specification title
+                name_match = re.search(r"#\s*Hardware Design Specification:\s*([A-Za-z0-9_\-\s]+)", self.design_spec)
             if not name_match:
-                name_match = re.search(r"(?:module|design|specification:)\s+([A-Za-z0-9_\-\s]+?)(?:\s+with|\s*\n|$)", self.design_spec, re.IGNORECASE)
+                name_match = re.search(r"(?:Functional\s+)?Specification\s+for\s+([A-Za-z0-9_\-\s]+?)(?:\.|\n|$)", self.design_spec, re.IGNORECASE)
+            if not name_match:
+                name_match = re.search(r"(?:module|specification:)\s+([A-Za-z0-9_\-\s]+?)(?:\s+with|\s*\n|$)", self.design_spec, re.IGNORECASE)
             if name_match:
                 candidate = _clean_title(name_match.group(1))
                 if candidate and candidate.lower() not in GENERIC_TITLES:
@@ -418,7 +430,12 @@ class EFSIRBuilder:
         """Map architecture plan submodules into EFSComponents and register top-level design target."""
         # 1. Add submodules from plan
         for sub in self.plan.get("submodules", []):
-            name = sub.get("name", "Unnamed_Submodule")
+            if isinstance(sub, dict):
+                name = sub.get("name", "Unnamed_Submodule")
+                purpose = sub.get("purpose", "")
+            else:
+                name = str(sub).strip()
+                purpose = ""
             if not name or name.strip().lower() in DISQUALIFIED_COMPONENT_NAMES or not is_hardware_component_candidate(name):
                 continue
             comp_id = new_efs_id("comp")
@@ -426,7 +443,7 @@ class EFSIRBuilder:
                 component_id=comp_id,
                 name=name,
                 type=name.lower(),
-                description=sub.get("purpose", ""),
+                description=purpose,
                 traceability=self._find_entity_traceability(name)
             )
             self.ir.components.append(comp)
@@ -435,12 +452,17 @@ class EFSIRBuilder:
         # 2. Add memories from requirement model as components
         for mem in self.req_model.get("memories", []):
             comp_id = new_efs_id("comp")
-            name = mem.get("name", "FIFO_Buffer")
+            if isinstance(mem, dict):
+                name = mem.get("name", "FIFO_Buffer")
+                desc = f"{mem.get('description', '')} (Depth: {mem.get('depth', 0)}, Width: {mem.get('width', 0)})"
+            else:
+                name = str(mem).strip()
+                desc = "Memory buffer"
             comp = EFSComponent(
                 component_id=comp_id,
                 name=name,
                 type="memory",
-                description=f"{mem.get('description', '')} (Depth: {mem.get('depth', 0)}, Width: {mem.get('width', 0)})",
+                description=desc,
                 traceability=self._find_entity_traceability(name)
             )
             self.ir.components.append(comp)
@@ -507,6 +529,8 @@ class EFSIRBuilder:
         clk_sigs = []
         rst_sigs = []
         for cr in self.req_model.get("clocks_resets", []):
+            if not isinstance(cr, dict):
+                continue
             name = cr.get("name", "clk")
             if cr.get("type") == "clock":
                 if name not in clk_sigs:
@@ -786,6 +810,8 @@ class EFSIRBuilder:
     def _build_registers(self):
         """Map requirement model register layout."""
         for reg in self.req_model.get("registers", []):
+            if not isinstance(reg, dict):
+                continue
             name = reg.get("name", "")
             if not is_valid_register_candidate(name, reg):
                 continue
@@ -1004,6 +1030,9 @@ class EFSIRBuilder:
                 traceability=self._find_relationship_traceability(src_st, dst_st)
             ))
 
+        if not states:
+            return
+
         fsm_id = new_efs_id("fsm")
         fsm_name = fsm_info.get("name") or plan_fsm.get("name") or (f"{self.ir.metadata.design_name}_fsm" if (self.ir.metadata and self.ir.metadata.design_name and self.ir.metadata.design_name != "hardware_module") else "fsm_controller")
         init_st = fsm_info.get("initial_state") or plan_fsm.get("initial_state") or fsm_info.get("reset_state") or (states[0].name if states else "IDLE")
@@ -1216,6 +1245,8 @@ class EFSIRBuilder:
     def _build_instructions(self):
         """Map instructions from req_model."""
         for instr in self.req_model.get("instructions", []):
+            if not isinstance(instr, dict):
+                continue
             instr_id = new_efs_id("instr")
             name = (instr.get("name") or instr.get("mnemonic") or "").strip()
             if not name:
@@ -1254,6 +1285,8 @@ class EFSIRBuilder:
     def _build_opcodes(self):
         """Map opcodes from req_model with strict property resolution and cross-linking."""
         for opc in self.req_model.get("opcodes", []):
+            if not isinstance(opc, dict):
+                continue
             opc_id = new_efs_id("opc")
             mnemonic = (
                 opc.get("mnemonic")
@@ -1316,6 +1349,8 @@ class EFSIRBuilder:
     def _build_memory_regions(self):
         """Map memory regions from req_model."""
         for mr in self.req_model.get("memory_regions", []):
+            if not isinstance(mr, dict):
+                continue
             mr_id = new_efs_id("memreg")
             name = mr.get("name", "memory_region")
             self.ir.memory_regions.append(EFSMemoryRegion(
@@ -1333,6 +1368,8 @@ class EFSIRBuilder:
     def _build_data_structures(self):
         """Map data structures from req_model."""
         for ds in self.req_model.get("data_structures", []):
+            if not isinstance(ds, dict):
+                continue
             ds_id = new_efs_id("dstruct")
             name = ds.get("name", "data_structure")
             self.ir.data_structures.append(EFSDataStructure(
@@ -1346,6 +1383,8 @@ class EFSIRBuilder:
     def _build_errors(self):
         """Map errors from req_model."""
         for err in self.req_model.get("errors", []):
+            if not isinstance(err, dict):
+                continue
             err_id = new_efs_id("err")
             name = err.get("name", "error")
             self.ir.errors.append(EFSError(

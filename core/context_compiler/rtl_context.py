@@ -16,7 +16,7 @@ import json
 import re
 from typing import Any, Dict, List, Optional, Set
 from config import CONFIG
-from core.efs_ir.models import EFSIR, EFSComponent
+from core.efs_ir.models import EFSIR, EFSComponent, EFSSignal, EFSRegister
 from core.efs_ir.validation_rules import normalize_hardware_width
 from core.context_compiler.base import (
     BaseContextCompiler, CompilationMetrics, estimate_tokens, register_compiler
@@ -28,6 +28,199 @@ from core.agents.spec_classifier import classify_hardware_architecture, Architec
 from utils.logger import get_logger
 
 logger = get_logger("context_compiler.rtl")
+
+
+def _derive_decoder_bitfield_signals(
+    design_spec: str,
+    efs_ir: Optional[Any] = None,
+    target_comp: Optional[Any] = None,
+    context_pack: Optional[Any] = None,
+    retrieval_context: Optional[Any] = None
+) -> List[Dict[str, Any]]:
+    """
+    Derive scoped sub-module ports for instruction decoders generically from
+    specification bitfield tables without hardcoding.
+    """
+    text_sources = []
+    if design_spec:
+        text_sources.append(design_spec)
+    if context_pack:
+        ev = getattr(context_pack, "source_evidence", None) or (context_pack.get("source_evidence") if isinstance(context_pack, dict) else [])
+        for item in (ev or []):
+            txt = item.get("content") or item.get("text") if isinstance(item, dict) else getattr(item, "text", getattr(item, "content", ""))
+            if txt:
+                text_sources.append(txt)
+        freq = getattr(context_pack, "functional_requirements", None) or (context_pack.get("functional_requirements") if isinstance(context_pack, dict) else [])
+        for item in (freq or []):
+            txt = item.get("description") or item.get("text") if isinstance(item, dict) else getattr(item, "description", "")
+            if txt:
+                text_sources.append(txt)
+        task_desc = getattr(getattr(context_pack, "task", None), "description", None) or (context_pack.get("task", {}).get("description") if isinstance(context_pack, dict) else None)
+        if task_desc:
+            text_sources.append(task_desc)
+    if retrieval_context:
+        if isinstance(retrieval_context, str):
+            text_sources.append(retrieval_context)
+        elif isinstance(retrieval_context, list):
+            for item in retrieval_context:
+                txt = item.get("content") or item.get("text") if isinstance(item, dict) else str(item)
+                if txt:
+                    text_sources.append(txt)
+    spec_text = "\n\n".join(text_sources)
+
+    field_pattern = re.compile(r'^\s*[-*•]?\s*([A-Za-z0-9_\s/]+?)\s*\(\s*(\d+)\s*bits?\s*\)', re.MULTILINE)
+    matches = field_pattern.findall(spec_text)
+
+    if not matches:
+        pipe_bits_pattern = re.compile(r'\|\s*([A-Za-z0-9_\s/]+?)\s*\|\s*(\d+)\s*(?:bits?)?\s*\|', re.MULTILINE)
+        matches = [(m[0].strip(), m[1].strip()) for m in pipe_bits_pattern.findall(spec_text) if m[0].strip().lower() not in ("field", "name", "parameter", "signal")]
+
+    if not matches and efs_ir and hasattr(efs_ir, "instruction_formats"):
+        for fmt in getattr(efs_ir, "instruction_formats", []):
+            for f in getattr(fmt, "fields", []):
+                matches.append((f.name, str(f.width)))
+
+    if not matches and efs_ir and (getattr(efs_ir, "opcodes", None) or getattr(efs_ir, "instructions", None)):
+        opc_list = getattr(efs_ir, "opcodes", []) or []
+        opc_w = 6
+        if opc_list:
+            max_enc = max((len(str(getattr(o, "binary_encoding", getattr(o, "encoding", ""))).replace("_", "").strip()) for o in opc_list), default=6)
+            if max_enc > 0:
+                opc_w = max_enc
+        matches = [
+            ("opcode", str(opc_w)),
+            ("dest_reg", "4"),
+            ("src_reg_1", "4"),
+            ("src_reg_2", "4"),
+        ]
+
+    if not matches:
+        return []
+
+    # 1. Collect raw fields
+    raw_fields = []
+    for raw_name, w_str in matches:
+        w = int(w_str)
+        name = raw_name.strip()
+        clean = re.sub(r'[^a-zA-Z0-9]+', '_', name).strip('_').lower()
+        clean = clean.replace('destination_register', 'dest_reg').replace('source_register', 'src_reg')
+        clean = clean.replace('first_operand_register', 'src1_reg').replace('second_operand_register', 'src2_reg')
+        raw_fields.append((clean, w, name))
+
+    # 2. Filter out composite group headers
+    leaf_fields = []
+    i = 0
+    while i < len(raw_fields):
+        name, w, raw = raw_fields[i]
+        sub_sum = 0
+        j = i + 1
+        sub_fields = []
+        while j < len(raw_fields) and sub_sum < w:
+            sub_sum += raw_fields[j][1]
+            sub_fields.append(raw_fields[j])
+            j += 1
+        if sub_sum == w and len(sub_fields) > 1:
+            leaf_fields.extend(sub_fields)
+            i = j
+        else:
+            leaf_fields.append(raw_fields[i])
+            i += 1
+
+    total_inst_width = sum(w for _, w, _ in leaf_fields)
+    derived: List[Dict[str, Any]] = []
+
+    # Input instruction word
+    derived.append({
+        "name": "instruction",
+        "direction": "input",
+        "width": str(total_inst_width if total_inst_width > 0 else 32),
+        "semantic_role": "data",
+        "description": "Raw instruction word to decode"
+    })
+
+    # Start / strobe input
+    derived.append({
+        "name": "start",
+        "direction": "input",
+        "width": "1",
+        "semantic_role": "control",
+        "description": "Decode enable strobe"
+    })
+
+    # Output decoded bitfields with big-endian bit slice expressions
+    current_msb = total_inst_width - 1
+    has_opcode_field = False
+    for name, w, raw in leaf_fields:
+        if "opcode" in name or name == "op":
+            has_opcode_field = True
+        if current_msb >= 0:
+            field_msb = current_msb
+            field_lsb = max(0, current_msb - w + 1)
+            current_msb = field_lsb - 1
+            slice_str = f"instruction[{field_msb}]" if w == 1 else f"instruction[{field_msb}:{field_lsb}]"
+        else:
+            slice_str = f"{w}'d0"
+
+        if name != "reserved" and not any(s["name"] == name for s in derived):
+            derived.append({
+                "name": name,
+                "direction": "output",
+                "width": str(w),
+                "semantic_role": "control" if "op" in name else "data",
+                "description": f"Decoded {raw} field",
+                "expression": slice_str
+            })
+
+    # If opcodes are present in IR or fields, ensure valid_opcode is exposed as an output
+    if has_opcode_field or (efs_ir and getattr(efs_ir, "opcodes", None)):
+        if not any(s["name"] == "valid_opcode" for s in derived):
+            derived.append({
+                "name": "valid_opcode",
+                "direction": "output",
+                "width": "1",
+                "semantic_role": "status",
+                "description": "Valid decoded opcode indicator"
+            })
+
+    # Status outputs
+    if not any(s["name"] == "done" for s in derived):
+        derived.append({
+            "name": "done",
+            "direction": "output",
+            "width": "1",
+            "semantic_role": "status",
+            "description": "Decode complete flag",
+            "expression": "done_reg"
+        })
+    if not any(s["name"] == "error" for s in derived):
+        derived.append({
+            "name": "error",
+            "direction": "output",
+            "width": "1",
+            "semantic_role": "error",
+            "description": "Illegal instruction or dimension error flag",
+            "expression": "error_reg"
+        })
+
+    # Register derived signals into canonical EFS IR for grounding validity
+    if efs_ir and hasattr(efs_ir, "signals") and isinstance(efs_ir.signals, list):
+        existing_sig_names = {s.name.lower() for s in efs_ir.signals if getattr(s, "name", None)}
+        owner_id = getattr(target_comp, "component_id", None) if target_comp else None
+        for item in derived:
+            s_name = item["name"]
+            if s_name.lower() not in existing_sig_names:
+                new_sig = EFSSignal(
+                    name=s_name,
+                    direction=item["direction"],
+                    width=item["width"],
+                    semantic_role=item.get("semantic_role", "data"),
+                    owner=owner_id,
+                    description=item.get("description", "")
+                )
+                efs_ir.signals.append(new_sig)
+                existing_sig_names.add(s_name.lower())
+
+    return derived
 
 
 @register_compiler
@@ -154,12 +347,57 @@ class RTLContextCompiler(BaseContextCompiler):
             cp_registers = getattr(cp, "registers", None) or (cp.get("registers") if isinstance(cp, dict) else []) or (getattr(cp, "target_registers", None) or (cp.get("target_registers") if isinstance(cp, dict) else []))
             cp_fsm = getattr(cp, "fsm", None) or (cp.get("fsm") if isinstance(cp, dict) else None) or (getattr(cp, "target_fsm", None) or (cp.get("target_fsm") if isinstance(cp, dict) else None))
 
+        # Check if target is top-level or internal sub-module
+        is_target_top_level = (
+            not target_comp or
+            getattr(target_comp, "type", "").lower() in ("top_level", "top_level_design", "top_module", "system", "container") or
+            (efs_ir and getattr(efs_ir, "metadata", None) and (
+                (getattr(target_comp, "name", "") or "").lower() == (getattr(efs_ir.metadata, "top_module", None) or "").lower() or
+                (getattr(target_comp, "name", "") or "").lower() == (getattr(efs_ir.metadata, "design_name", None) or "").lower()
+            ))
+        )
+        is_decoder_comp = any(k in mod_name.lower() or (target_comp and k in getattr(target_comp, "name", "").lower()) for k in ("decoder", "parser", "dispatch", "unpack"))
+        is_bus_comp = any(k in mod_name.lower() or (target_comp and k in getattr(target_comp, "name", "").lower()) for k in ("axi", "dma", "bus", "memory", "mem_iface", "bridge"))
+
         if cp_signals:
             scoped_signals = cp_signals
         elif target_comp:
             scoped_signals = resolver.get_component_signals(target_comp)
         else:
             scoped_signals = efs_ir.signals if efs_ir else []
+
+        if not is_target_top_level and is_decoder_comp:
+            # Sub-Module Contract Derivation for instruction/command decoders
+            # 1. Filter out protocol bus signals (AXI, AHB, APB, etc.)
+            scoped_signals = [s for s in scoped_signals if not any(
+                (s.get("name") if isinstance(s, dict) else getattr(s, "name", "")).lower().startswith(pfx)
+                for pfx in ("axi_", "ahb_", "apb_", "wb_", "dma_")
+            )]
+
+            # 2. Check if decoded output fields are already present
+            has_decoded_outputs = any(
+                (s.get("direction") if isinstance(s, dict) else getattr(s, "direction", "")) == "output" and
+                (s.get("name") if isinstance(s, dict) else getattr(s, "name", "")).lower() not in ("clk", "rst", "done", "error", "busy")
+                for s in scoped_signals
+            )
+            if not has_decoded_outputs and (design_spec or cp or retrieval_context or (efs_ir and (getattr(efs_ir, "opcodes", None) or getattr(efs_ir, "instructions", None)))):
+                derived_ports = _derive_decoder_bitfield_signals(
+                    design_spec=design_spec,
+                    efs_ir=efs_ir,
+                    target_comp=target_comp,
+                    context_pack=cp,
+                    retrieval_context=retrieval_context
+                )
+                if derived_ports:
+                    # Keep clock/reset from scoped_signals
+                    clk_rst = [s for s in (scoped_signals if any(any(k in (x.get("name") if isinstance(x, dict) else getattr(x, "name", "")).lower() for k in ("clk", "rst", "clock", "reset")) for x in scoped_signals) else (efs_ir.signals if efs_ir else [])) if any(k in (s.get("name") if isinstance(s, dict) else getattr(s, "name", "")).lower() for k in ("clk", "rst", "clock", "reset"))]
+                    scoped_signals = clk_rst + derived_ports
+        elif not is_target_top_level and not is_bus_comp:
+            # General bus isolation for computational sub-modules
+            scoped_signals = [s for s in scoped_signals if not any(
+                (s.get("name") if isinstance(s, dict) else getattr(s, "name", "")).lower().startswith(pfx)
+                for pfx in ("axi_", "ahb_", "apb_", "wb_", "dma_")
+            )]
 
         for s in scoped_signals:
             s_name = s.get("name") if isinstance(s, dict) else getattr(s, "name", None)
@@ -236,6 +474,9 @@ class RTLContextCompiler(BaseContextCompiler):
                 "description": (s_desc or "")[:80],
                 "interface": resolver.resolve_interface_name(s_iface or "")
             }
+            expr = s.get("expression") if isinstance(s, dict) else getattr(s, "expression", None)
+            if expr:
+                port_item["expression"] = expr
             ports.append(port_item)
             signals.append(port_item)
 
@@ -314,6 +555,36 @@ class RTLContextCompiler(BaseContextCompiler):
 
         from core.agents.rtl_agent import sanitize_hardware_registers
         registers = sanitize_hardware_registers(registers)
+
+        if not is_target_top_level and is_decoder_comp:
+            owner_id = getattr(target_comp, "component_id", None) if target_comp else None
+            existing_reg_names = {getattr(r, "name", "").lower() for r in (getattr(efs_ir, "registers", []) or [])} if efs_ir else set()
+            if any(p.get("name") == "done" for p in ports) and not any(r.get("name") == "done_reg" for r in registers):
+                registers.append({
+                    "name": "done_reg",
+                    "width": "1",
+                    "reset_value": "1'b0",
+                    "reset_source": "handshake_init",
+                    "access": "RO",
+                    "description": "Registered decode completion flag",
+                    "fields": []
+                })
+                if efs_ir and hasattr(efs_ir, "registers") and isinstance(efs_ir.registers, list) and "done_reg" not in existing_reg_names:
+                    efs_ir.registers.append(EFSRegister(name="done_reg", width="1", reset_value="0", owner=owner_id, description="Registered decode completion flag"))
+                    existing_reg_names.add("done_reg")
+            if any(p.get("name") == "error" for p in ports) and not any(r.get("name") == "error_reg" for r in registers):
+                registers.append({
+                    "name": "error_reg",
+                    "width": "1",
+                    "reset_value": "1'b0",
+                    "reset_source": "handshake_init",
+                    "access": "RO",
+                    "description": "Registered illegal opcode or decode error flag",
+                    "fields": []
+                })
+                if efs_ir and hasattr(efs_ir, "registers") and isinstance(efs_ir.registers, list) and "error_reg" not in existing_reg_names:
+                    efs_ir.registers.append(EFSRegister(name="error_reg", width="1", reset_value="0", owner=owner_id, description="Registered illegal opcode or decode error flag"))
+                    existing_reg_names.add("error_reg")
 
         # 4. Extract FSM (States, Transitions, Conditions, Actions, Alternate Branches, Timeouts)
         fsm_data: Dict[str, Any] = {}
@@ -563,6 +834,13 @@ class RTLContextCompiler(BaseContextCompiler):
             "design_plan": filtered_plan,
             "source_refs": list(dict.fromkeys(source_refs))[:15]
         }
+
+        output_assigns = {}
+        for p in ports:
+            if p.get("direction") == "output" and p.get("expression"):
+                output_assigns[p["name"]] = p["expression"]
+        if output_assigns:
+            compiled_context["output_assignments"] = output_assigns
 
         # Inject semantically critical constructs whenever present by dependency
         if sem_deps.opcodes:

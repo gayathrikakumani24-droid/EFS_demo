@@ -40,10 +40,16 @@ def _normalize_plan(rtl_plan: Any) -> Dict[str, Any]:
     if rtl_plan is None:
         return {}
     if hasattr(rtl_plan, "to_dict"):
-        return rtl_plan.to_dict()
-    if isinstance(rtl_plan, dict):
-        return rtl_plan
-    return {}
+        d = rtl_plan.to_dict()
+    elif isinstance(rtl_plan, dict):
+        d = dict(rtl_plan)
+    else:
+        return {}
+
+    # Bridge 'registers' from compiled context to 'internal_registers' if not explicitly defined
+    if "internal_registers" not in d and "registers" in d:
+        d["internal_registers"] = d["registers"]
+    return d
 
 
 def _normalize_hdl_condition(cond: str) -> str:
@@ -157,8 +163,7 @@ def emit_deterministic_module_header(
                 is_assign = (
                     output_strategy.get(p_name) in ("continuous", "assign") or
                     bool(output_assigns.get(p_name)) or
-                    any(getattr(r, "name", None) in (f"{p_name}_reg", p_name) or (isinstance(r, dict) and r.get("name") in (f"{p_name}_reg", p_name)) for r in internal_regs) or
-                    bool(internal_regs)
+                    any(getattr(r, "name", None) in (f"{p_name}_reg", p_name) or (isinstance(r, dict) and r.get("name") in (f"{p_name}_reg", p_name)) for r in internal_regs)
                 )
                 type_keyword = "wire" if is_assign else "reg"
             else:
@@ -362,11 +367,23 @@ def emit_deterministic_behavioral_logic(
                         break
             if matched_state:
                 assignments.append(f"assign {p_name} = (current_state == {matched_state});")
-            elif plan_dict.get("internal_registers") and any(k in p_name.lower() for k in ("out", "data", "count", "cnt", "val", "timer", "done")):
-                first_reg = plan_dict["internal_registers"][0]
-                first_r_name = first_reg.get("name") if isinstance(first_reg, dict) else getattr(first_reg, "name", "")
-                if first_r_name:
-                    assignments.append(f"assign {p_name} = {first_r_name};")
+            elif plan_dict.get("internal_registers"):
+                p_w = str(p.get("width", "1") if isinstance(p, dict) else getattr(p, "width", "1")).strip()
+                p_w_int = int(p_w) if p_w.isdigit() else 1
+                matched_reg = None
+                for r in plan_dict.get("internal_registers", []):
+                    r_name = r.get("name") if isinstance(r, dict) else getattr(r, "name", "")
+                    r_w = str(r.get("width", "1") if isinstance(r, dict) else getattr(r, "width", "1")).strip()
+                    r_w_int = int(r_w) if r_w.isdigit() else 1
+                    # Only map if widths match exactly and clean names correspond
+                    if r_w_int == p_w_int and r_name:
+                        r_clean = r_name.lower().replace("_reg", "").replace("reg_", "").strip()
+                        p_clean = p_name.lower().replace("_out", "").replace("_o", "").strip()
+                        if r_clean == p_clean or p_clean.endswith(r_clean) or r_clean.endswith(p_clean):
+                            matched_reg = r_name
+                            break
+                if matched_reg:
+                    assignments.append(f"assign {p_name} = {matched_reg};")
 
     # 2. Datapath operations
     datapath = plan_dict.get("datapath", {})
@@ -392,6 +409,36 @@ def emit_deterministic_behavioral_logic(
         comb_lines.append("    endcase")
         comb_lines.append("end")
 
+    # Opcode decoding / validation combinational block
+    opcodes = plan_dict.get("opcodes", [])
+    valid_port = next((
+        p.get("name") if isinstance(p, dict) else getattr(p, "name", "")
+        for p in plan_dict.get("ports", [])
+        if "valid" in (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")).lower()
+    ), None)
+    opcode_port = next((
+        p.get("name") if isinstance(p, dict) else getattr(p, "name", "")
+        for p in plan_dict.get("ports", [])
+        if "opcode" in (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")).lower() or (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")).lower() == "op"
+    ), "opcode")
+
+    if opcodes and valid_port:
+        block_kw = "always_comb" if is_sv else "always @(*)"
+        comb_lines.append(f"{block_kw} begin")
+        comb_lines.append(f"    case ({opcode_port})")
+        op_names = [
+            op.get("name", op.get("mnemonic", "")) if isinstance(op, dict) else getattr(op, "name", getattr(op, "mnemonic", ""))
+            for op in opcodes
+        ]
+        op_names = [o for o in op_names if o]
+        if op_names:
+            chunked_ops = [", ".join(op_names[i:i+4]) for i in range(0, len(op_names), 4)]
+            case_items = ",\n        ".join(chunked_ops)
+            comb_lines.append(f"        {case_items}: {valid_port} = 1'b1;")
+        comb_lines.append(f"        default: {valid_port} = 1'b0;")
+        comb_lines.append("    endcase")
+        comb_lines.append("end")
+
     # 3. Sequential Clock & Reset Infrastructure
     reset_req = plan_dict.get("reset_requirements", {})
     rr_dict = reset_req if isinstance(reset_req, dict) else (reset_req.to_dict() if hasattr(reset_req, "to_dict") else {})
@@ -404,7 +451,7 @@ def emit_deterministic_behavioral_logic(
     has_clk = any((p.get("name") if isinstance(p, dict) else getattr(p, "name", "")) == clk_name for p in plan_dict.get("ports", []))
     internal_regs = plan_dict.get("internal_registers", [])
 
-    if has_clk:
+    if has_clk and (internal_regs or not (plan_dict.get("fsm") or plan_dict.get("fsm_spec"))):
         seq_kw = "always_ff @" if is_sv else "always @"
         has_rst = any((p.get("name") if isinstance(p, dict) else getattr(p, "name", "")).lower() == rst_name.lower() for p in plan_dict.get("ports", []))
         if not has_rst:
@@ -456,29 +503,36 @@ def emit_deterministic_behavioral_logic(
             elif internal_regs:
                 in_ports = [p.get("name") if isinstance(p, dict) else getattr(p, "name", "") for p in plan_dict.get("ports", []) if (p.get("direction") if isinstance(p, dict) else getattr(p, "direction", "")) == "input" and (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")) not in (clk_name, rst_name)]
                 en_port = next((p for p in in_ports if "en" in p.lower()), None)
-                data_port = next((p for p in in_ports if p != en_port), None)
+                control_sigs = {"start", "strobe", "valid", "ready", "req", "ack", "sel", "enable", "en", "clk", "clock", "rst", "reset"}
+                data_candidates = [
+                    p for p in in_ports
+                    if p != en_port and not any(cs == p.lower() or p.lower().startswith(f"{cs}_") or p.lower().endswith(f"_{cs}") for cs in control_sigs)
+                ]
+                data_port = data_candidates[0] if data_candidates else None
 
                 for r in internal_regs:
                     r_name = r.get("name") if isinstance(r, dict) else getattr(r, "name", "")
                     r_upd = r.get("update_condition") if isinstance(r, dict) else getattr(r, "update_condition", None)
                     r_desc = str(r.get("description", "") if isinstance(r, dict) else getattr(r, "description", "")).lower()
+                    r_w = str(r.get("width", "1") if isinstance(r, dict) else getattr(r, "width", "1")).strip()
+                    r_w_int = int(r_w) if r_w.isdigit() else 1
 
                     if r_upd and any(k in str(r_upd).lower() for k in ("posedge", "negedge", "clk", "clock")):
                         r_upd = None
                     cond = en_port or r_upd
-                    if "accumulat" in r_desc and data_port:
-                        expr = f"{r_name} + {data_port}"
-                    elif data_port:
-                        expr = data_port
-                    else:
-                        expr = f"{r_name} + 1'b1"
 
-                    if cond:
-                        seq_lines.append(f"        if ({cond}) begin")
-                        seq_lines.append(f"            {r_name} <= {expr};")
-                        seq_lines.append("        end")
-                    elif data_port:
-                        seq_lines.append(f"        {r_name} <= {data_port};")
+                    dp_matching = None
+                    if data_port:
+                        dp_obj = next((p for p in plan_dict.get("ports", []) if (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")) == data_port), None)
+                        dp_w = str(dp_obj.get("width", "1") if isinstance(dp_obj, dict) else getattr(dp_obj, "width", "1")).strip()
+                        dp_w_int = int(dp_w) if dp_w.isdigit() else 1
+                        if dp_w_int == r_w_int:
+                            dp_matching = data_port
+
+                    if r_name in ("done_reg", "done") and any(p.get("name") == "start" for p in plan_dict.get("ports", [])):
+                        seq_lines.append(f"        {r_name} <= start;")
+                    elif r_name in ("error_reg", "error") and valid_port:
+                        seq_lines.append(f"        {r_name} <= ~{valid_port};")
                     elif any(k in r_name.lower() for k in ("cnt", "counter", "timer")):
                         fsm_for_timer = plan_dict.get("fsm") or plan_dict.get("fsm_spec") or {}
                         fsm_dict_timer = fsm_for_timer if isinstance(fsm_for_timer, dict) else (fsm_for_timer.to_dict() if hasattr(fsm_for_timer, "to_dict") else {})
@@ -491,6 +545,19 @@ def emit_deterministic_behavioral_logic(
                             seq_lines.append(f"        end")
                         else:
                             seq_lines.append(f"        {r_name} <= {r_name} + 1'b1;")
+                    elif "accumulat" in r_desc and dp_matching:
+                        expr = f"{r_name} + {dp_matching}"
+                        if cond:
+                            seq_lines.append(f"        if ({cond}) begin")
+                            seq_lines.append(f"            {r_name} <= {expr};")
+                            seq_lines.append("        end")
+                        else:
+                            seq_lines.append(f"        {r_name} <= {expr};")
+                    elif cond:
+                        expr = dp_matching or (f"{r_name} + 1'b1" if r_w_int > 1 else "~" + r_name)
+                        seq_lines.append(f"        if ({cond}) begin")
+                        seq_lines.append(f"            {r_name} <= {expr};")
+                        seq_lines.append("        end")
                     else:
                         seq_lines.append(f"        {r_name} <= {r_name};")
             else:
@@ -514,23 +581,51 @@ def emit_deterministic_behavioral_logic(
             elif internal_regs:
                 in_ports = [p.get("name") if isinstance(p, dict) else getattr(p, "name", "") for p in plan_dict.get("ports", []) if (p.get("direction") if isinstance(p, dict) else getattr(p, "direction", "")) == "input" and (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")) not in (clk_name,)]
                 en_port = next((p for p in in_ports if "en" in p.lower()), None)
-                data_port = next((p for p in in_ports if p != en_port), None)
+                control_sigs = {"start", "strobe", "valid", "ready", "req", "ack", "sel", "enable", "en", "clk", "clock", "rst", "reset"}
+                data_candidates = [
+                    p for p in in_ports
+                    if p != en_port and not any(cs == p.lower() or p.lower().startswith(f"{cs}_") or p.lower().endswith(f"_{cs}") for cs in control_sigs)
+                ]
+                data_port = data_candidates[0] if data_candidates else None
 
                 for r in internal_regs:
                     r_name = r.get("name") if isinstance(r, dict) else getattr(r, "name", "")
                     r_upd = r.get("update_condition") if isinstance(r, dict) else getattr(r, "update_condition", None)
                     r_desc = str(r.get("description", "") if isinstance(r, dict) else getattr(r, "description", "")).lower()
+                    r_w = str(r.get("width", "1") if isinstance(r, dict) else getattr(r, "width", "1")).strip()
+                    r_w_int = int(r_w) if r_w.isdigit() else 1
 
                     if r_upd and any(k in str(r_upd).lower() for k in ("posedge", "negedge", "clk", "clock")):
                         r_upd = None
                     cond = en_port or r_upd
-                    expr = f"{r_name} + {data_port}" if ("accumulat" in r_desc and data_port) else (data_port or f"{r_name} + 1'b1")
-                    if cond:
+
+                    dp_matching = None
+                    if data_port:
+                        dp_obj = next((p for p in plan_dict.get("ports", []) if (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")) == data_port), None)
+                        dp_w = str(dp_obj.get("width", "1") if isinstance(dp_obj, dict) else getattr(dp_obj, "width", "1")).strip()
+                        dp_w_int = int(dp_w) if dp_w.isdigit() else 1
+                        if dp_w_int == r_w_int:
+                            dp_matching = data_port
+
+                    if r_name in ("done_reg", "done") and any(p.get("name") == "start" for p in plan_dict.get("ports", [])):
+                        seq_lines.append(f"    {r_name} <= start;")
+                    elif r_name in ("error_reg", "error") and valid_port:
+                        seq_lines.append(f"    {r_name} <= ~{valid_port};")
+                    elif any(k in r_name.lower() for k in ("cnt", "counter", "timer")):
+                        seq_lines.append(f"    {r_name} <= {r_name} + 1'b1;")
+                    elif "accumulat" in r_desc and dp_matching:
+                        expr = f"{r_name} + {dp_matching}"
+                        if cond:
+                            seq_lines.append(f"    if ({cond}) begin")
+                            seq_lines.append(f"        {r_name} <= {expr};")
+                            seq_lines.append("    end")
+                        else:
+                            seq_lines.append(f"    {r_name} <= {expr};")
+                    elif cond:
+                        expr = dp_matching or (f"{r_name} + 1'b1" if r_w_int > 1 else "~" + r_name)
                         seq_lines.append(f"    if ({cond}) begin")
                         seq_lines.append(f"        {r_name} <= {expr};")
                         seq_lines.append("    end")
-                    elif data_port:
-                        seq_lines.append(f"    {r_name} <= {data_port};")
                     else:
                         seq_lines.append(f"    {r_name} <= {r_name};")
             else:
@@ -543,6 +638,7 @@ def emit_deterministic_behavioral_logic(
         if (p.get("direction") if isinstance(p, dict) else getattr(p, "direction", "")) == "output"
         and not any(f"assign {p.get('name') if isinstance(p, dict) else getattr(p, 'name', '')}" in a for a in assignments)
         and not any(f"{p.get('name') if isinstance(p, dict) else getattr(p, 'name', '')} <=" in s for s in seq_lines)
+        and not any(re.search(rf"\b{re.escape(p.get('name') if isinstance(p, dict) else getattr(p, 'name', ''))}\b\s*=", c) for c in comb_lines)
     ]
     # 4. FSM Logic
     fsm = plan_dict.get("fsm") or plan_dict.get("fsm_spec") or {}
@@ -590,8 +686,7 @@ def emit_deterministic_behavioral_logic(
                 is_assign = (
                     output_strategy.get(uo) in ("continuous", "assign") or
                     bool(output_assigns.get(uo)) or
-                    any(getattr(r, "name", None) in (f"{uo}_reg", uo) or (isinstance(r, dict) and r.get("name") in (f"{uo}_reg", uo)) for r in internal_regs) or
-                    bool(internal_regs)
+                    any(getattr(r, "name", None) in (f"{uo}_reg", uo) or (isinstance(r, dict) and r.get("name") in (f"{uo}_reg", uo)) for r in internal_regs)
                 )
                 if is_assign:
                     assignments.append(f"assign {uo} = {zero_val};")
@@ -638,6 +733,13 @@ def emit_deterministic_behavioral_logic(
             fsm_lines.append("end")
         fsm_lines.append("")
 
+        # Collect outputs that are Moore decodes of specific states: {signal_name: state_name}
+        moore_outputs = {}
+        for a in assignments:
+            m_moore = re.search(r"assign\s+([a-zA-Z0-9_]+)\s*=\s*\(\s*current_state\s*==\s*([a-zA-Z0-9_]+)\s*\);", a)
+            if m_moore:
+                moore_outputs[m_moore.group(1).lower()] = m_moore.group(2)
+
         # Next-state combinational block
         comb_kw = "always_comb" if is_sv else "always @(*)"
         fsm_lines.append(f"{comb_kw} begin")
@@ -659,6 +761,22 @@ def emit_deterministic_behavioral_logic(
                 if isinstance(cond, dict):
                     cond = cond.get("expression", "1'b1")
                 cond_str = _normalize_hdl_condition(str(cond or "1'b1"))
+
+                # Resolve self-referential Moore state deadlocks
+                cond_clean = cond_str.strip().lower()
+                for moore_sig, moore_target_st in moore_outputs.items():
+                    if moore_target_st == to_st and st_name != moore_target_st:
+                        # Condition requires Moore output that is only asserted once target state is reached (e.g. EXECUTE -> DONE on 'done')
+                        if cond_clean in (moore_sig, f"{moore_sig} == 1'b1", f"{moore_sig} == 1"):
+                            cond_str = "1'b1"
+                    elif moore_target_st == st_name and to_st != st_name:
+                        # Exiting state conditioned on negation of output asserted in this state (e.g. DONE -> IDLE on '!done')
+                        if cond_clean in (f"!{moore_sig}", f"{moore_sig} == 1'b0", f"{moore_sig} == 0"):
+                            start_port = next((p.get("name") if isinstance(p, dict) else getattr(p, "name", "")
+                                              for p in plan_dict.get("ports", [])
+                                              if (p.get("name") if isinstance(p, dict) else getattr(p, "name", "")).lower() == "start"), None)
+                            cond_str = f"!{start_port}" if start_port else "1'b1"
+
                 if cond_str and cond_str != "1'b1":
                     fsm_lines.append(f"            if ({cond_str}) next_state = {to_st};")
                 else:
@@ -723,7 +841,7 @@ def generate_llm_behavioral_blocks(
     module_name = plan_dict.get("module_name", "target_module")
     is_sv = "systemverilog" in target_language.lower()
 
-    # Construct focused prompt without unnecessary tokens
+    # Construct focused prompt with interface, opcodes, datapath, and requirements
     ports_summary = [
         f"{p.get('direction', 'input')} {p.get('name', '')} [{p.get('width', '1')}-1:0]"
         for p in plan_dict.get("ports", [])
@@ -733,18 +851,44 @@ def generate_llm_behavioral_blocks(
         for r in plan_dict.get("internal_registers", [])
     ]
     fsm_summary = plan_dict.get("fsm") or plan_dict.get("fsm_spec") or {}
+    opcodes_summary = plan_dict.get("opcodes", [])
+    dp_summary = plan_dict.get("datapath") or plan_dict.get("datapath_strategy") or {}
+    params_summary = plan_dict.get("parameters", [])
+
+    opcodes_section = f"\nInstruction Opcodes:\n{json.dumps(opcodes_summary, indent=2)}" if opcodes_summary else ""
+    dp_section = f"\nDatapath Architecture:\n{json.dumps(dp_summary, indent=2)}" if dp_summary else ""
+    params_section = f"\nParameters:\n{json.dumps(params_summary, indent=2)}" if params_summary else ""
+
+    spec_notes = []
+    if context_pack:
+        if hasattr(context_pack, "functional_requirements") and context_pack.functional_requirements:
+            for fr in context_pack.functional_requirements[:8]:
+                desc = fr.get("description") or fr.get("expected_behavior") or str(fr)
+                spec_notes.append(f"- {desc}")
+        if hasattr(context_pack, "source_evidence") and context_pack.source_evidence:
+            for se in context_pack.source_evidence[:4]:
+                txt = se.get("text") or se.get("original_text") or ""
+                if txt and len(txt.strip()) > 10:
+                    spec_notes.append(f"- {txt.strip()[:250]}")
+    spec_section = f"\nDesign Specification Requirements:\n" + "\n".join(spec_notes) if spec_notes else ""
+
+    behavioral_guidelines = []
+    if opcodes_summary:
+        behavioral_guidelines.append("4. Implement combinational decoding for the provided opcodes (e.g. valid_opcode assertion and any operation category flags).")
+    if any(p.get("name") in ("done", "busy", "error") for p in plan_dict.get("ports", [])):
+        behavioral_guidelines.append("5. Implement execution handshake logic (drive done, error, busy according to start strobe and opcode validity).")
+    guidelines_str = ("\n" + "\n".join(behavioral_guidelines)) if behavioral_guidelines else ""
 
     focused_prompt = f"""You are generating behavioral logic for module '{module_name}' in {target_language}.
 Approved Hardware Interface:
 Ports: {json.dumps(ports_summary)}
 Registers: {json.dumps(regs_summary)}
-FSM: {json.dumps(fsm_summary)}
+FSM: {json.dumps(fsm_summary)}{opcodes_section}{params_section}{dp_section}{spec_section}
 
 RESTRICTIONS:
 1. Do NOT redefine module header or endmodule.
-2. Only reference declared ports and internal registers. Do NOT invent undeclared signals.
-3. Do NOT invent ungrounded ALU operations or packet parsers unless specified.
-4. Output synthesizable {target_language} procedural and combinational blocks.
+2. Only reference declared ports and internal registers. Do NOT invent undeclared external signals.
+3. Output synthesizable {target_language} procedural and combinational blocks.{guidelines_str}
 """
     try:
         response = llm_client.complete(
@@ -754,8 +898,13 @@ RESTRICTIONS:
         cleaned = re.sub(r"^```[a-zA-Z0-9_]*\n", "", response.strip())
         cleaned = re.sub(r"\n```$", "", cleaned).strip()
 
-        # Check for ungrounded hallucination traps (e.g. spec_15)
-        if "alu_result" in cleaned and not any("alu" in str(p).lower() for p in plan_dict.get("ports", [])):
+        # Check for ungrounded hallucination traps (e.g. spec_15: simple peripheral hallucinating an ALU)
+        has_arithmetic_intent = (
+            any("alu" in str(p).lower() for p in plan_dict.get("ports", [])) or
+            bool(plan_dict.get("opcodes")) or
+            any(k in module_name.lower() for k in ("alu", "compute", "arith", "matrix", "core", "math", "cpu", "proc"))
+        )
+        if "alu_result" in cleaned and not has_arithmetic_intent:
             errors.append("Ungrounded ALU logic detected in behavioral block.")
             return False, "", errors
 

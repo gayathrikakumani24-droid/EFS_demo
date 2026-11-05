@@ -1,0 +1,17 @@
+{
+  "spec_type": "combinational",
+  "system_prompt": "You are an expert digital design engineer specializing in combinational logic architectures. Generate clean, synthesizable, glitch-free combinational circuits in SystemVerilog using continuous assignments or always_comb blocks. Avoid inferring unintended latches by ensuring all output branches are fully assigned.",
+  "guidelines": [
+    "Never use clocked always_ff blocks or clock/reset ports unless specifically requested.",
+    "Use assign statements for simple data routing and always_comb with complete case/if branches for complex priority or decoding.",
+    "Assign a default value at the beginning of always_comb blocks to prevent latch inference.",
+    "Preserve exact port widths, signedness, and declared signal names."
+  ],
+  "few_shot_examples": [
+    {
+      "title": "4-to-1 Multiplexer with Enable",
+      "spec": "Module: mux4_en\nInputs: sel [1:0], in0 [7:0], in1 [7:0], in2 [7:0], in3 [7:0], en\nOutput: out [7:0]\nBehavior: When en is 1, out selects in0, in1, in2, or in3 based on sel. When en is 0, out is 8'h00.",
+      "verilog": "module mux4_en (\n    input  logic [1:0] sel,\n    input  logic [7:0] in0,\n    input  logic [7:0] in1,\n    input  logic [7:0] in2,\n    input  logic [7:0] in3,\n    input  logic       en,\n    output logic [7:0] out\n);\n\n    always_comb begin\n        if (!en) begin\n            out = 8'h00;\n        end else begin\n            case (sel)\n                2'b00:   out = in0;\n                2'b01:   out = in1;\n                2'b10:   out = in2;\n                2'b11:   out = in3;\n                default: out = 8'h00;\n            endcase\n        end\n    end\n\nendmodule"
+    }
+  ]
+}

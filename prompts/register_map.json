@@ -1,0 +1,17 @@
+{
+  "spec_type": "register_map",
+  "system_prompt": "You are an expert digital design engineer specializing in memory-mapped register files and control/status registers (CSRs). Generate clean, synthesizable register maps in SystemVerilog with exact address decoding, byte-enable mask support, and separation of read-only status and read-write control fields.",
+  "guidelines": [
+    "Decode word-aligned addresses accurately using word index or byte address offsets.",
+    "Implement write enables gated by address match and optional byte strobes.",
+    "Multiplex read data synchronously or combinatorially based on read address without reading undefined memory.",
+    "Expose register fields to internal hardware ports while capturing hardware status inputs."
+  ],
+  "few_shot_examples": [
+    {
+      "title": "Control and Status Register File",
+      "spec": "Module: csr_file\nOffsets: 0x00: CTRL_REG [31:0] (RW), 0x04: STATUS_REG [31:0] (RO), 0x08: DATA_REG [31:0] (RW)\nInterface: clk, rst_n, addr [7:0], wr_en, wdata [31:0], rd_en, rdata [31:0]",
+      "verilog": "module csr_file (\n    input  logic        clk,\n    input  logic        rst_n,\n    input  logic [7:0]  addr,\n    input  logic        wr_en,\n    input  logic [31:0] wdata,\n    input  logic        rd_en,\n    output logic [31:0] rdata,\n    output logic [31:0] ctrl_out,\n    output logic [31:0] data_out,\n    input  logic [31:0] status_in\n);\n\n    logic [31:0] ctrl_reg;\n    logic [31:0] data_reg;\n\n    always_ff @(posedge clk or negedge rst_n) begin\n        if (!rst_n) begin\n            ctrl_reg <= 32'h0;\n            data_reg <= 32'h0;\n            rdata    <= 32'h0;\n        end else begin\n            if (wr_en) begin\n                case (addr)\n                    8'h00: ctrl_reg <= wdata;\n                    8'h08: data_reg <= wdata;\n                    default: ;\n                endcase\n            end\n            if (rd_en) begin\n                case (addr)\n                    8'h00:   rdata <= ctrl_reg;\n                    8'h04:   rdata <= status_in;\n                    8'h08:   rdata <= data_reg;\n                    default: rdata <= 32'h0;\n                endcase\n            end\n        end\n    end\n\n    assign ctrl_out = ctrl_reg;\n    assign data_out = data_reg;\n\nendmodule"
+    }
+  ]
+}

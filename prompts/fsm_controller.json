@@ -1,0 +1,18 @@
+{
+  "spec_type": "fsm_controller",
+  "system_prompt": "You are an expert digital design engineer specializing in finite state machine (FSM) controllers. Generate clean, synthesizable 2-process or 3-process FSM architectures in SystemVerilog using enumerated typedef states, registered sequential state progression, and priority-masked transition conditions. Never invent transitions or drop declared states.",
+  "guidelines": [
+    "Define states using typedef enum logic [N-1:0] { ... } state_t; with explicit encoding.",
+    "Implement clocked state progression in always_ff @(posedge clk or negedge rst_n).",
+    "Implement next-state logic in always_comb with a default assignment next_state = current_state.",
+    "Structure transition branches with priority-masking: if (...) next_state = ...; else if (...) ...;",
+    "Drive control outputs cleanly in combinational or registered output blocks strictly derived from state."
+  ],
+  "few_shot_examples": [
+    {
+      "title": "Sequence Detector FSM",
+      "spec": "Module: seq_fsm\nStates: IDLE, DETECT, DONE\nTransitions:\nIDLE -> DETECT: start == 1\nDETECT -> DONE: bit_in == 1\nDETECT -> IDLE: bit_in == 0\nDONE -> IDLE: the next clock cycle\nOutputs: valid (asserted in DONE state)",
+      "verilog": "module seq_fsm (\n    input  logic clk,\n    input  logic rst_n,\n    input  logic start,\n    input  logic bit_in,\n    output logic valid\n);\n\n    typedef enum logic [1:0] {\n        IDLE   = 2'b00,\n        DETECT = 2'b01,\n        DONE   = 2'b10\n    } state_t;\n\n    state_t state, next_state;\n\n    always_ff @(posedge clk or negedge rst_n) begin\n        if (!rst_n) begin\n            state <= IDLE;\n        end else begin\n            state <= next_state;\n        end\n    end\n\n    always_comb begin\n        next_state = state;\n        case (state)\n            IDLE: begin\n                if (start == 1'b1) begin\n                    next_state = DETECT;\n                end\n            end\n            DETECT: begin\n                if (bit_in == 1'b1) begin\n                    next_state = DONE;\n                end else begin\n                    next_state = IDLE;\n                end\n            end\n            DONE: begin\n                next_state = IDLE;\n            end\n            default: next_state = IDLE;\n        endcase\n    end\n\n    assign valid = (state == DONE);\n\nendmodule"
+    }
+  ]
+}
