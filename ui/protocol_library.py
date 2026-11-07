@@ -142,8 +142,8 @@ def _process_protocol_file(p_name: str, uploaded_file) -> None:
         status_text.text(message)
 
     try:
-        # Run pipeline
-        result = run_pipeline(save_path, filename=uploaded_file.name, progress_cb=progress_cb)
+        # Run pipeline with explicit protocol knowledge domain
+        result = run_pipeline(save_path, filename=uploaded_file.name, progress_cb=progress_cb, knowledge_domain="protocol")
         register_result(result)
 
         if result.errors:

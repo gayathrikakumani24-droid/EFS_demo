@@ -132,3 +132,24 @@ def render() -> None:
                 if summary_text:
                     with st.expander("📑 Comprehensive Technical Architecture Documentation", expanded=False):
                         st.markdown(summary_text)
+
+                # Expandable RTL Generation Plan Inspector
+                plan_obj = out_data.get("plan") or results.get("rtl_generation_plan")
+                if plan_obj and isinstance(plan_obj, dict):
+                    with st.expander("📐 View RTL Generation Plan & Directives", expanded=False):
+                        st.caption("Deterministic implementation contract enforced for this target HDL code.")
+                        st.json(plan_obj)
+
+                # Deterministic Post-Generation Contract Validation Report
+                contract_val = out_data.get("contract_validation")
+                if contract_val and isinstance(contract_val, dict):
+                    is_compliant = contract_val.get("is_compliant", True)
+                    val_title = "🛡️ Contract Validation: PASS" if is_compliant else "🛡️ Contract Validation: VIOLATIONS DETECTED"
+                    with st.expander(val_title, expanded=not is_compliant):
+                        if is_compliant:
+                            st.success("✅ Synthesized HDL strictly complies with the RTL Generation Plan contract (Ports, Registers, and Logic Directives verified).")
+                        else:
+                            st.error("❌ Discrepancies detected between synthesized HDL and the RTL Generation Plan contract:")
+                            for viol in contract_val.get("violations", []):
+                                st.markdown(f"- **[{viol.get('category', 'VIOLATION')}]** {viol.get('issue', str(viol))}")
+                        st.json(contract_val)

@@ -44,7 +44,15 @@ def compile_task_context(
     else:
         intent = query_or_intent
 
-    all_protocol_rules = all_protocol_rules or []
+    all_protocol_rules = list(all_protocol_rules or [])
+    if efs_ir and hasattr(efs_ir, "protocol_rules") and efs_ir.protocol_rules:
+        existing_texts = {r.get("text") or r.get("description") for r in all_protocol_rules if isinstance(r, dict)}
+        for pr in efs_ir.protocol_rules:
+            pr_dict = pr.to_dict() if hasattr(pr, "to_dict") else pr
+            pr_text = pr_dict.get("description") or pr_dict.get("text")
+            if pr_text not in existing_texts:
+                all_protocol_rules.append(pr_dict)
+                existing_texts.add(pr_text)
 
     # 2. Resolve Target Component against canonical complete EFS IR
     res_result = resolve_target(intent.target, efs_ir)

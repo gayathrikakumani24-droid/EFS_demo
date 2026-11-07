@@ -95,22 +95,38 @@ class InMemoryGraphStore:
     def merge_node(self, name: str, entity_type: str, props: Dict[str, Any], auto_persist: bool = True) -> None:
         key = (entity_type, name)
         existing = self.nodes.get(key)
+        doc_id = props.get("doc_id") or props.get("document_id")
         if existing:
             existing["chunk_ids"] = sorted(set(existing.get("chunk_ids", []) + props.get("chunk_ids", [])))
             existing["pages"] = sorted(set(existing.get("pages", []) + props.get("pages", [])))
             existing.setdefault("aliases", [])
             existing["aliases"] = sorted(set(existing["aliases"] + props.get("aliases", [])))
+            if doc_id:
+                existing.setdefault("doc_ids", [])
+                if doc_id not in existing["doc_ids"]:
+                    existing["doc_ids"].append(doc_id)
+                existing["doc_id"] = doc_id
+            if props.get("knowledge_domain"):
+                existing["knowledge_domain"] = props["knowledge_domain"]
         else:
-            node = {"name": name, "type": entity_type, **props}
+            doc_ids = [doc_id] if doc_id else []
+            node = {"name": name, "type": entity_type, "doc_ids": doc_ids, **props}
             self.nodes[key] = node
         if auto_persist:
             self._persist()
 
     def clear_document(self, document_id: str) -> None:
-        """Remove all graph nodes and edges associated with a specific document_id."""
+        """Remove or unbind graph nodes and edges associated with a specific document_id."""
         if not document_id:
             return
-        keys_to_remove = [k for k, node in self.nodes.items() if node.get("doc_id") == document_id or node.get("document_id") == document_id]
+        keys_to_remove = []
+        for k, node in self.nodes.items():
+            doc_ids = node.get("doc_ids", [])
+            if document_id in doc_ids:
+                doc_ids.remove(document_id)
+            if (node.get("doc_id") == document_id or node.get("document_id") == document_id) and not doc_ids:
+                keys_to_remove.append(k)
+
         for k in keys_to_remove:
             del self.nodes[k]
         valid_node_names = {n["name"] for n in self.nodes.values()}
@@ -154,28 +170,47 @@ class InMemoryGraphStore:
         frontier = {name}
         for _ in range(max(1, hops)):
             next_frontier = set()
+            frontier_lower = {f.lower() for f in frontier}
             for e in self.edges:
-                if e["source"] in frontier or e["target"] in frontier:
+                src = e.get("source", "")
+                tgt = e.get("target", "")
+                if (src in frontier or tgt in frontier or
+                        src.lower() in frontier_lower or tgt.lower() in frontier_lower):
                     visited_edges.append(e)
-                    next_frontier.add(e["source"])
-                    next_frontier.add(e["target"])
+                    next_frontier.add(src)
+                    next_frontier.add(tgt)
             frontier |= next_frontier
         for n in frontier:
             node = self.get_node(n)
+            if not node:
+                for (etype, nn), nd in self.nodes.items():
+                    if nn.lower() == n.lower():
+                        node = nd
+                        break
             if node:
-                visited_nodes[n] = node
+                visited_nodes[node.get("name", n)] = node
         return list(visited_nodes.values()), visited_edges
 
     def all_nodes(self, document_id: Optional[str] = None) -> List[Dict[str, Any]]:
         nodes = list(self.nodes.values())
         if document_id:
-            return [n for n in nodes if n.get("doc_id") == document_id or n.get("document_id") == document_id]
+            return [
+                n for n in nodes
+                if n.get("doc_id") == document_id
+                or n.get("document_id") == document_id
+                or document_id in n.get("doc_ids", [])
+            ]
         return nodes
 
     def all_edges(self, document_id: Optional[str] = None) -> List[Dict[str, Any]]:
         edges = list(self.edges)
         if document_id:
-            return [e for e in edges if e.get("doc_id") == document_id or e.get("document_id") == document_id]
+            return [
+                e for e in edges
+                if e.get("doc_id") == document_id
+                or e.get("document_id") == document_id
+                or document_id in e.get("doc_ids", [])
+            ]
         return edges
 
     def deduplicate_nodes(self) -> Tuple[int, int]:
@@ -393,7 +428,13 @@ def reset_graph_store():
 # High level build API
 # --------------------------------------------------------------------------
 
-def build_graph(entities: List[Entity], relationships: List[Relationship], efs_ir: Optional[EFSIR] = None) -> Dict[str, int]:
+def build_graph(
+    entities: List[Entity],
+    relationships: List[Relationship],
+    efs_ir: Optional[EFSIR] = None,
+    req_ir: Optional[Any] = None,
+    knowledge_domain: str = "design"
+) -> Dict[str, int]:
     """Upsert all normalized entities and relationships into the graph store."""
     store = get_graph_store()
 
@@ -401,6 +442,8 @@ def build_graph(entities: List[Entity], relationships: List[Relationship], efs_i
     active_doc_id = None
     if efs_ir and efs_ir.metadata and efs_ir.metadata.document_id:
         active_doc_id = efs_ir.metadata.document_id
+    elif req_ir and getattr(req_ir, "document_id", None):
+        active_doc_id = req_ir.document_id
     elif entities and getattr(entities[0], "doc_id", None):
         active_doc_id = entities[0].doc_id
 
@@ -429,6 +472,7 @@ def build_graph(entities: List[Entity], relationships: List[Relationship], efs_i
                 "section": sample.section,
                 "doc_id": sample.doc_id,
                 "original_text": sample.original_text,
+                "knowledge_domain": getattr(sample, "knowledge_domain", None) or knowledge_domain,
             },
             auto_persist=False,
         )
@@ -446,10 +490,80 @@ def build_graph(entities: List[Entity], relationships: List[Relationship], efs_i
             source=r.source, source_type=s_type,
             relation=r.relation,
             target=r.target, target_type=t_type,
-            props={"evidence": [r.evidence] if r.evidence else [], "doc_id": getattr(r, "doc_id", None) or active_doc_id or ""},
+            props={
+                "evidence": [r.evidence] if r.evidence else [],
+                "doc_id": getattr(r, "doc_id", None) or active_doc_id or "",
+                "knowledge_domain": getattr(r, "knowledge_domain", None) or knowledge_domain,
+            },
             auto_persist=False,
         )
         n_edges += 1
+
+    # Ingest structured entities directly from req_ir when efs_ir is not provided
+    if req_ir and not efs_ir and hasattr(req_ir, "entities"):
+        logger.info("Ingesting structured entities directly from RequirementIR into knowledge graph...")
+        for ent in req_ir.entities:
+            e_name = getattr(ent, "name", "")
+            e_type = getattr(ent, "type", "entity").lower()
+            if not e_name:
+                continue
+
+            canon_type = "Component"
+            if e_type in ("module", "component", "subsystem", "block", "unit", "controller"):
+                canon_type = "Component"
+            elif e_type in ("interface", "bus", "channel"):
+                canon_type = "Interface"
+            elif e_type in ("signal", "port", "clock", "reset"):
+                canon_type = "Signal"
+            elif e_type in ("register", "reg"):
+                canon_type = "Register"
+            elif e_type in ("instruction", "inst", "mnemonic"):
+                canon_type = "Instruction"
+            elif e_type in ("opcode", "encoding"):
+                canon_type = "Opcode"
+            elif e_type in ("state", "fsm_state"):
+                canon_type = "State"
+            elif e_type in ("protocol", "standard"):
+                canon_type = "Protocol"
+
+            refs = getattr(ent, "source_references", [])
+            chunk_ids = [getattr(r, "block_id", "") for r in refs if getattr(r, "block_id", "")]
+            pages = [getattr(r, "page", 1) for r in refs if getattr(r, "page", None)]
+
+            store.merge_node(
+                name=e_name,
+                entity_type=canon_type,
+                props={
+                    "name": e_name,
+                    "efs_id": getattr(ent, "entity_id", e_name),
+                    "description": getattr(ent, "description", ""),
+                    "doc_id": active_doc_id or "",
+                    "chunk_ids": chunk_ids,
+                    "pages": pages,
+                    "knowledge_domain": knowledge_domain,
+                    "attributes": getattr(ent, "attributes", {}),
+                },
+                auto_persist=False,
+            )
+
+        # Ingest edges from req_ir.edges
+        if hasattr(req_ir, "edges"):
+            for edge in req_ir.edges:
+                src = getattr(edge, "source", "")
+                tgt = getattr(edge, "target", "")
+                rel = getattr(edge, "relationship", "RELATED_TO")
+                if src and tgt:
+                    src_type = type_by_name.get(src, "Entity")
+                    tgt_type = type_by_name.get(tgt, "Entity")
+                    ref = getattr(edge, "source_reference", None)
+                    ev = [getattr(ref, "statement", "Requirement graph edge")] if ref else []
+                    store.merge_edge(
+                        source=src, source_type=src_type,
+                        relation=rel,
+                        target=tgt, target_type=tgt_type,
+                        props={"evidence": ev, "doc_id": active_doc_id or "", "knowledge_domain": knowledge_domain},
+                        auto_persist=False,
+                    )
 
     # Insert EFS IR canonical objects if available
     if efs_ir:

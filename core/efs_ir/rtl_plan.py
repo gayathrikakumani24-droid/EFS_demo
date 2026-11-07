@@ -8,6 +8,7 @@ downstream RTL generation and verified by the RTL Plan Validator.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
@@ -29,6 +30,594 @@ class PlanStatus(str, Enum):
     CONTRADICTORY = "CONTRADICTORY"
 
 
+class PlanOrigin(str, Enum):
+    """Origin classification for plan elements distinguishing requirements from implementation decisions."""
+    INHERITED = "INHERITED"
+    DERIVED = "DERIVED"
+    IMPLEMENTATION_DECISION = "IMPLEMENTATION_DECISION"
+
+
+@dataclass
+class DerivationMetadata:
+    """Metadata describing how a plan element was derived from specification entities."""
+    description: str = ""
+    input_entities: List[str] = field(default_factory=list)
+    rule: str = ""
+    confidence: float = 1.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "description": self.description,
+            "input_entities": self.input_entities,
+            "rule": self.rule,
+            "confidence": self.confidence,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> DerivationMetadata:
+        if not isinstance(data, dict):
+            return cls(description=str(data))
+        return cls(
+            description=data.get("description", ""),
+            input_entities=data.get("input_entities", []),
+            rule=data.get("rule", ""),
+            confidence=float(data.get("confidence", 1.0)),
+        )
+
+
+@dataclass
+class PlanExpression:
+    """Structured expression representation for hardware logic."""
+    expression_id: str = ""
+    expression_type: str = "BOOLEAN"  # BOOLEAN, ARITHMETIC, MUX, SLICE, CONCAT, IDENTIFIER, LITERAL, CONDITIONAL, UNARY
+    operator: str = ""                # "+", "-", "*", "&", "|", "^", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", "~", "MUX", "SLICE", "CONCAT"
+    operands: List[Any] = field(default_factory=list)
+    condition: Optional[str] = None
+    result: Optional[str] = None
+    width: Optional[int] = None
+    signed: bool = False
+    source_references: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        ops = []
+        for op in self.operands:
+            if hasattr(op, "to_dict"):
+                ops.append(op.to_dict())
+            elif isinstance(op, dict):
+                ops.append(op)
+            else:
+                ops.append(op)
+        d = {
+            "expression_id": self.expression_id,
+            "expression_type": self.expression_type,
+            "operator": self.operator,
+            "operands": ops,
+            "condition": self.condition,
+            "result": self.result,
+            "width": self.width,
+            "signed": self.signed,
+            "source_references": self.source_references,
+        }
+        return {k: v for k, v in d.items() if v is not None}
+
+    def to_verilog_expr(self) -> str:
+        """Render machine-readable PlanExpression to synthesizable Verilog expression."""
+        t = self.expression_type.upper()
+        if t in ("IDENTIFIER", "LITERAL"):
+            res = str(self.operands[0]) if self.operands else (self.result or "0")
+        elif t == "SLICE" and len(self.operands) >= 3:
+            res = f"{self.operands[0]}[{self.operands[1]}:{self.operands[2]}]"
+        elif t == "SLICE" and len(self.operands) == 2:
+            res = f"{self.operands[0]}[{self.operands[1]}]"
+        elif t == "CONCAT":
+            inner = ", ".join(op.to_verilog_expr() if hasattr(op, "to_verilog_expr") else str(op) for op in self.operands)
+            res = f"{{{inner}}}"
+        elif t in ("MUX", "CONDITIONAL"):
+            cond = str(self.condition or (self.operands[0] if len(self.operands) > 2 else "1'b1"))
+            true_v = self.operands[0].to_verilog_expr() if hasattr(self.operands[0], "to_verilog_expr") else str(self.operands[0])
+            false_v = self.operands[1].to_verilog_expr() if (len(self.operands) > 1 and hasattr(self.operands[1], "to_verilog_expr")) else (str(self.operands[1]) if len(self.operands) > 1 else "0")
+            res = f"({cond} ? {true_v} : {false_v})"
+        elif t == "UNARY" and self.operands:
+            op_str = self.operands[0].to_verilog_expr() if hasattr(self.operands[0], "to_verilog_expr") else str(self.operands[0])
+            res = f"{self.operator}{op_str}"
+        elif t in ("BOOLEAN", "ARITHMETIC") and len(self.operands) >= 2:
+            op1 = self.operands[0].to_verilog_expr() if hasattr(self.operands[0], "to_verilog_expr") else str(self.operands[0])
+            op2 = self.operands[1].to_verilog_expr() if hasattr(self.operands[1], "to_verilog_expr") else str(self.operands[1])
+            op_sym = self.operator or "&"
+            res = f"({op1} {op_sym} {op2})"
+        elif self.operands:
+            res = str(self.operands[0])
+        else:
+            res = self.result or "0"
+        return re.sub(r"\b0x([0-9a-fA-F]+)\b", r"'h\1", res)
+
+    @classmethod
+    def parse_expression(cls, raw: str, expr_id: str = "") -> PlanExpression:
+        """Parse raw hardware expression string into a structured PlanExpression."""
+        if not raw or not isinstance(raw, str):
+            return cls(expression_id=expr_id or "expr_lit", expression_type="LITERAL", operands=["0"])
+        s = raw.strip()
+
+        # Slice: sig[msb:lsb] or sig[bit]
+        m_slice = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*\[\s*(\d+|[a-zA-Z0-9_+\-]+)\s*(?::\s*(\d+|[a-zA-Z0-9_+\-]+))?\s*\]$", s)
+        if m_slice:
+            sig = m_slice.group(1)
+            msb = m_slice.group(2)
+            lsb = m_slice.group(3)
+            if lsb is not None:
+                return cls(
+                    expression_id=expr_id or f"expr_slice_{sig}",
+                    expression_type="SLICE",
+                    operator="SLICE",
+                    operands=[sig, int(msb) if msb.isdigit() else msb, int(lsb) if lsb.isdigit() else lsb]
+                )
+            else:
+                return cls(
+                    expression_id=expr_id or f"expr_bit_{sig}",
+                    expression_type="SLICE",
+                    operator="SLICE",
+                    operands=[sig, int(msb) if msb.isdigit() else msb]
+                )
+
+        # Concatenation: {a, b, ...}
+        if s.startswith("{") and s.endswith("}"):
+            parts = [p.strip() for p in s[1:-1].split(",") if p.strip()]
+            return cls(
+                expression_id=expr_id or "expr_concat",
+                expression_type="CONCAT",
+                operator="CONCAT",
+                operands=parts
+            )
+
+        # Ternary conditional: cond ? val_true : val_false
+        m_tern = re.match(r"^([^?]+)\s*\?\s*([^:]+)\s*:\s*(.+)$", s)
+        if m_tern:
+            cond = m_tern.group(1).strip()
+            val_t = m_tern.group(2).strip()
+            val_f = m_tern.group(3).strip()
+            return cls(
+                expression_id=expr_id or "expr_mux",
+                expression_type="CONDITIONAL",
+                operator="?",
+                condition=cond,
+                operands=[val_t, val_f]
+            )
+
+        # Binary operators
+        bin_ops = ["==", "!=", "<=", ">=", "&&", "||", "<<", ">>", "+", "-", "*", "&", "|", "^", "<", ">"]
+        for op in bin_ops:
+            pat = rf"^(.+?)\s*{re.escape(op)}\s*(.+)$"
+            m_op = re.match(pat, s)
+            if m_op:
+                left = m_op.group(1).strip().strip("()")
+                right = m_op.group(2).strip().strip("()")
+                expr_t = "ARITHMETIC" if op in ("+", "-", "*", "<<", ">>") else "BOOLEAN"
+                return cls(
+                    expression_id=expr_id or f"expr_{expr_t.lower()}",
+                    expression_type=expr_t,
+                    operator=op,
+                    operands=[left, right]
+                )
+
+        # Unary: !a, ~a
+        if s.startswith("!") or s.startswith("~"):
+            return cls(
+                expression_id=expr_id or "expr_unary",
+                expression_type="UNARY",
+                operator=s[0],
+                operands=[s[1:].strip()]
+            )
+
+        # Literal or Identifier
+        is_lit = re.match(r"^\d+'[bBhdD][0-9a-fA-F_]+|\b\d+\b", s)
+        return cls(
+            expression_id=expr_id or ("expr_lit" if is_lit else "expr_id"),
+            expression_type="LITERAL" if is_lit else "IDENTIFIER",
+            operands=[s]
+        )
+
+    @classmethod
+    def from_dict(cls, data: Any) -> PlanExpression:
+        if not isinstance(data, dict):
+            return cls.parse_expression(str(data))
+        ops = []
+        for o in data.get("operands", []):
+            if isinstance(o, dict) and ("expression_type" in o or "operator" in o):
+                ops.append(cls.from_dict(o))
+            else:
+                ops.append(o)
+        return cls(
+            expression_id=data.get("expression_id", ""),
+            expression_type=data.get("expression_type", "BOOLEAN"),
+            operator=data.get("operator", ""),
+            operands=ops,
+            condition=data.get("condition"),
+            result=data.get("result"),
+            width=data.get("width"),
+            signed=bool(data.get("signed", False)),
+            source_references=data.get("source_references", []),
+        )
+
+
+@dataclass
+class PlanRegisterUpdate:
+    """Structured representation of sequential register update semantics."""
+    target: str
+    condition: str = "1'b1"
+    enable: Optional[str] = None
+    load: Optional[str] = None
+    next_value: Optional[PlanExpression] = None
+    hold_behavior: str = "PRESERVE"   # PRESERVE, DEFAULT, ZERO
+    assignment_priority: int = 0
+    reset_behavior: Optional[str] = None
+    source_references: List[str] = field(default_factory=list)
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "target": self.target,
+            "condition": self.condition,
+            "enable": self.enable,
+            "load": self.load,
+            "next_value": self.next_value.to_dict() if self.next_value else None,
+            "hold_behavior": self.hold_behavior,
+            "assignment_priority": self.assignment_priority,
+            "reset_behavior": self.reset_behavior,
+            "source_references": self.source_references,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanRegisterUpdate:
+        if not isinstance(data, dict):
+            return cls(target=str(data))
+        nv = data.get("next_value")
+        nv_obj = PlanExpression.from_dict(nv) if nv else None
+        orig = PlanOrigin(data["origin"]) if data.get("origin") in PlanOrigin._value2member_map_ else PlanOrigin.INHERITED
+        deriv = DerivationMetadata.from_dict(data["derivation"]) if data.get("derivation") else None
+        return cls(
+            target=data.get("target", ""),
+            condition=data.get("condition", "1'b1"),
+            enable=data.get("enable"),
+            load=data.get("load"),
+            next_value=nv_obj,
+            hold_behavior=data.get("hold_behavior", "PRESERVE"),
+            assignment_priority=int(data.get("assignment_priority", 0)),
+            reset_behavior=data.get("reset_behavior"),
+            source_references=data.get("source_references", []),
+            origin=orig,
+            derivation=deriv,
+        )
+
+
+@dataclass
+class PlanSequentialProcess:
+    """Explicit, structured sequential always/process block definition."""
+    process_id: str
+    process_type: str = "ALWAYS_FF"   # ALWAYS_FF, ALWAYS, PROCESS
+    clock_signal: str = "clk"
+    clock_edge: str = "POSEDGE"       # POSEDGE, NEGEDGE
+    reset_signal: Optional[str] = None
+    reset_type: str = "ASYNC"         # ASYNC, SYNC, NONE
+    reset_active_level: str = "LOW"   # LOW, HIGH
+    reset_priority: str = "HIGH"
+    reset_actions: Dict[str, str] = field(default_factory=dict)
+    register_updates: List[PlanRegisterUpdate] = field(default_factory=list)
+    fsm_state_updates: Dict[str, Any] = field(default_factory=dict)
+    source_references: List[str] = field(default_factory=list)
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "process_id": self.process_id,
+            "process_type": self.process_type,
+            "clock_signal": self.clock_signal,
+            "clock_edge": self.clock_edge,
+            "reset_signal": self.reset_signal,
+            "reset_type": self.reset_type,
+            "reset_active_level": self.reset_active_level,
+            "reset_priority": self.reset_priority,
+            "reset_actions": self.reset_actions,
+            "register_updates": [u.to_dict() for u in self.register_updates],
+            "fsm_state_updates": self.fsm_state_updates,
+            "source_references": self.source_references,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanSequentialProcess:
+        if not isinstance(data, dict):
+            return cls(process_id="proc_seq")
+        clk_obj = data.get("clock", {})
+        rst_obj = data.get("reset", {})
+        clk_sig = clk_obj.get("signal", data.get("clock_signal", "clk")) if isinstance(clk_obj, dict) else str(clk_obj or "clk")
+        clk_edge = clk_obj.get("edge", data.get("clock_edge", "POSEDGE")) if isinstance(clk_obj, dict) else data.get("clock_edge", "POSEDGE")
+        rst_sig = rst_obj.get("signal", data.get("reset_signal")) if isinstance(rst_obj, dict) else str(rst_obj or "")
+        rst_type = rst_obj.get("type", data.get("reset_type", "ASYNC")) if isinstance(rst_obj, dict) else data.get("reset_type", "ASYNC")
+        rst_lvl = rst_obj.get("active_level", data.get("reset_active_level", "LOW")) if isinstance(rst_obj, dict) else data.get("reset_active_level", "LOW")
+
+        updates = [
+            PlanRegisterUpdate.from_dict(u) if isinstance(u, dict) else u
+            for u in data.get("register_updates", [])
+        ]
+        orig = PlanOrigin(data["origin"]) if data.get("origin") in PlanOrigin._value2member_map_ else PlanOrigin.INHERITED
+        deriv = DerivationMetadata.from_dict(data["derivation"]) if data.get("derivation") else None
+        return cls(
+            process_id=data.get("process_id", "SEQ_001"),
+            process_type=data.get("process_type", "ALWAYS_FF"),
+            clock_signal=clk_sig,
+            clock_edge=clk_edge,
+            reset_signal=rst_sig or None,
+            reset_type=rst_type,
+            reset_active_level=rst_lvl,
+            reset_priority=data.get("reset_priority", "HIGH"),
+            reset_actions=data.get("reset_actions", {}),
+            register_updates=updates,
+            fsm_state_updates=data.get("fsm_state_updates", {}),
+            source_references=data.get("source_references", []),
+            origin=orig,
+            derivation=deriv,
+        )
+
+
+@dataclass
+class PlanCombinationalAssignment:
+    """Explicit combinational target assignment."""
+    target: str
+    expression: Optional[PlanExpression] = None
+    expression_raw: str = ""
+    condition: Optional[str] = None
+    default_assignment: Optional[str] = None
+    source_references: List[str] = field(default_factory=list)
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "target": self.target,
+            "expression": self.expression.to_dict() if self.expression else None,
+            "expression_raw": self.expression_raw or (self.expression.to_verilog_expr() if self.expression else ""),
+            "condition": self.condition,
+            "default_assignment": self.default_assignment,
+            "source_references": self.source_references,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanCombinationalAssignment:
+        if not isinstance(data, dict):
+            return cls(target=str(data))
+        expr = data.get("expression")
+        expr_obj = PlanExpression.from_dict(expr) if expr else None
+        expr_raw = str(data.get("expression_raw") or (expr.get("raw") if isinstance(expr, dict) else (expr or "")))
+        if not expr_obj and expr_raw:
+            expr_obj = PlanExpression.parse_expression(expr_raw)
+        orig = PlanOrigin(data["origin"]) if data.get("origin") in PlanOrigin._value2member_map_ else PlanOrigin.INHERITED
+        deriv = DerivationMetadata.from_dict(data["derivation"]) if data.get("derivation") else None
+        return cls(
+            target=data.get("target", ""),
+            expression=expr_obj,
+            expression_raw=expr_raw,
+            condition=data.get("condition"),
+            default_assignment=data.get("default_assignment"),
+            source_references=data.get("source_references", []),
+            origin=orig,
+            derivation=deriv,
+        )
+
+
+@dataclass
+class PlanCombinationalProcess:
+    """Explicit, structured combinational always_comb or continuous assign block."""
+    process_id: str
+    process_type: str = "ALWAYS_COMB"  # ALWAYS_COMB, CONTINUOUS_ASSIGN
+    input_dependencies: List[str] = field(default_factory=list)
+    output_targets: List[str] = field(default_factory=list)
+    assignments: List[PlanCombinationalAssignment] = field(default_factory=list)
+    data_selections: List[Any] = field(default_factory=list)
+    source_references: List[str] = field(default_factory=list)
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "process_id": self.process_id,
+            "process_type": self.process_type,
+            "input_dependencies": self.input_dependencies,
+            "output_targets": self.output_targets,
+            "assignments": [a.to_dict() for a in self.assignments],
+            "data_selections": [ds.to_dict() if hasattr(ds, "to_dict") else ds for ds in self.data_selections],
+            "source_references": self.source_references,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanCombinationalProcess:
+        if not isinstance(data, dict):
+            return cls(process_id="proc_comb")
+        assigns = [
+            PlanCombinationalAssignment.from_dict(a) if isinstance(a, dict) else a
+            for a in data.get("assignments", [])
+        ]
+        orig = PlanOrigin(data["origin"]) if data.get("origin") in PlanOrigin._value2member_map_ else PlanOrigin.INHERITED
+        deriv = DerivationMetadata.from_dict(data["derivation"]) if data.get("derivation") else None
+        return cls(
+            process_id=data.get("process_id", "COMB_001"),
+            process_type=data.get("process_type", "ALWAYS_COMB"),
+            input_dependencies=data.get("input_dependencies", []),
+            output_targets=data.get("output_targets", []),
+            assignments=assigns,
+            data_selections=data.get("data_selections", []),
+            source_references=data.get("source_references", []),
+            origin=orig,
+            derivation=deriv,
+        )
+
+
+@dataclass
+class PlanUnresolvedLogic:
+    """Represents an explicitly unresolved logic requirement or gap in specification."""
+    affected_entity: str
+    description: str
+    missing_information: str
+    affected_component: Optional[str] = None
+    reason: Optional[str] = None
+    source_evidence: Optional[str] = None
+    blocks_generation: bool = False
+    requires_human_decision: bool = False
+    severity: str = "WARNING"  # BLOCKING, WARNING
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "affected_entity": self.affected_entity,
+            "description": self.description,
+            "missing_information": self.missing_information,
+            "affected_component": self.affected_component,
+            "reason": self.reason,
+            "source_evidence": self.source_evidence,
+            "blocks_generation": self.blocks_generation,
+            "requires_human_decision": self.requires_human_decision,
+            "severity": self.severity,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanUnresolvedLogic:
+        if not isinstance(data, dict):
+            return cls(affected_entity="unknown", description=str(data), missing_information=str(data))
+        return cls(
+            affected_entity=data.get("affected_entity", "general"),
+            description=data.get("description", ""),
+            missing_information=data.get("missing_information", ""),
+            affected_component=data.get("affected_component"),
+            reason=data.get("reason"),
+            source_evidence=data.get("source_evidence"),
+            blocks_generation=bool(data.get("blocks_generation", False)),
+            requires_human_decision=bool(data.get("requires_human_decision", False)),
+            severity=data.get("severity", "WARNING"),
+        )
+
+
+@dataclass
+class PlanProtocolRule:
+    """Individual structured protocol rule inside a component's protocol contract."""
+    rule_id: str
+    name: str = ""
+    rule_type: str = "HANDSHAKE"  # HANDSHAKE, TRANSACTION_ACCEPTANCE, ORDERING, STABILITY, RESET, TIMING, VERIFICATION_ONLY
+    description: str = ""
+    applicable_interfaces: List[str] = field(default_factory=list)
+    applicable_signals: List[str] = field(default_factory=list)
+    handshake_condition: Optional[str] = None
+    acceptance_condition: Optional[str] = None
+    ordering_requirement: Optional[str] = None
+    stability_constraint: Optional[str] = None
+    reset_requirement: Optional[str] = None
+    timing_constraint: Optional[str] = None
+    is_synthesizable_behavior: bool = True
+    source_references: List[str] = field(default_factory=list)
+    source_evidence: str = ""
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "rule_id": self.rule_id,
+            "name": self.name,
+            "rule_type": self.rule_type,
+            "description": self.description,
+            "applicable_interfaces": self.applicable_interfaces,
+            "applicable_signals": self.applicable_signals,
+            "handshake_condition": self.handshake_condition,
+            "acceptance_condition": self.acceptance_condition,
+            "ordering_requirement": self.ordering_requirement,
+            "stability_constraint": self.stability_constraint,
+            "reset_requirement": self.reset_requirement,
+            "timing_constraint": self.timing_constraint,
+            "is_synthesizable_behavior": self.is_synthesizable_behavior,
+            "source_references": self.source_references,
+            "source_evidence": self.source_evidence,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanProtocolRule:
+        if not isinstance(data, dict):
+            return cls(rule_id=str(data))
+        orig = PlanOrigin(data["origin"]) if data.get("origin") in PlanOrigin._value2member_map_ else PlanOrigin.INHERITED
+        deriv = DerivationMetadata.from_dict(data["derivation"]) if data.get("derivation") else None
+        return cls(
+            rule_id=data.get("rule_id", "prule_0"),
+            name=data.get("name", ""),
+            rule_type=data.get("rule_type", "HANDSHAKE"),
+            description=data.get("description", ""),
+            applicable_interfaces=list(data.get("applicable_interfaces", [])),
+            applicable_signals=list(data.get("applicable_signals", [])),
+            handshake_condition=data.get("handshake_condition"),
+            acceptance_condition=data.get("acceptance_condition"),
+            ordering_requirement=data.get("ordering_requirement"),
+            stability_constraint=data.get("stability_constraint"),
+            reset_requirement=data.get("reset_requirement"),
+            timing_constraint=data.get("timing_constraint"),
+            is_synthesizable_behavior=bool(data.get("is_synthesizable_behavior", True)),
+            source_references=list(data.get("source_references", [])),
+            source_evidence=data.get("source_evidence", ""),
+            origin=orig,
+            derivation=deriv,
+        )
+
+
+@dataclass
+class PlanProtocolContract:
+    """Target component-scoped protocol contract containing applicable protocol specifications."""
+    protocol_name: str = "GENERIC"
+    protocol_version: str = "1.0"
+    applicable_interfaces: List[str] = field(default_factory=list)
+    rules: List[PlanProtocolRule] = field(default_factory=list)
+    verification_assertions: List[Dict[str, Any]] = field(default_factory=list)
+    source_evidence_ids: List[str] = field(default_factory=list)
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "protocol_name": self.protocol_name,
+            "protocol_version": self.protocol_version,
+            "applicable_interfaces": self.applicable_interfaces,
+            "rules": [r.to_dict() for r in self.rules],
+            "verification_assertions": self.verification_assertions,
+            "source_evidence_ids": self.source_evidence_ids,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlanProtocolContract:
+        if not isinstance(data, dict):
+            return cls(protocol_name=str(data))
+        rules_list = [
+            PlanProtocolRule.from_dict(r) if isinstance(r, dict) else r
+            for r in data.get("rules", [])
+        ]
+        orig = PlanOrigin(data["origin"]) if data.get("origin") in PlanOrigin._value2member_map_ else PlanOrigin.INHERITED
+        deriv = DerivationMetadata.from_dict(data["derivation"]) if data.get("derivation") else None
+        return cls(
+            protocol_name=data.get("protocol_name", "GENERIC"),
+            protocol_version=data.get("protocol_version", "1.0"),
+            applicable_interfaces=list(data.get("applicable_interfaces", [])),
+            rules=rules_list,
+            verification_assertions=list(data.get("verification_assertions", [])),
+            source_evidence_ids=list(data.get("source_evidence_ids", [])),
+            origin=orig,
+            derivation=deriv,
+        )
+
+
 @dataclass
 class PlanPort:
     """Hardware module port definition."""
@@ -43,6 +632,8 @@ class PlanPort:
     source_ref: str = ""
     efs_id: Optional[str] = None
     classification: EvidenceClassification = EvidenceClassification.EXPLICIT
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -57,6 +648,8 @@ class PlanPort:
             "source_ref": self.source_ref,
             "efs_id": self.efs_id,
             "classification": self.classification.value if isinstance(self.classification, EvidenceClassification) else str(self.classification),
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
         }
 
     @classmethod
@@ -66,6 +659,16 @@ class PlanPort:
             c_enum = EvidenceClassification(c_val)
         except Exception:
             c_enum = EvidenceClassification.EXPLICIT
+
+        o_val = data.get("origin", "INHERITED")
+        try:
+            o_enum = PlanOrigin(o_val)
+        except Exception:
+            o_enum = PlanOrigin.INHERITED
+
+        drv = data.get("derivation")
+        drv_obj = DerivationMetadata.from_dict(drv) if drv else None
+
         return cls(
             name=data.get("name", "unnamed_port"),
             direction=data.get("direction", "input"),
@@ -78,6 +681,8 @@ class PlanPort:
             source_ref=data.get("source_ref", data.get("source_evidence", "")),
             efs_id=data.get("efs_id"),
             classification=c_enum,
+            origin=o_enum,
+            derivation=drv_obj,
         )
 
 
@@ -91,6 +696,8 @@ class PlanParameter:
     usage: str = ""
     is_behaviorally_defined: bool = True
     source_ref: str = ""
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -101,10 +708,19 @@ class PlanParameter:
             "usage": self.usage,
             "is_behaviorally_defined": self.is_behaviorally_defined,
             "source_ref": self.source_ref,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> PlanParameter:
+        o_val = data.get("origin", "INHERITED")
+        try:
+            o_enum = PlanOrigin(o_val)
+        except Exception:
+            o_enum = PlanOrigin.INHERITED
+        drv = data.get("derivation")
+        drv_obj = DerivationMetadata.from_dict(drv) if drv else None
         return cls(
             name=data.get("name", "PARAM"),
             value=data.get("value", data.get("default", "0")),
@@ -113,6 +729,8 @@ class PlanParameter:
             usage=data.get("usage", ""),
             is_behaviorally_defined=bool(data.get("is_behaviorally_defined", True)),
             source_ref=data.get("source_ref", ""),
+            origin=o_enum,
+            derivation=drv_obj,
         )
 
 
@@ -154,6 +772,8 @@ class PlanInternalSignal:
     driving_type: str = "wire"  # wire, logic, reg
     driver: str = ""
     source_ref: str = ""
+    origin: PlanOrigin = PlanOrigin.IMPLEMENTATION_DECISION
+    derivation: Optional[DerivationMetadata] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -163,10 +783,19 @@ class PlanInternalSignal:
             "driving_type": self.driving_type,
             "driver": self.driver,
             "source_ref": self.source_ref,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> PlanInternalSignal:
+        o_val = data.get("origin", "IMPLEMENTATION_DECISION")
+        try:
+            o_enum = PlanOrigin(o_val)
+        except Exception:
+            o_enum = PlanOrigin.IMPLEMENTATION_DECISION
+        drv = data.get("derivation")
+        drv_obj = DerivationMetadata.from_dict(drv) if drv else None
         return cls(
             name=data.get("name", "sig"),
             width=str(data.get("width", "1")),
@@ -174,6 +803,8 @@ class PlanInternalSignal:
             driving_type=data.get("driving_type", "wire"),
             driver=data.get("driver", ""),
             source_ref=data.get("source_ref", ""),
+            origin=o_enum,
+            derivation=drv_obj,
         )
 
 
@@ -219,6 +850,8 @@ class PlanRegister:
     source_ref: str = ""
     efs_id: Optional[str] = None
     offset: Optional[str] = None
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -232,6 +865,8 @@ class PlanRegister:
             "fields": [f.to_dict() for f in self.fields],
             "source_ref": self.source_ref,
             "efs_id": self.efs_id,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
         }
 
     @classmethod
@@ -241,6 +876,13 @@ class PlanRegister:
             PlanRegisterField.from_dict(f) if isinstance(f, dict) else f
             for f in data.get("fields", [])
         ]
+        o_val = data.get("origin", "INHERITED")
+        try:
+            o_enum = PlanOrigin(o_val)
+        except Exception:
+            o_enum = PlanOrigin.INHERITED
+        drv = data.get("derivation")
+        drv_obj = DerivationMetadata.from_dict(drv) if drv else None
         return cls(
             name=data.get("name", "reg"),
             width=str(data.get("width", "32")),
@@ -252,6 +894,8 @@ class PlanRegister:
             fields=flds,
             source_ref=data.get("source_ref", ""),
             efs_id=data.get("efs_id"),
+            origin=o_enum,
+            derivation=drv_obj,
         )
 
 
@@ -289,6 +933,8 @@ class PlanOpcode:
     associated_operations: List[str] = field(default_factory=list)
     evidence: str = ""
     efs_id: Optional[str] = None
+    origin: PlanOrigin = PlanOrigin.INHERITED
+    derivation: Optional[DerivationMetadata] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -297,16 +943,27 @@ class PlanOpcode:
             "associated_operations": self.associated_operations,
             "evidence": self.evidence,
             "efs_id": self.efs_id,
+            "origin": self.origin.value if isinstance(self.origin, PlanOrigin) else str(self.origin),
+            "derivation": self.derivation.to_dict() if self.derivation else None,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> PlanOpcode:
+        o_val = data.get("origin", "INHERITED")
+        try:
+            o_enum = PlanOrigin(o_val)
+        except Exception:
+            o_enum = PlanOrigin.INHERITED
+        drv = data.get("derivation")
+        drv_obj = DerivationMetadata.from_dict(drv) if drv else None
         return cls(
             name=data.get("name", data.get("mnemonic", "OPC")),
             binary_encoding=str(data.get("binary_encoding", data.get("encoding", ""))),
             associated_operations=data.get("associated_operations", data.get("operations", [])),
             evidence=data.get("evidence", data.get("source_evidence", "")),
             efs_id=data.get("efs_id"),
+            origin=o_enum,
+            derivation=drv_obj,
         )
 
 
@@ -691,8 +1348,12 @@ class RTLGenerationPlan:
     fsm: Optional[PlanFSM] = None
     datapath: PlanDatapath = field(default_factory=PlanDatapath)
     behavioral_implementation: List[PlanBehavioralOp] = field(default_factory=list)
+    sequential_logic: List[PlanSequentialProcess] = field(default_factory=list)
+    combinational_logic: List[PlanCombinationalProcess] = field(default_factory=list)
+    unresolved_logic: List[PlanUnresolvedLogic] = field(default_factory=list)
     traceability: PlanTraceability = field(default_factory=PlanTraceability)
     output_driving_strategy: Dict[str, str] = field(default_factory=dict)
+    protocol_contract: Optional[PlanProtocolContract] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to clean JSON-serializable dictionary."""
@@ -711,6 +1372,10 @@ class RTLGenerationPlan:
             "fsm": self.fsm.to_dict() if self.fsm else None,
             "datapath": self.datapath.to_dict(),
             "behavioral_implementation": [b.to_dict() for b in self.behavioral_implementation],
+            "sequential_logic": [seq.to_dict() for seq in self.sequential_logic],
+            "combinational_logic": [comb.to_dict() for comb in self.combinational_logic],
+            "unresolved_logic": [u.to_dict() for u in self.unresolved_logic],
+            "protocol_contract": self.protocol_contract.to_dict() if self.protocol_contract else None,
             "traceability": self.traceability.to_dict(),
             "output_driving_strategy": self.output_driving_strategy,
             # Legacy compatibility fields
@@ -780,12 +1445,32 @@ class RTLGenerationPlan:
             PlanBehavioralOp.from_dict(b) if isinstance(b, dict) else b
             for b in data.get("behavioral_implementation", [])
         ]
+        # Sequential logic
+        seq_logic = [
+            PlanSequentialProcess.from_dict(s) if isinstance(s, dict) else s
+            for s in data.get("sequential_logic", [])
+        ]
+        # Combinational logic
+        comb_logic = [
+            PlanCombinationalProcess.from_dict(c) if isinstance(c, dict) else c
+            for c in data.get("combinational_logic", [])
+        ]
+        # Unresolved logic
+        unresolved = [
+            PlanUnresolvedLogic.from_dict(u) if isinstance(u, dict) else u
+            for u in data.get("unresolved_logic", [])
+        ]
         # Traceability
         traceability_obj = (
             PlanTraceability.from_dict(data["traceability"])
             if isinstance(data.get("traceability"), dict)
             else PlanTraceability()
         )
+        # Protocol contract
+        proto_contract = None
+        if data.get("protocol_contract") and isinstance(data["protocol_contract"], dict):
+            proto_contract = PlanProtocolContract.from_dict(data["protocol_contract"])
+
         # Status
         spec_status = (
             PlanSpecificationStatus.from_dict(data["specification_status"])
@@ -808,6 +1493,10 @@ class RTLGenerationPlan:
             fsm=fsm_obj,
             datapath=datapath_obj,
             behavioral_implementation=behaviors,
+            sequential_logic=seq_logic,
+            combinational_logic=comb_logic,
+            unresolved_logic=unresolved,
+            protocol_contract=proto_contract,
             traceability=traceability_obj,
             output_driving_strategy=data.get("output_driving_strategy", {}),
         )

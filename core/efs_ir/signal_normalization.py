@@ -557,7 +557,11 @@ def resolve_signal_metadata(
 
     # Final resolved direction
     final_dir = dir_res["resolved_value"]
-    if not final_dir:
+    competing_dirs = sorted(list(set(str(c.value) for c in all_dir_cands if c.value))) if dir_res["is_conflicted"] else []
+    if dir_res["is_conflicted"]:
+        final_dir = final_dir or (competing_dirs[0] if competing_dirs else "input")
+        dir_source = "conflict"
+    elif not final_dir:
         # Fallback to input if unspecified, but record provenance as default
         final_dir = "input"
         dir_source = "unspecified_default"
@@ -566,7 +570,11 @@ def resolve_signal_metadata(
 
     # Final resolved width
     final_w_int = width_res["resolved_value"] if isinstance(width_res["resolved_value"], int) else None
-    if final_w_int is not None:
+    competing_widths = sorted(list(set(str(c.value) for c in all_width_cands if c.value))) if width_res["is_conflicted"] else []
+    if width_res["is_conflicted"]:
+        final_w_str = str(final_w_int) if final_w_int is not None else (width_res["resolved_value"] if isinstance(width_res["resolved_value"], str) else (competing_widths[0] if competing_widths else "1"))
+        width_source = "conflict"
+    elif final_w_int is not None:
         final_w_str = str(final_w_int)
         width_source = width_res["source"]
     elif isinstance(width_res["resolved_value"], str):
@@ -591,10 +599,12 @@ def resolve_signal_metadata(
         "direction": final_dir,
         "direction_source": dir_source,
         "direction_authority": dir_res["authority"].value,
+        "competing_directions": competing_dirs,
         "width": final_w_str,
         "width_int": final_w_int,
         "width_source": width_source,
         "width_authority": width_res["authority"].value,
+        "competing_widths": competing_widths,
         "semantic_role": sem_role,
         "is_conflicted": is_conflicted,
         "conflicts": conflicts,

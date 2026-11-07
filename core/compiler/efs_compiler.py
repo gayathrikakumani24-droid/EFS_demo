@@ -735,6 +735,46 @@ class RequirementToEFSCompiler:
                             traceability=opcs[0].traceability
                         ))
 
+        # Programmatic signal direction & width conflict detection across compiled signals
+        for sig in self.efs.signals:
+            c_details = getattr(sig, "conflict_details", None)
+            if c_details and isinstance(c_details, dict) and c_details.get("is_conflicted"):
+                for sub_c in c_details.get("conflicts", []):
+                    prop = sub_c.get("property", "signal")
+                    issue_msg = sub_c.get("issue", f"Conflicting {prop} on signal '{sig.name}'")
+                    evid = sub_c.get("evidence", issue_msg)
+                    c_type = "SIGNAL_DIRECTION" if prop == "direction" else ("CONFLICTING_WIDTH" if prop == "width" else "SIGNAL_CONFLICT")
+
+                    # Avoid duplicate conflict objects
+                    existing = any(
+                        c.property == prop and sig.name in (c.entities or [])
+                        for c in self.efs.conflicts
+                    )
+                    if not existing:
+                        c_id = new_efs_id("conf")
+                        comp_vals = c_details.get(f"competing_{prop}s", []) or [str(getattr(sig, prop, ""))]
+                        self.efs.conflicts.append(EFSConflict(
+                            conflict_id=c_id,
+                            type=c_type,
+                            severity="CRITICAL",
+                            title=f"Conflicting Signal {prop.title()}: {sig.name}",
+                            property=prop,
+                            description=issue_msg,
+                            conflicting_values=comp_vals,
+                            current_values={sig.name: str(getattr(sig, prop, ""))},
+                            entities=[sig.name],
+                            target_entities=[sig.name],
+                            affected_entities=[sig.name],
+                            candidates=comp_vals,
+                            source_objects=[sig.signal_id],
+                            evidence=evid,
+                            status="UNRESOLVED",
+                            resolution_status="UNRESOLVED",
+                            requires_human_decision=True,
+                            blocking=True,
+                            traceability=sig.traceability
+                        ))
+
     def _compile_extraction_coverage(self) -> None:
         """Compute dynamic extraction coverage metrics across all hardware semantic categories."""
         categories = {

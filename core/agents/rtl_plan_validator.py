@@ -609,6 +609,58 @@ class RTLPlanValidator:
                         )
                     )
 
+        # 8b. Sequential & Combinational Logic Validation
+        seq_logic = plan_dict.get("sequential_logic", [])
+        if seq_logic and isinstance(seq_logic, list):
+            for sp in seq_logic:
+                if isinstance(sp, dict):
+                    pid = sp.get("process_id", "SEQ")
+                    clk_sig = sp.get("clock_signal") or (sp.get("clock", {}).get("signal") if isinstance(sp.get("clock"), dict) else None)
+                    if not clk_sig:
+                        diagnostics.append(
+                            PlanDiagnostic(
+                                diagnostic_type=DiagnosticCode.PLAN_VALIDATION_FAILED,
+                                category="SEQUENTIAL",
+                                affected_object=pid,
+                                evidence=f"Sequential process '{pid}' does not specify a clock signal",
+                                severity="CRITICAL",
+                                suggested_resolution=f"Assign a valid clock domain signal to sequential process '{pid}'."
+                            )
+                        )
+                    # Verify register update targets
+                    for ru in sp.get("register_updates", []):
+                        if isinstance(ru, dict):
+                            tgt = ru.get("target")
+                            if not tgt:
+                                diagnostics.append(
+                                    PlanDiagnostic(
+                                        diagnostic_type=DiagnosticCode.PLAN_VALIDATION_FAILED,
+                                        category="SEQUENTIAL",
+                                        affected_object=pid,
+                                        evidence=f"Sequential process '{pid}' contains register update with missing target",
+                                        severity="CRITICAL",
+                                        suggested_resolution="Specify target register for update."
+                                    )
+                                )
+
+        comb_logic = plan_dict.get("combinational_logic", [])
+        if comb_logic and isinstance(comb_logic, list):
+            for cp in comb_logic:
+                if isinstance(cp, dict):
+                    pid = cp.get("process_id", "COMB")
+                    for ca in cp.get("assignments", []):
+                        if isinstance(ca, dict) and not ca.get("target"):
+                            diagnostics.append(
+                                PlanDiagnostic(
+                                    diagnostic_type=DiagnosticCode.PLAN_VALIDATION_FAILED,
+                                    category="COMBINATIONAL",
+                                    affected_object=pid,
+                                    evidence=f"Combinational process '{pid}' contains assignment without target",
+                                    severity="CRITICAL",
+                                    suggested_resolution="Specify destination signal for assignment."
+                                )
+                            )
+
         # 9. Determine Overall Status
         has_critical = any(d.severity == "CRITICAL" for d in diagnostics)
         is_contradictory = any(d.diagnostic_type in (DiagnosticCode.INTERFACE_CONFLICT, DiagnosticCode.OPCODE_CONFLICT, DiagnosticCode.REGISTER_DEFINITION_CONFLICT) and "conflict" in d.evidence.lower() for d in diagnostics)

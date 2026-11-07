@@ -8,6 +8,16 @@ import streamlit as st
 from config import CONFIG
 from core.agents.orchestrator import run_design_flow
 from core.efs_ir.models import EFSConflict, EFSResolution
+from core.efs_ir.specification_gap import (
+    EvidenceClassification,
+    GapResolutionStatus,
+    GapSeverity,
+    HITLAction,
+    SpecificationGap,
+    SpecificationGapCategory,
+    SpecificationGapProposal,
+)
+from core.verification.hitl_gap_manager import HITLSpecificationGapManager
 from utils.protocol_manager import get_library_data, select_protocol
 from utils.logger import get_logger
 
@@ -43,8 +53,26 @@ def _handle_doc_upload() -> None:
             parsed = _parse_uploaded_spec_doc(doc)
             st.session_state["req_spec_text"] = parsed
             st.session_state["_last_parsed_doc_name"] = doc.name
-            st.session_state["doc_upload_success"] = f"Parsed content from {doc.name}"
+            st.session_state["doc_upload_success"] = f"Parsed content and ingested knowledge from {doc.name}"
             st.session_state.pop("doc_upload_error", None)
+
+            # Ingest specification into Knowledge Base (Vector DB + Graph DB)
+            try:
+                save_path = os.path.join(CONFIG.upload_dir, doc.name)
+                os.makedirs(CONFIG.upload_dir, exist_ok=True)
+                doc.seek(0)
+                with open(save_path, "wb") as f:
+                    f.write(doc.read())
+                doc.seek(0)
+
+                from core.pipeline import run_pipeline
+                from core.registry import register_result
+                pipe_res = run_pipeline(save_path, filename=doc.name, knowledge_domain="design")
+                register_result(pipe_res)
+                if pipe_res.req_ir:
+                    st.session_state["active_req_ir"] = pipe_res.req_ir
+            except Exception as e_ingest:
+                logger.warning(f"Background knowledge ingestion notice: {e_ingest}")
 
             # Cleanly reset stale design session artifacts on new upload
             for k in [
@@ -85,6 +113,8 @@ def render() -> None:
     gen_verilog = st.sidebar.checkbox("Verilog RTL", value=True)
     gen_sv = st.sidebar.checkbox("SystemVerilog RTL", value=False)
     gen_vhdl = st.sidebar.checkbox("VHDL Design", value=False)
+    gen_uvm = st.sidebar.checkbox("UVM Testbench", value=False)
+    gen_sva = st.sidebar.checkbox("SVA Assertions", value=False)
 
     st.sidebar.markdown("### Hybrid Generation Engine")
     generation_mode = st.sidebar.selectbox(
@@ -211,6 +241,8 @@ def render() -> None:
     if gen_verilog: targets_summary.append("Verilog RTL")
     if gen_sv: targets_summary.append("SystemVerilog RTL")
     if gen_vhdl: targets_summary.append("VHDL Design")
+    if gen_uvm: targets_summary.append("UVM Testbench")
+    if gen_sva: targets_summary.append("SVA Assertions")
     
     st.markdown(f"**Targets selected:** {', '.join(targets_summary) if targets_summary else 'None (Select in sidebar)'}")
 
@@ -218,6 +250,8 @@ def render() -> None:
     if gen_verilog: targets.append("Verilog")
     if gen_sv: targets.append("SystemVerilog")
     if gen_vhdl: targets.append("VHDL")
+    if gen_uvm: targets.append("UVM")
+    if gen_sva: targets.append("Assertions")
 
     generate_disabled = not targets or not raw_req_text
 
@@ -282,7 +316,7 @@ def render() -> None:
                 st.session_state["design_results"] = results
                 if results.get("status") in ("TARGET_NOT_FOUND", "AMBIGUOUS_TARGET"):
                     st.error(f"❌ Target Resolution Failed: {results.get('error_message')}")
-                elif results.get("status") in ("AWAITING_HUMAN_DECISION", "BLOCKED_CONFLICT"):
+                elif results.get("status") in ("AWAITING_HUMAN_DECISION", "AWAITING_HITL", "BLOCKED_CONFLICT"):
                     st.warning("⚠️ Human Decision Required: Specification conflicts or ambiguities detected. The pipeline is safely paused at this decision point.")
                 elif results.get("status") == "BLOCKED":
                     st.error("❌ Generation BLOCKED due to critical builder errors.")
@@ -413,8 +447,14 @@ def render() -> None:
                         st.markdown(f"**PlantUML ({k.capitalize()}):**")
                         st.code(code, language="plantuml")
 
-        if results.get("status") == "RTL_GENERATION_ERROR":
-            st.error(f"❌ RTL Generation Error: {results.get('error_message', 'RTL generation could not produce complete code.')}")
+        is_hitl_paused = (
+            results.get("status") in ("AWAITING_HUMAN_DECISION", "AWAITING_HITL", "BLOCKED_CONFLICT")
+            or results.get("pipeline_state") in ("AWAITING_HUMAN_DECISION", "AWAITING_HITL")
+            or results.get("requires_human_decision", False)
+        )
+
+        if not is_hitl_paused and (results.get("status") in ("RTL_GENERATION_ERROR", "RTL_VALIDATION_ERROR", "REJECTED", "FAILED") or (results.get("status") != "SUCCESS" and results.get("outputs"))):
+            st.error(f"❌ Design Generation Issue: {results.get('error_message', 'RTL generation produced output with validation or contract issues.')}")
             outputs = results.get("outputs", {})
             for tgt, out_data in outputs.items():
                 if isinstance(out_data, dict):
@@ -447,7 +487,7 @@ def render() -> None:
                 st.rerun()
             return
 
-        if results.get("status") in ("AWAITING_HUMAN_DECISION", "BLOCKED", "BLOCKED_CONFLICT", "INSUFFICIENT_SPEC"):
+        if results.get("status") in ("AWAITING_HUMAN_DECISION", "AWAITING_HITL", "BLOCKED", "BLOCKED_CONFLICT", "INSUFFICIENT_SPEC") or results.get("requires_human_decision", False):
             # Live Pipeline Stage Tracker
             st.markdown("""
             <div style="background-color: #1e293b; padding: 12px 18px; border-radius: 8px; margin-bottom: 18px; border-left: 5px solid #f59e0b;">
@@ -509,6 +549,17 @@ def render() -> None:
                 if getattr(c, "conflict_id", None) in approved_cids:
                     return True
                 c_prop = (getattr(c, "property", "") or "").lower()
+                if c_prop == "transition_condition":
+                    if getattr(c, "conflict_id", None) in approved_cids:
+                        return True
+                    c_ents = getattr(c, "affected_entities", []) or getattr(c, "entities", [])
+                    if len(c_ents) >= 2 and efs_ir:
+                        src, dst = c_ents[0], c_ents[1]
+                        for fsm in getattr(efs_ir, "fsms", []):
+                            for tr in getattr(fsm, "transitions", []):
+                                if tr.source_state.upper() == src.upper() and tr.target_state.upper() == dst.upper():
+                                    return bool((tr.condition or "").strip())
+                    return False
                 for ent in (getattr(c, "affected_entities", []) or getattr(c, "entities", []) or []):
                     if c_prop and (ent.lower(), c_prop) in approved_entity_props:
                         return True
@@ -516,49 +567,213 @@ def render() -> None:
 
             unresolved_conflicts = [c for c in conflicts if not is_conflict_resolved(c)]
 
-            if unresolved_conflicts:
-                st.warning(f"### ⚠️ Human Decision Required ({len(unresolved_conflicts)} decision{'s' if len(unresolved_conflicts) != 1 else ''} pending)")
-                st.info("The design pipeline identified hardware specification conflicts or ambiguities that require a design decision. The pipeline is safely paused at this decision point.")
-            else:
-                st.success("### ✓ All specification issues and conflicts resolved.")
-                if st.button("▶ Resume Design & RTL Generation", type="primary", key="btn_resume_generation"):
-                    with st.spinner("Resuming PlantUML and RTL generation..."):
-                        from core.agents.orchestrator import resume_design_flow_with_resolutions
-                        # Collect approved resolutions from both session_state AND efs_ir.resolutions
-                        # (conflicts may have been resolved in-memory without being stored in session_state)
-                        _ss_resolutions = list(st.session_state.get("approved_resolutions", []))
-                        _ss_res_ids = {getattr(r, "resolution_id", "") for r in _ss_resolutions}
-                        if efs_ir and hasattr(efs_ir, "resolutions"):
-                            for _r in efs_ir.resolutions:
-                                if (getattr(_r, "approval_status", "") == "APPROVED"
-                                        and getattr(_r, "resolution_id", "") not in _ss_res_ids):
-                                    _ss_resolutions.append(_r)
-                        _resume_targets = targets if targets else ["Verilog"]
-                        _res_query = (
-                            st.session_state.get("user_target_query")
-                            or st.session_state.get("last_active_query")
-                            or results.get("user_query")
-                            or default_query_text
-                        )
-                        res_results = resume_design_flow_with_resolutions(
-                            results,
-                            _ss_resolutions,
-                            target_outputs=_resume_targets,
-                            user_query=_res_query,
-                            bypass_conflicts=bypass_conflicts,
-                            generation_mode=generation_mode,
-                            k_candidates=k_candidates,
-                            allow_partial=allow_partial
-                        )
-                        st.session_state["design_results"] = res_results
-                        if "outputs" in res_results:
-                            st.session_state["generated_rtl"] = res_results["outputs"]
-                        if "efs_ir" in res_results and res_results["efs_ir"]:
-                            st.session_state["resolved_efsir"] = res_results["efs_ir"]
-                        if "plan" in res_results:
-                            st.session_state["design_plan"] = res_results["plan"]
-                        st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+            # Render Evidence-Grounded Specification Gaps (Phase 3.2)
+            spec_gaps_raw = results.get("specification_gaps", [])
+            active_spec_gaps = [
+                SpecificationGap.from_dict(g) if isinstance(g, dict) else g
+                for g in spec_gaps_raw
+                if (g.get("resolution_status") if isinstance(g, dict) else getattr(g, "resolution_status", "")) not in ("APPROVED", "RESOLVED")
+                and (g.get("gap_id") if isinstance(g, dict) else getattr(g, "gap_id", "")) not in approved_cids
+            ]
+            if active_spec_gaps:
+                col_ghead, col_gbtn = st.columns([2, 1])
+                with col_ghead:
+                    st.markdown(f"### 🔍 Specification Gaps Requiring Human Decision ({len(active_spec_gaps)})")
+                with col_gbtn:
+                    if st.button("⚡ Approve All AI Proposals", key="btn_approve_all_gaps", type="primary", use_container_width=True):
+                        for g in active_spec_gaps:
+                            if g.proposals:
+                                p0 = g.proposals[0]
+                                _, res_ir = HITLSpecificationGapManager.execute_human_action(
+                                    gap=g,
+                                    action=HITLAction.APPROVE,
+                                    proposal_id=p0.proposal_id,
+                                    reviewer="human_engineer",
+                                    efs_ir=efs_ir
+                                )
+                                if res_ir and hasattr(res_ir, "resolutions") and res_ir.resolutions:
+                                    latest_r = res_ir.resolutions[-1]
+                                    if "approved_resolutions" not in st.session_state:
+                                        st.session_state["approved_resolutions"] = []
+                                    if not any(getattr(x, "resolution_id", "") == getattr(latest_r, "resolution_id", "") for x in st.session_state["approved_resolutions"]):
+                                        st.session_state["approved_resolutions"].append(latest_r)
+                                    st.session_state["resolved_efsir"] = res_ir
+                        st.success(f"✓ Approved all {len(active_spec_gaps)} specification gaps!")
                         st.rerun()
+
+                badge_colors = {
+                    "SOURCE_SUPPORTED": ("#10b981", "🟢 SOURCE_SUPPORTED"),
+                    "DERIVED": ("#3b82f6", "🔵 DERIVED"),
+                    "IMPLEMENTATION_CHOICE": ("#f59e0b", "⚙️ IMPLEMENTATION_CHOICE"),
+                    "UNSUPPORTED_ASSUMPTION": ("#ef4444", "🔴 UNSUPPORTED_ASSUMPTION"),
+                }
+                for s_idx, s_gap in enumerate(active_spec_gaps, 1):
+                    with st.container(border=True):
+                        st.markdown(f"#### 🔎 Gap #{s_idx}: `{s_gap.category.value if hasattr(s_gap.category, 'value') else s_gap.category}` — Entity: `{s_gap.affected_entity}`")
+                        col_g1, col_g2, col_g3 = st.columns(3)
+                        with col_g1:
+                            st.caption(f"**Severity:** `{s_gap.severity.value if hasattr(s_gap.severity, 'value') else s_gap.severity}`")
+                        with col_g2:
+                            st.caption(f"**Gap ID:** `{s_gap.gap_id}`")
+                        with col_g3:
+                            st.caption(f"**Blocking:** `{'Yes' if s_gap.blocks_generation else 'No'}`")
+
+                        st.markdown(f"**Description:** {s_gap.description}")
+                        if s_gap.source_evidence:
+                            st.caption(f"**Source Evidence:** {s_gap.source_evidence}")
+
+                        # Render Proposals with Evidence Grounding
+                        if s_gap.proposals:
+                            st.markdown("##### Evidence-Grounded AI Proposals")
+                            for p_idx, prop in enumerate(s_gap.proposals, 1):
+                                ev_cls = prop.evidence_classification.value if hasattr(prop.evidence_classification, "value") else str(prop.evidence_classification)
+                                bg_color, badge_label = badge_colors.get(ev_cls, ("#f59e0b", ev_cls))
+                                with st.container(border=True):
+                                    st.markdown(f"**Proposal #{p_idx}:** {prop.title} &nbsp; <span style='background-color:{bg_color}; color:#ffffff; padding:2px 8px; border-radius:4px; font-size:12px;'>{badge_label}</span>", unsafe_allow_html=True)
+                                    st.code(prop.proposed_resolution, language="verilog")
+                                    st.markdown(f"*{prop.detailed_behavioral_explanation}*")
+                                    if getattr(prop, "clarification_questions", None):
+                                        st.warning(f"❓ **Clarification Questions:** {'; '.join(prop.clarification_questions)}")
+                                    if getattr(prop, "potential_risks", None):
+                                        st.caption(f"⚠️ **Potential Risks:** {'; '.join(prop.potential_risks)}")
+
+                                    # Functional Actions
+                                    processed_actions = st.session_state.setdefault("processed_gap_action_ids", set())
+                                    col_act1, col_act2, col_act3, col_act4 = st.columns(4)
+                                    with col_act1:
+                                        btn_app_key = f"btn_app_{s_gap.gap_id}_{prop.proposal_id}"
+                                        if st.button("✓ Approve", key=btn_app_key, type="primary"):
+                                            act_sig = f"{s_gap.gap_id}:{prop.proposal_id}:APPROVE"
+                                            if act_sig not in processed_actions:
+                                                processed_actions.add(act_sig)
+                                                gap_res, res_ir = HITLSpecificationGapManager.execute_human_action(
+                                                    gap=s_gap,
+                                                    action=HITLAction.APPROVE,
+                                                    proposal_id=prop.proposal_id,
+                                                    reviewer="human_engineer",
+                                                    efs_ir=efs_ir
+                                                )
+                                                if res_ir and hasattr(res_ir, "resolutions") and res_ir.resolutions:
+                                                    latest_r = res_ir.resolutions[-1]
+                                                    if "approved_resolutions" not in st.session_state:
+                                                        st.session_state["approved_resolutions"] = []
+                                                    if not any(getattr(x, "resolution_id", "") == getattr(latest_r, "resolution_id", "") for x in st.session_state["approved_resolutions"]):
+                                                        st.session_state["approved_resolutions"].append(latest_r)
+                                                    st.session_state["resolved_efsir"] = res_ir
+                                                st.success(f"Approved proposal for '{s_gap.affected_entity}'!")
+                                                st.rerun()
+                                    with col_act2:
+                                        btn_rej_key = f"btn_rej_{s_gap.gap_id}_{prop.proposal_id}"
+                                        if st.button("✗ Reject", key=btn_rej_key):
+                                            act_sig = f"{s_gap.gap_id}:{prop.proposal_id}:REJECT"
+                                            if act_sig not in processed_actions:
+                                                processed_actions.add(act_sig)
+                                                HITLSpecificationGapManager.execute_human_action(
+                                                    gap=s_gap,
+                                                    action=HITLAction.REJECT,
+                                                    proposal_id=prop.proposal_id,
+                                                    reviewer="human_engineer",
+                                                    efs_ir=efs_ir
+                                                )
+                                                st.info(f"Rejected proposal for '{s_gap.affected_entity}'.")
+                                                st.rerun()
+                                    with col_act3:
+                                        btn_def_key = f"btn_def_{s_gap.gap_id}_{prop.proposal_id}"
+                                        if st.button("⏳ Defer", key=btn_def_key):
+                                            act_sig = f"{s_gap.gap_id}:{prop.proposal_id}:DEFER"
+                                            if act_sig not in processed_actions:
+                                                processed_actions.add(act_sig)
+                                                HITLSpecificationGapManager.execute_human_action(
+                                                    gap=s_gap,
+                                                    action=HITLAction.DEFER,
+                                                    reviewer="human_engineer",
+                                                    efs_ir=efs_ir
+                                                )
+                                                st.warning(f"Deferred gap '{s_gap.affected_entity}'.")
+                                                st.rerun()
+                                    with col_act4:
+                                        btn_alt_key = f"btn_alt_{s_gap.gap_id}_{prop.proposal_id}"
+                                        if st.button("🔄 Alternatives", key=btn_alt_key):
+                                            act_sig = f"{s_gap.gap_id}:{prop.proposal_id}:ALTERNATIVES"
+                                            if act_sig not in processed_actions:
+                                                processed_actions.add(act_sig)
+                                                HITLSpecificationGapManager.execute_human_action(
+                                                    gap=s_gap,
+                                                    action=HITLAction.REQUEST_ALTERNATIVES,
+                                                    proposal_id=prop.proposal_id,
+                                                    reviewer="human_engineer",
+                                                    efs_ir=efs_ir
+                                                )
+                                                st.info(f"Generating alternative proposals for '{s_gap.affected_entity}'...")
+                                                st.rerun()
+
+                                    # Edit Proposal Expander
+                                    with st.expander("✏️ Edit Behavior Before Authorizing", expanded=False):
+                                        custom_expr = st.text_area(
+                                            "Custom RTL / Behavioral Expression",
+                                            value=prop.proposed_resolution,
+                                            key=f"custom_edit_{s_gap.gap_id}_{prop.proposal_id}",
+                                            height=80
+                                        )
+                                        # Live syntax check
+                                        open_paren = custom_expr.count("(") == custom_expr.count(")")
+                                        open_bracket = custom_expr.count("[") == custom_expr.count("]")
+                                        open_brace = custom_expr.count("{") == custom_expr.count("}")
+                                        syntax_valid = open_paren and open_bracket and open_brace and bool(custom_expr.strip())
+                                        if syntax_valid:
+                                            st.caption("🟢 Syntax Valid (balanced parentheses, brackets, and braces)")
+                                        else:
+                                            st.caption("⚠️ Potential syntax issue: unbalanced `()`, `[]`, or `{}`")
+
+                                        if st.button("Authorize Edited Proposal", key=f"btn_edit_auth_{s_gap.gap_id}_{prop.proposal_id}", type="secondary"):
+                                            act_sig = f"{s_gap.gap_id}:{prop.proposal_id}:EDIT:{custom_expr.strip()}"
+                                            if act_sig not in processed_actions:
+                                                processed_actions.add(act_sig)
+                                                gap_res, res_ir = HITLSpecificationGapManager.execute_human_action(
+                                                    gap=s_gap,
+                                                    action=HITLAction.EDIT,
+                                                    proposal_id=prop.proposal_id,
+                                                    edited_resolution=custom_expr.strip(),
+                                                    reviewer="human_engineer",
+                                                    efs_ir=efs_ir
+                                                )
+                                                if res_ir and hasattr(res_ir, "resolutions") and res_ir.resolutions:
+                                                    latest_r = res_ir.resolutions[-1]
+                                                    if "approved_resolutions" not in st.session_state:
+                                                        st.session_state["approved_resolutions"] = []
+                                                    if not any(getattr(x, "resolution_id", "") == getattr(latest_r, "resolution_id", "") for x in st.session_state["approved_resolutions"]):
+                                                        st.session_state["approved_resolutions"].append(latest_r)
+                                                    st.session_state["resolved_efsir"] = res_ir
+                                                st.success(f"Authorized custom edited proposal for '{s_gap.affected_entity}'!")
+                                                st.rerun()
+
+                                    # Clarification Expander
+                                    with st.expander("❓ Provide Clarification / Specification Answer", expanded=False):
+                                        clarif_input = st.text_input(
+                                            "Enter clarification details or specification guidance",
+                                            key=f"clarif_in_{s_gap.gap_id}_{prop.proposal_id}"
+                                        )
+                                        if st.button("Submit Clarification", key=f"btn_clarif_sub_{s_gap.gap_id}_{prop.proposal_id}"):
+                                            if clarif_input.strip():
+                                                act_sig = f"{s_gap.gap_id}:{prop.proposal_id}:CLARIF:{clarif_input.strip()}"
+                                                if act_sig not in processed_actions:
+                                                    processed_actions.add(act_sig)
+                                                    HITLSpecificationGapManager.execute_human_action(
+                                                        gap=s_gap,
+                                                        action=HITLAction.REQUEST_CLARIFICATION,
+                                                        proposal_id=prop.proposal_id,
+                                                        rationale=clarif_input.strip(),
+                                                        reviewer="human_engineer",
+                                                        efs_ir=efs_ir
+                                                    )
+                                                    st.success(f"Recorded clarification for '{s_gap.affected_entity}' and synthesised updated proposals!")
+                                                    st.rerun()
+                                            else:
+                                                st.warning("Please provide clarification text before submitting.")
+
+            if unresolved_conflicts:
+                st.warning(f"### ⚠️ Human Decision Required ({len(unresolved_conflicts)} Specification Conflict{'s' if len(unresolved_conflicts) != 1 else ''} pending)")
+                st.info("The design pipeline identified hardware specification conflicts or ambiguities that require a design decision. The pipeline is safely paused at this decision point.")
 
             if unresolved_conflicts:
                 for conf_idx, conf in enumerate(unresolved_conflicts, 1):
@@ -721,9 +936,15 @@ def render() -> None:
                                 st.text_input("Current Value:", value=str(current_val_show), disabled=True, key=f"curr_val_{conf.conflict_id}")
 
                             effective_prop = conf.property or ("opcode" if conf.type == "DUPLICATE_OPCODE" else "value")
-                            if effective_prop in ("transition_condition", "fsm_definition"):
+                            if effective_prop in ("fsm", "fsm_definition", "fsm_states", "fsm_transitions"):
+                                prop_placeholder = "e.g. IDLE -> FETCH on start == 1'b1, FETCH -> DECODE on axi_rvalid && axi_rready, DECODE -> EXECUTE on 1'b1, EXECUTE -> DONE on exec_done, DONE -> IDLE on 1'b1"
+                                st.info("💡 **FSM Definition Guidance:** Enter state transitions and conditions in format: `IDLE -> FETCH on start == 1'b1, FETCH -> EXECUTE on 1'b1, EXECUTE -> DONE on exec_done, DONE -> IDLE on 1'b1`.")
+                            elif effective_prop in ("transition_condition",):
                                 prop_placeholder = "e.g. start == 1'b1, req == 1'b1, timer_cnt >= 4'd4"
                                 st.info("💡 **FSM Condition Guidance:** Enter an explicit Boolean condition (e.g. `start == 1'b1`, `timer_cnt >= 4'd10`, `data_valid && ready`) to define the state transition.")
+                            elif effective_prop in ("driver_expression", "driving_equation", "missing_signal_driver"):
+                                prop_placeholder = "e.g. assign done = (state == DONE); or assign error = 1'b0;"
+                                st.info("💡 **Signal Driver Guidance:** Enter an explicit continuous assignment equation or driver (e.g. `assign done = 1'b0;`, `(current_state == DONE)`).")
                             elif effective_prop == "direction":
                                 prop_placeholder = "e.g. input, output, or inout"
                             elif effective_prop == "width":
@@ -802,32 +1023,86 @@ def render() -> None:
                                             st.success(f"✓ Conflict '{conf.title or conf.conflict_id}' resolved. ({len(remaining)} pending)")
                                             st.rerun()
                                         else:
-                                            with st.spinner("All conflicts resolved! Resuming PlantUML and RTL generation..."):
-                                                from core.agents.orchestrator import resume_design_flow_with_resolutions
-                                                _res_query = (
-                                                    st.session_state.get("user_target_query")
-                                                    or st.session_state.get("last_active_query")
-                                                    or results.get("user_query")
-                                                    or default_query_text
-                                                )
-                                                res_results = resume_design_flow_with_resolutions(
-                                                    results,
-                                                    st.session_state["approved_resolutions"],
-                                                    target_outputs=targets,
-                                                    user_query=_res_query,
-                                                    generation_mode=generation_mode,
-                                                    k_candidates=k_candidates,
-                                                    allow_partial=allow_partial
-                                                )
-                                                st.session_state["design_results"] = res_results
-                                                if "outputs" in res_results:
-                                                    st.session_state["generated_rtl"] = res_results["outputs"]
-                                                if "efs_ir" in res_results and res_results["efs_ir"]:
-                                                    st.session_state["resolved_efsir"] = res_results["efs_ir"]
-                                                if "plan" in res_results:
-                                                    st.session_state["design_plan"] = res_results["plan"]
-                                                st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                                            results["conflicts"] = []
+                                            st.session_state["design_results"] = results
+                                            if active_spec_gaps:
+                                                st.success(f"✓ Conflict '{conf.title or conf.conflict_id}' resolved. Please review and authorize the remaining specification gaps above.")
                                                 st.rerun()
+                                            else:
+                                                with st.spinner("All issues resolved! Resuming PlantUML and RTL generation..."):
+                                                    from core.agents.orchestrator import resume_design_flow_with_resolutions
+                                                    _res_query = (
+                                                        st.session_state.get("user_target_query")
+                                                        or st.session_state.get("last_active_query")
+                                                        or results.get("user_query")
+                                                        or default_query_text
+                                                    )
+                                                    res_results = resume_design_flow_with_resolutions(
+                                                        results,
+                                                        st.session_state["approved_resolutions"],
+                                                        target_outputs=targets,
+                                                        user_query=_res_query,
+                                                        generation_mode=generation_mode,
+                                                        k_candidates=k_candidates,
+                                                        allow_partial=allow_partial
+                                                    )
+                                                    st.session_state["design_results"] = res_results
+                                                    if "outputs" in res_results:
+                                                        st.session_state["generated_rtl"] = res_results["outputs"]
+                                                    if "efs_ir" in res_results and res_results["efs_ir"]:
+                                                        st.session_state["resolved_efsir"] = res_results["efs_ir"]
+                                                    if "plan" in res_results:
+                                                        st.session_state["design_plan"] = res_results["plan"]
+                                                    st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                                                    st.rerun()
+
+            # HITL Continuation Gate: Render Resume button ONLY when ALL conflicts AND gaps are resolved
+            has_pending_decisions = bool(unresolved_conflicts) or bool(active_spec_gaps)
+            if not has_pending_decisions:
+                st.success("### ✓ All specification issues and conflicts resolved.")
+                if st.button("▶ Resume Design & RTL Generation", type="primary", key="btn_resume_generation"):
+                    with st.spinner("Resuming PlantUML and RTL generation..."):
+                        from core.agents.orchestrator import resume_design_flow_with_resolutions
+                        _ss_resolutions = list(st.session_state.get("approved_resolutions", []))
+                        _ss_res_ids = {getattr(r, "resolution_id", "") for r in _ss_resolutions}
+                        if efs_ir and hasattr(efs_ir, "resolutions"):
+                            for _r in efs_ir.resolutions:
+                                if (getattr(_r, "approval_status", "") == "APPROVED"
+                                        and getattr(_r, "resolution_id", "") not in _ss_res_ids):
+                                    _ss_resolutions.append(_r)
+                        _resume_targets = targets if targets else ["Verilog"]
+                        _res_query = (
+                            st.session_state.get("user_target_query")
+                            or st.session_state.get("last_active_query")
+                            or results.get("user_query")
+                            or default_query_text
+                        )
+                        res_results = resume_design_flow_with_resolutions(
+                            results,
+                            _ss_resolutions,
+                            target_outputs=_resume_targets,
+                            user_query=_res_query,
+                            bypass_conflicts=bypass_conflicts,
+                            generation_mode=generation_mode,
+                            k_candidates=k_candidates,
+                            allow_partial=allow_partial
+                        )
+                        st.session_state["design_results"] = res_results
+                        if "outputs" in res_results:
+                            st.session_state["generated_rtl"] = res_results["outputs"]
+                        if "efs_ir" in res_results and res_results["efs_ir"]:
+                            st.session_state["resolved_efsir"] = res_results["efs_ir"]
+                        if "plan" in res_results:
+                            st.session_state["design_plan"] = res_results["plan"]
+                        st.session_state["generation_status"] = res_results.get("status", "SUCCESS")
+                        st.rerun()
+            else:
+                pending_items = []
+                if unresolved_conflicts:
+                    pending_items.append(f"{len(unresolved_conflicts)} hardware conflict{'s' if len(unresolved_conflicts) != 1 else ''}")
+                if active_spec_gaps:
+                    pending_items.append(f"{len(active_spec_gaps)} specification gap{'s' if len(active_spec_gaps) != 1 else ''}")
+                st.info(f"⏳ **Pending Decisions:** Please review and authorize the {' and '.join(pending_items)} above to proceed.")
 
             # Resolution Provenance & Audit Log
             if st.session_state.get("approved_resolutions"):

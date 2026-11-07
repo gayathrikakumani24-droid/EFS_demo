@@ -33,6 +33,8 @@ class ResolvedDependencies:
     constraints: List[EFSConstraint] = field(default_factory=list)
     timing_rules: List[EFSTimingRule] = field(default_factory=list)
     protocol_rules: List[EFSProtocolRule] = field(default_factory=list)
+    dependency_classifications: Dict[str, str] = field(default_factory=dict)
+    unresolved_dependencies: List[Dict[str, Any]] = field(default_factory=list)
     depth_used: int = 1
 
 
@@ -121,62 +123,111 @@ def resolve_dependencies(
 
     comp_name_lower = target_comp.name.lower()
     comp_type_lower = (getattr(target_comp, "type", "") or "").lower()
-    is_decoder = "decoder" in comp_name_lower or "decoder" in comp_type_lower
 
-    # Sub-Module Bus Isolation Rule: Internal compute/decoder sub-blocks must not inherit external protocol buses
-    if not is_top_level and not any(k in comp_name_lower for k in ("axi", "dma", "bus", "memory", "mem_iface", "bridge")):
-        signals = [s for s in signals if not any(s.name.lower().startswith(pfx) for pfx in ("axi_", "ahb_", "apb_", "wb_", "dma_"))]
+    # Track structural dependency classifications
+    dep_classifications: Dict[str, str] = {}
+    unresolved_deps: List[Dict[str, Any]] = []
 
-    # Gather registers owned by target
+    for s in signals:
+        if s.owner == target_comp.component_id or (s.owner and s.owner.lower() == comp_name_lower):
+            dep_classifications[s.signal_id] = "DIRECT_OWNED"
+        elif s.interface and s.interface in interface_ids:
+            dep_classifications[s.signal_id] = "INTERFACE_CONNECTED"
+        elif s.semantic_role in ("clock", "reset"):
+            dep_classifications[s.signal_id] = "SHARED_RESOURCE"
+        else:
+            dep_classifications[s.signal_id] = "EXTERNAL_DEPENDENCY"
+
+    # Identify unresolved interface signals (declared in interface but missing from IR signals)
+    known_sig_ids = {s.signal_id for s in efs_ir.signals}
+    for ref_id in interface_signal_ids:
+        if ref_id not in known_sig_ids and not any(s.name.lower() == ref_id.lower() for s in efs_ir.signals):
+            unresolved_deps.append({
+                "type": "MISSING_INTERFACE_SIGNAL",
+                "reference": ref_id,
+                "target_component": target_comp.component_id,
+                "severity": "WARNING"
+            })
+
+    # Gather registers owned by target (metadata-driven, never suppressed by component type)
     registers: List[EFSRegister] = []
-    if not is_decoder:
-        for reg in efs_ir.registers:
-            reg_owner = (reg.owner or "").lower()
-            if (reg.owner == target_comp.component_id or
-                reg.owner == target_comp.name or
-                reg_owner == target_comp.component_id.lower() or
-                reg_owner == target_comp.name.lower() or
-                target_comp.name.lower() in reg.name.lower()):
-                registers.append(reg)
-        if not registers and is_top_level and efs_ir.registers:
-            registers = list(efs_ir.registers)
+    for reg in (efs_ir.registers or []):
+        reg_owner = (reg.owner or "").lower()
+        if (reg.owner == target_comp.component_id or
+            reg.owner == target_comp.name or
+            reg_owner == target_comp.component_id.lower() or
+            reg_owner == comp_name_lower or
+            (is_top_level and not reg.owner)):
+            registers.append(reg)
+            dep_classifications[reg.register_id] = "DIRECT_OWNED"
+    if not registers and is_top_level and efs_ir.registers:
+        registers = list(efs_ir.registers)
+        for r in registers:
+            dep_classifications.setdefault(r.register_id, "DIRECT_OWNED")
 
-    # Gather state machines (FSMs) for target
+    # Gather state machines (FSMs) for target (metadata-driven, never suppressed by component type)
     fsms: List[EFSFSM] = []
-    if not is_decoder:
-        for fsm in efs_ir.fsms:
-            fsm_owner = (getattr(fsm, "owner", "") or getattr(fsm, "component_id", "") or "").lower()
-            if (fsm_owner == target_comp.component_id.lower() or
-                fsm_owner == target_comp.name.lower() or
-                target_comp.name.lower() in fsm.name.lower()):
-                fsms.append(fsm)
-        if not fsms and efs_ir.fsms and is_top_level:
-            fsms = list(efs_ir.fsms)
+    for fsm in (efs_ir.fsms or []):
+        fsm_owner = (getattr(fsm, "owner", "") or getattr(fsm, "component_id", "") or "").lower()
+        if (fsm_owner == target_comp.component_id.lower() or
+            fsm_owner == comp_name_lower or
+            (is_top_level and not fsm_owner)):
+            fsms.append(fsm)
+            dep_classifications[getattr(fsm, "fsm_id", fsm.name)] = "DIRECT_OWNED"
+    if not fsms and efs_ir.fsms and is_top_level:
+        fsms = list(efs_ir.fsms)
+        for f in fsms:
+            dep_classifications.setdefault(getattr(f, "fsm_id", f.name), "DIRECT_OWNED")
 
     # Gather transactions relevant to target
     transactions: List[EFSTransaction] = []
-    if not is_decoder:
-        for tx in efs_ir.transactions:
-            if (tx.initiator == target_comp.component_id or
-                tx.target == target_comp.component_id or
-                target_comp.name.lower() in tx.name.lower() or
-                is_top_level):
-                transactions.append(tx)
+    for tx in (efs_ir.transactions or []):
+        if (tx.initiator == target_comp.component_id or
+            tx.target == target_comp.component_id or
+            is_top_level):
+            transactions.append(tx)
 
-    # Gather timing rules, constraints, and protocol rules
-    constraints = list(efs_ir.constraints)
-    timing_rules = list(efs_ir.timing_rules)
-    protocol_rules = list(efs_ir.protocol_rules)
+    # Gather timing rules, constraints, and protocol rules (scoped by target relevance)
+    target_sig_ids = {s.signal_id for s in signals} | {s.name.lower() for s in signals}
+    target_iface_ids = {i.interface_id for i in interfaces} | {i.name.lower() for i in interfaces}
 
-    # 2. Submodule / Dependency traversal (depth 1)
-    for comp in efs_ir.components:
+    constraints: List[EFSConstraint] = []
+    for c in (efs_ir.constraints or []):
+        c_comp = getattr(c, "component", "") or getattr(c, "component_id", "")
+        c_scope = getattr(c, "scope", "")
+        c_sigs = {s.lower() for s in (getattr(c, "signals", []) or [])}
+        if is_top_level or c_comp in (target_comp.component_id, target_comp.name) or (c_sigs & target_sig_ids) or c_scope in ("global", "top"):
+            constraints.append(c)
+
+    timing_rules: List[EFSTimingRule] = []
+    for tr in (efs_ir.timing_rules or []):
+        tr_comp = getattr(tr, "component", "") or getattr(tr, "component_id", "")
+        tr_sigs = {s.lower() for s in (getattr(tr, "signals", []) or [])}
+        if is_top_level or tr_comp in (target_comp.component_id, target_comp.name) or (tr_sigs & target_sig_ids):
+            timing_rules.append(tr)
+
+    protocol_rules: List[EFSProtocolRule] = []
+    for pr in (efs_ir.protocol_rules or []):
+        pr_iface = (getattr(pr, "interface", "") or getattr(pr, "protocol", "")).lower()
+        if is_top_level or pr_iface in target_iface_ids or any(ti in pr_iface for ti in target_iface_ids):
+            protocol_rules.append(pr)
+
+    # 2. Submodule / Hierarchy traversal (metadata-driven parent-child relationships)
+    subcomp_ids = set(getattr(target_comp, "subcomponents", []) or [])
+    for comp in (efs_ir.components or []):
         if comp.component_id == target_comp.component_id:
             continue
-        if (comp.name.lower() in target_comp.description.lower() or
-            target_comp.name.lower() in comp.description.lower()):
+        is_submodule = (
+            comp.component_id in subcomp_ids or
+            comp.name in subcomp_ids or
+            getattr(comp, "parent_id", None) == target_comp.component_id or
+            getattr(comp, "parent_id", None) == target_comp.name
+        )
+        if is_submodule:
             direct_submodules.append(comp)
             resolved_comp_ids.add(comp.component_id)
             resolved_comp_names.add(comp.name.lower())
+            dep_classifications[comp.component_id] = "CHILD_SUBMODULE"
 
     # 3. Neo4j / Knowledge Graph Traversal
     try:
@@ -232,5 +283,7 @@ def resolve_dependencies(
         constraints=constraints,
         timing_rules=timing_rules,
         protocol_rules=protocol_rules,
+        dependency_classifications=dep_classifications,
+        unresolved_dependencies=unresolved_deps,
         depth_used=effective_depth
     )

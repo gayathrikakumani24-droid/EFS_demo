@@ -141,6 +141,13 @@ def resolve_target(target_name: str, efs_ir: EFSIR) -> TargetResolutionResult:
     if len(alias_matches) == 1:
         logger.info(f"Target '{truncate_for_log(raw_target, 60)}' resolved via EXACT ALIAS match -> {alias_matches[0].name}")
         return TargetResolutionResult(status="SUCCESS", target_component=alias_matches[0], match_method="exact_alias")
+    elif len(alias_matches) > 1:
+        logger.warning(f"Target '{truncate_for_log(raw_target, 60)}' matches multiple components via exact alias: {[c.name for c in alias_matches]}")
+        return TargetResolutionResult(
+            status="AMBIGUOUS_TARGET",
+            matching_components=alias_matches,
+            error_message=f"Ambiguous target '{truncate_for_log(raw_target, 60)}': multiple components share exact alias ({', '.join([c.name for c in alias_matches])}). User clarification required."
+        )
 
     # 3. Normalized Canonical Name Match
     norm_matches = [c for c in components if normalize_target_name(c.name) == target_norm]
@@ -164,6 +171,13 @@ def resolve_target(target_name: str, efs_ir: EFSIR) -> TargetResolutionResult:
     if len(norm_alias_matches) == 1:
         logger.info(f"Target '{truncate_for_log(raw_target, 60)}' resolved via NORMALIZED ALIAS match -> {norm_alias_matches[0].name}")
         return TargetResolutionResult(status="SUCCESS", target_component=norm_alias_matches[0], match_method="normalized_alias")
+    elif len(norm_alias_matches) > 1:
+        logger.warning(f"Target '{truncate_for_log(raw_target, 60)}' matches multiple components via normalized alias: {[c.name for c in norm_alias_matches]}")
+        return TargetResolutionResult(
+            status="AMBIGUOUS_TARGET",
+            matching_components=norm_alias_matches,
+            error_message=f"Ambiguous target '{truncate_for_log(raw_target, 60)}': multiple components share normalized alias ({', '.join([c.name for c in norm_alias_matches])}). User clarification required."
+        )
 
     # 4b. Compound Canonical Name Sub-Part Match (e.g. "Control Processor and Instruction Decoder" matches "instruction_decoder")
     compound_matches = []
@@ -289,40 +303,27 @@ def resolve_target(target_name: str, efs_ir: EFSIR) -> TargetResolutionResult:
                 logger.info(f"Target '{truncate_for_log(raw_target, 60)}' matched EFS IR FSM '{fsm_name}' -> {parent_comp.name}")
                 return TargetResolutionResult(status="SUCCESS", target_component=parent_comp, match_method="sub_entity_fsm")
 
-    # 7b. Sub-Entity Contract Derivation: ISA / Command Decoder & Parser
-    # If the design defines instruction/opcode contracts and the target is a decoder/parser/dispatcher,
-    # resolve to a focused sub_module component linked to the parent control unit / top level.
-    if any(k in target_norm for k in ("decoder", "parser", "dispatch", "unpack")):
-        has_isa = bool(
-            getattr(efs_ir, "opcodes", None) or 
-            getattr(efs_ir, "instructions", None) or 
-            getattr(efs_ir, "instruction_formats", None)
-        )
-        if has_isa:
-            parent_comp = None
-            for c in components:
-                c_norm = normalize_target_name(c.name)
-                if any(k in c_norm for k in ("controlprocessor", "controlunit", "processor", "core", "controller")):
-                    parent_comp = c
-                    break
-            if not parent_comp:
-                parent_comp = get_top_component()
-
+    # 7b. Sub-Entity Contract Derivation: Architecture-Agnostic Sub-Module Resolution
+    # If the target is explicitly referenced in parent subcomponents, resolve to that focused sub_module.
+    for c in components:
+        subcomps = [normalize_target_name(sc) for sc in getattr(c, "subcomponents", []) or []]
+        if target_norm in subcomps:
             sub_comp = EFSComponent(
                 component_id=f"COMP_{target_norm.upper()}",
                 name=raw_target,
                 type="sub_module",
-                description=f"Sub-module derived from design instruction/command specification: {raw_target}",
-                clock_domain=getattr(parent_comp, "clock_domain", "clk") if parent_comp else "clk",
-                reset_domain=getattr(parent_comp, "reset_domain", "rst_n") if parent_comp else "rst_n"
+                description=f"Sub-module derived from parent '{c.name}' subcomponents: {raw_target}",
+                clock_domain=getattr(c, "clock_domain", "clk") or "clk",
+                reset_domain=getattr(c, "reset_domain", "rst_n") or "rst_n",
+                parent_id=getattr(c, "component_id", None)
             )
             if not any(comp.component_id == sub_comp.component_id for comp in components):
                 components.append(sub_comp)
-            logger.info(f"Target '{truncate_for_log(raw_target, 60)}' resolved via ISA CONTRACT SUB-MODULE -> {sub_comp.name} (parent: {parent_comp.name if parent_comp else 'None'})")
+            logger.info(f"Target '{truncate_for_log(raw_target, 60)}' resolved via PARENT SUBCOMPONENT DECLARATION -> {sub_comp.name} (parent: {c.name})")
             return TargetResolutionResult(
                 status="SUCCESS",
                 target_component=sub_comp,
-                match_method="isa_submodule_contract"
+                match_method="contract_submodule"
             )
 
     # 7c. Signal / Register Owner Resolution
@@ -353,8 +354,16 @@ def resolve_target(target_name: str, efs_ir: EFSIR) -> TargetResolutionResult:
     if fuzzy_matches:
         fuzzy_matches.sort(key=lambda x: x[0], reverse=True)
         best_score, best_comp = fuzzy_matches[0]
-        # Only resolve if single clear top candidate or unambiguous top score
-        if len(fuzzy_matches) == 1 or (len(fuzzy_matches) > 1 and fuzzy_matches[0][0] > fuzzy_matches[1][0] + 0.05):
+        # Ambiguity check: if multiple components have close top scores (within 0.04), do not pick arbitrarily
+        if len(fuzzy_matches) > 1 and abs(fuzzy_matches[0][0] - fuzzy_matches[1][0]) <= 0.04:
+            ambiguous_candidates = [c for score, c in fuzzy_matches if score >= best_score - 0.04]
+            logger.warning(f"Target '{truncate_for_log(raw_target, 60)}' is ambiguous under fuzzy matching: {[c.name for c in ambiguous_candidates]}")
+            return TargetResolutionResult(
+                status="AMBIGUOUS_TARGET",
+                matching_components=ambiguous_candidates,
+                error_message=f"Ambiguous target '{truncate_for_log(raw_target, 60)}': multiple candidates match with close similarity ({', '.join([c.name for c in ambiguous_candidates])}). User clarification required."
+            )
+        elif len(fuzzy_matches) == 1 or fuzzy_matches[0][0] > fuzzy_matches[1][0] + 0.04:
             logger.info(f"Target '{truncate_for_log(raw_target, 60)}' resolved via CONTROLLED FUZZY match (ratio={best_score:.2f}) -> {best_comp.name}")
             return TargetResolutionResult(status="SUCCESS", target_component=best_comp, match_method="controlled_fuzzy")
 

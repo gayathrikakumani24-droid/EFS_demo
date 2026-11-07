@@ -152,6 +152,110 @@ def run_design_flow(
         completed_model = inference_engine.infer_and_complete()
         efs_ir = completed_model.efs_ir
 
+        # Query-driven Scoped EFS IR Compilation & Protocol Context Integration
+        try:
+            from core.retrieval.query_interpreter import interpret_query
+            from core.retrieval.scope_resolver import resolve_component_scope
+            from core.compiler.scoped_efs_compiler import ScopedEFSCompiler
+
+            top_design_name = getattr(efs_ir.metadata, "design_name", "TopDesign")
+            scoped_intent = interpret_query(query_cmd, default_design_name=top_design_name)
+
+            doc_ir_to_pass_init = None
+            if isinstance(req_model, dict):
+                doc_ir_to_pass_init = req_model.get("doc_ir")
+                if not doc_ir_to_pass_init and "_raw_req_ir" in req_model:
+                    raw_req = req_model["_raw_req_ir"]
+                    if isinstance(raw_req, dict) and "doc_ir" in raw_req:
+                        from core.requirement_ir.models import DocumentIR
+                        raw_d = raw_req["doc_ir"]
+                        doc_ir_to_pass_init = DocumentIR.from_dict(raw_d) if isinstance(raw_d, dict) else raw_d
+            else:
+                doc_ir_to_pass_init = getattr(req_model, "doc_ir", None)
+
+            raw_req_ir = None
+            if isinstance(req_model, dict) and "_raw_req_ir" in req_model:
+                raw_req_ir = req_model["_raw_req_ir"]
+
+            active_doc_id = None
+            try:
+                from core.registry import get_registry
+                active_doc_id = get_registry().active_doc_id
+            except Exception:
+                pass
+
+            resolved_scope = resolve_component_scope(
+                target_name=scoped_intent.target_component or top_design_name,
+                scope_type=scoped_intent.requested_scope,
+                req_ir=raw_req_ir,
+                document_id=active_doc_id
+            )
+
+            scoped_compiler = ScopedEFSCompiler(
+                intent=scoped_intent,
+                scope=resolved_scope,
+                protocol_rules=protocol_rules,
+                design_spec=design_spec,
+                generation_run_id=generation_run_id,
+                doc_ir=doc_ir_to_pass_init
+            )
+            scoped_efs_ir = scoped_compiler.compile()
+
+            # Integrate scoped components, signals, opcodes, and protocol rules into canonical EFS IR
+            if scoped_efs_ir.components:
+                from core.normalization.target_normalizer import normalize_target_name
+                existing_comp_norms = {normalize_target_name(c.name) for c in (efs_ir.components or [])}
+                for comp in scoped_efs_ir.components:
+                    if normalize_target_name(comp.name) not in existing_comp_norms:
+                        efs_ir.components.append(comp)
+                        existing_comp_norms.add(normalize_target_name(comp.name))
+
+            if scoped_efs_ir.signals:
+                existing_sig_names = {s.name.lower() for s in (efs_ir.signals or [])}
+                for sig in scoped_efs_ir.signals:
+                    if sig.name.lower() not in existing_sig_names:
+                        efs_ir.signals.append(sig)
+                        existing_sig_names.add(sig.name.lower())
+
+            if scoped_efs_ir.registers:
+                existing_reg_names = {r.name.lower() for r in (efs_ir.registers or [])}
+                for reg in scoped_efs_ir.registers:
+                    if reg.name.lower() not in existing_reg_names:
+                        efs_ir.registers.append(reg)
+                        existing_reg_names.add(reg.name.lower())
+
+            if scoped_efs_ir.opcodes:
+                if not hasattr(efs_ir, "opcodes") or efs_ir.opcodes is None:
+                    efs_ir.opcodes = []
+                existing_opcs = {getattr(o, "mnemonic", "").lower() for o in efs_ir.opcodes}
+                for opc in scoped_efs_ir.opcodes:
+                    if getattr(opc, "mnemonic", "").lower() not in existing_opcs:
+                        efs_ir.opcodes.append(opc)
+                        existing_opcs.add(getattr(opc, "mnemonic", "").lower())
+
+            if scoped_efs_ir.instructions:
+                if not hasattr(efs_ir, "instructions") or efs_ir.instructions is None:
+                    efs_ir.instructions = []
+                existing_insts = {getattr(i, "name", "").lower() for i in efs_ir.instructions}
+                for inst in scoped_efs_ir.instructions:
+                    if getattr(inst, "name", "").lower() not in existing_insts:
+                        efs_ir.instructions.append(inst)
+                        existing_insts.add(getattr(inst, "name", "").lower())
+
+            if scoped_efs_ir.protocol_rules:
+                existing_pids = {r.rule_id for r in getattr(efs_ir, "protocol_rules", [])}
+                for pr in scoped_efs_ir.protocol_rules:
+                    if pr.rule_id not in existing_pids:
+                        efs_ir.protocol_rules.append(pr)
+            if hasattr(scoped_efs_ir, "protocol_context") and scoped_efs_ir.protocol_context:
+                if not getattr(efs_ir, "protocol_context", None):
+                    efs_ir.protocol_context = scoped_efs_ir.protocol_context
+                else:
+                    efs_ir.protocol_context.update(scoped_efs_ir.protocol_context)
+            logger.info("Integrated query-driven scoped components, signals, opcodes, and protocol context into EFS IR.")
+        except Exception as e_scope:
+            logger.warning(f"Scoped EFS compiler notice: {e_scope}")
+
         curr_docs = [d.name if hasattr(d, "name") else str(d) for d in (efs_ir.metadata.source_documents or [])]
         curr_comps = [c.name for c in (efs_ir.components or [])]
         curr_rels = [
@@ -447,11 +551,19 @@ def run_design_flow(
 
         # Check if genuine specification conflicts or missing requirements require human decision
         if efs_ir is not None:
+            pipe_spec_gaps = pipe_res.get("specification_gaps", []) if isinstance(pipe_res, dict) else []
+            pipe_gap_entities = {
+                (g.get("affected_entity", "").lower() if isinstance(g, dict) else getattr(g, "affected_entity", "").lower())
+                for g in pipe_spec_gaps
+            }
             from core.verification.conflict_resolution_engine import ConflictResolutionEngine
             # Parse any issues from code if not already in efs_ir.conflicts
             parsed_conflicts = ConflictResolutionEngine.parse_specification_issues_to_conflicts(code, efs_ir=efs_ir)
             existing_keys = {getattr(c, "semantic_key", "") for c in getattr(efs_ir, "conflicts", [])}
             for pc in parsed_conflicts:
+                ent_name = (pc.entities[0] if pc.entities else "").lower()
+                if ent_name in pipe_gap_entities:
+                    continue
                 k = pc.semantic_key or ConflictResolutionEngine.compute_semantic_key(pc)
                 if k not in existing_keys:
                     efs_ir.conflicts.append(pc)
@@ -465,19 +577,22 @@ def run_design_flow(
                 and getattr(c, "status", "") != "RESOLVED"
             ]
 
-            if unresolved_blocking and not bypass_conflicts:
-                logger.warning(f"RTL Generation paused: {len(unresolved_blocking)} specification conflict(s) require human clarification before Stage 2 RTL generation.")
+            if (unresolved_blocking or pipe_spec_gaps) and not bypass_conflicts:
+                logger.warning(f"RTL Generation paused: {len(unresolved_blocking)} specification conflict(s) and {len(pipe_spec_gaps)} gap(s) require human clarification before Stage 2 RTL generation.")
                 log_state_transition(WorkflowState.RTL_VALIDATION, WorkflowState.HUMAN_RESOLUTION_REQUIRED)
                 log_generation_skipped("specification_conflicts_require_human_resolution")
                 proposals_map = {}
                 for conf in unresolved_blocking:
                     proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, efs_ir)
+                if isinstance(pipe_res, dict) and "proposals" in pipe_res and isinstance(pipe_res["proposals"], dict):
+                    proposals_map.update(pipe_res["proposals"])
 
                 pipe_plan = pipe_res.get("plan") if isinstance(pipe_res, dict) else None
                 pipe_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
+                chosen_status = "AWAITING_HITL" if (isinstance(pipe_res, dict) and pipe_res.get("status") == "AWAITING_HITL") else "AWAITING_HUMAN_DECISION"
                 return {
-                    "status": "AWAITING_HUMAN_DECISION",
-                    "pipeline_state": "AWAITING_HUMAN_DECISION",
+                    "status": chosen_status,
+                    "pipeline_state": chosen_status,
                     "workflow_state": WorkflowState.HUMAN_RESOLUTION_REQUIRED.value,
                     "requires_human_decision": True,
                     "is_blocked": False,
@@ -493,6 +608,7 @@ def run_design_flow(
                     "context_pack": context_pack,
                     "efs_ir_validation_issues": validation_issues,
                     "conflicts": unresolved_blocking,
+                    "specification_gaps": pipe_spec_gaps,
                     "proposals": proposals_map,
                     "outputs": {
                         primary_target: {
@@ -505,6 +621,9 @@ def run_design_flow(
                                 "failed_checks": [
                                     {"check_name": "Specification Conflict", "violation": c.description}
                                     for c in unresolved_blocking
+                                ] + [
+                                    {"check_name": "Specification Gap", "violation": g.get("description", "") if isinstance(g, dict) else getattr(g, "description", "")}
+                                    for g in pipe_spec_gaps
                                 ]
                             },
                             "history": [],
@@ -520,7 +639,7 @@ def run_design_flow(
                         "primary_target": primary_target,
                         "compliance_score": 0,
                         "pipeline_flow": "conflict_paused",
-                        "validation_issues_count": len(validation_issues) + len(unresolved_blocking)
+                        "validation_issues_count": len(validation_issues) + len(unresolved_blocking) + len(pipe_spec_gaps)
                     }
                 }
 
@@ -746,6 +865,7 @@ def run_design_flow(
         "compliance_score": best_score,
         "readiness_status": primary_readiness,
         "report": best_report,
+        "contract_validation": pipe_res.get("contract_validation", {}) if isinstance(pipe_res, dict) else {},
         "traceability_report": best_report.get("traceability_report"),
         "history": loop_history,
         "iterations_run": iteration
@@ -849,6 +969,9 @@ def run_design_flow(
         "completed_model": completed_model,
         "context_pack": context_pack,
         "efs_ir_validation_issues": validation_issues,
+        "specification_gaps": pipe_res.get("specification_gaps", []) if isinstance(pipe_res, dict) else [],
+        "specification_gaps": pipe_res.get("specification_gaps", []) if isinstance(pipe_res, dict) else [],
+        "proposals": pipe_res.get("proposals", {}) if isinstance(pipe_res, dict) else {},
         "diagrams": diagrams,
         "diagram_urls": diagram_urls,
         "outputs": outputs,
@@ -929,19 +1052,31 @@ def resume_design_flow_with_resolutions(
     for r in (approved_resolutions or []):
         c_id = getattr(r, "conflict_id", "") or ""
         r_id = getattr(r, "resolution_id", "") or ""
+        t_ent = getattr(r, "target_entity", "") or ""
         if c_id:
             all_approved_cids.add(c_id)
         if r_id:
             all_approved_cids.add(r_id)
+        if t_ent:
+            all_approved_cids.add(t_ent)
+        for aff in (getattr(r, "affected_requirements", []) or []):
+            if aff:
+                all_approved_cids.add(str(aff))
     # Also include resolutions already persisted on efs_ir
     for r in getattr(efs_ir, "resolutions", []):
         if getattr(r, "approval_status", "") == "APPROVED":
             c_id = getattr(r, "conflict_id", "") or ""
             r_id = getattr(r, "resolution_id", "") or ""
+            t_ent = getattr(r, "target_entity", "") or ""
             if c_id:
                 all_approved_cids.add(c_id)
             if r_id:
                 all_approved_cids.add(r_id)
+            if t_ent:
+                all_approved_cids.add(t_ent)
+            for aff in (getattr(r, "affected_requirements", []) or []):
+                if aff:
+                    all_approved_cids.add(str(aff))
 
     # If no human resolutions provided and blocking conflicts remain unresolved by any path,
     # stay in HUMAN_RESOLUTION_REQUIRED
@@ -1002,6 +1137,13 @@ def resume_design_flow_with_resolutions(
     # 2. Build resolved requirement model view & mandatory revalidation (ZERO LLM CALLS)
     logger.info("EFSIR_REBUILT: Rebuilding resolved requirement model view...")
     resolved_ir = resolved_ir.get_resolved_view()
+
+    # Ensure terminal state transitions back to IDLE have valid default condition if unspecified
+    for fsm in getattr(resolved_ir, "fsms", []):
+        for tr in getattr(fsm, "transitions", []):
+            if tr.target_state.upper() == "IDLE" and tr.source_state.upper() in ("DONE", "FINISH", "COMPLETED") and not (tr.condition or "").strip():
+                tr.condition = "1'b1"
+                tr.condition_type = "boolean"
 
     # 3. Mandatory deterministic revalidation
     update_resume_progress("Revalidating resolved model view...", 0.70)
@@ -1073,6 +1215,7 @@ def resume_design_flow_with_resolutions(
             "efs_ir": resolved_ir,
             "efs_ir_validation_issues": validation_issues,
             "conflicts": unresolved_blocking,
+            "specification_gaps": design_results.get("specification_gaps", []),
             "proposals": proposals_map
         }
     elif unresolved_blocking and bypass_conflicts:
@@ -1153,10 +1296,18 @@ def resume_design_flow_with_resolutions(
         log_generation_end("rtl_generation_insufficient_output_post_resolution")
 
         if resolved_ir is not None:
+            pipe_spec_gaps = pipe_res.get("specification_gaps", []) if isinstance(pipe_res, dict) else []
+            pipe_gap_entities = {
+                (g.get("affected_entity", "").lower() if isinstance(g, dict) else getattr(g, "affected_entity", "").lower())
+                for g in pipe_spec_gaps
+            }
             from core.verification.conflict_resolution_engine import ConflictResolutionEngine
             parsed_conflicts = ConflictResolutionEngine.parse_specification_issues_to_conflicts(code, efs_ir=resolved_ir)
             existing_keys = {getattr(c, "semantic_key", "") for c in getattr(resolved_ir, "conflicts", [])}
             for pc in parsed_conflicts:
+                ent_name = (pc.entities[0] if pc.entities else "").lower()
+                if ent_name in pipe_gap_entities:
+                    continue
                 k = pc.semantic_key or ConflictResolutionEngine.compute_semantic_key(pc)
                 if k not in existing_keys:
                     resolved_ir.conflicts.append(pc)
@@ -1170,20 +1321,23 @@ def resume_design_flow_with_resolutions(
                 and getattr(c, "status", "") != "RESOLVED"
             ]
 
-            if unresolved_blocking and not bypass_conflicts:
-                logger.warning(f"RTL Generation paused post-resolution: {len(unresolved_blocking)} specification conflict(s) require human clarification.")
+            if (unresolved_blocking or pipe_spec_gaps) and not bypass_conflicts:
+                logger.warning(f"RTL Generation paused post-resolution: {len(unresolved_blocking)} specification conflict(s) and {len(pipe_spec_gaps)} gap(s) require human clarification.")
                 log_state_transition(WorkflowState.RTL_VALIDATION, WorkflowState.HUMAN_RESOLUTION_REQUIRED)
                 log_generation_skipped("specification_conflicts_require_human_resolution_post_resume")
                 proposals_map = {}
                 for conf in unresolved_blocking:
                     proposals_map[conf.conflict_id] = ConflictResolutionEngine.generate_resolution_proposals(conf, resolved_ir)
+                if isinstance(pipe_res, dict) and "proposals" in pipe_res and isinstance(pipe_res["proposals"], dict):
+                    proposals_map.update(pipe_res["proposals"])
 
                 pipe_plan = pipe_res.get("plan") if isinstance(pipe_res, dict) else None
                 pipe_arch = pipe_res.get("architecture_classification") if isinstance(pipe_res, dict) else None
+                chosen_status = "AWAITING_HITL" if (isinstance(pipe_res, dict) and pipe_res.get("status") == "AWAITING_HITL") else "AWAITING_HUMAN_DECISION"
                 return {
                     **design_results,
-                    "status": "AWAITING_HUMAN_DECISION",
-                    "pipeline_state": "AWAITING_HUMAN_DECISION",
+                    "status": chosen_status,
+                    "pipeline_state": chosen_status,
                     "workflow_state": WorkflowState.HUMAN_RESOLUTION_REQUIRED.value,
                     "requires_human_decision": True,
                     "is_blocked": False,
@@ -1199,6 +1353,7 @@ def resume_design_flow_with_resolutions(
                     "context_pack": context_pack,
                     "efs_ir_validation_issues": validation_issues,
                     "conflicts": unresolved_blocking,
+                    "specification_gaps": pipe_spec_gaps,
                     "proposals": proposals_map,
                     "diagrams": diagrams,
                     "diagram_urls": diagram_urls,
@@ -1213,6 +1368,9 @@ def resume_design_flow_with_resolutions(
                                 "failed_checks": [
                                     {"check_name": "Specification Conflict", "violation": c.description}
                                     for c in unresolved_blocking
+                                ] + [
+                                    {"check_name": "Specification Gap", "violation": g.get("description", "") if isinstance(g, dict) else getattr(g, "description", "")}
+                                    for g in pipe_spec_gaps
                                 ]
                             },
                             "history": [],
@@ -1390,6 +1548,7 @@ def resume_design_flow_with_resolutions(
         "completed_model": completed_model,
         "context_pack": context_pack,
         "efs_ir_validation_issues": validation_issues,
+        "specification_gaps": pipe_res.get("specification_gaps", []) if isinstance(pipe_res, dict) else [],
         "diagrams": diagrams,
         "diagram_urls": diagram_urls,
         "outputs": outputs,

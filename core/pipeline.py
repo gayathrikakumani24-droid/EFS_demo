@@ -56,8 +56,45 @@ class PipelineResult:
     graph_stats: Dict[str, int] = field(default_factory=dict)
     errors: List[str] = field(default_factory=list)
     req_ir: Optional[RequirementIR] = None
-    efs_ir: Optional[EFSIR] = None
+    _efs_ir: Optional[EFSIR] = None
     extraction_quality: Dict[str, Any] = field(default_factory=dict)
+
+    def __init__(
+        self,
+        doc: ParsedDocument,
+        chunks: Optional[List[Chunk]] = None,
+        entities: Optional[List[Entity]] = None,
+        relationships: Optional[List[Relationship]] = None,
+        graph_stats: Optional[Dict[str, int]] = None,
+        errors: Optional[List[str]] = None,
+        req_ir: Optional[RequirementIR] = None,
+        efs_ir: Optional[EFSIR] = None,
+        extraction_quality: Optional[Dict[str, Any]] = None,
+    ):
+        self.doc = doc
+        self.chunks = chunks if chunks is not None else []
+        self.entities = entities if entities is not None else []
+        self.relationships = relationships if relationships is not None else []
+        self.graph_stats = graph_stats if graph_stats is not None else {}
+        self.errors = errors if errors is not None else []
+        self.req_ir = req_ir
+        self._efs_ir = efs_ir
+        self.extraction_quality = extraction_quality if extraction_quality is not None else {}
+
+    @property
+    def efs_ir(self) -> Optional[EFSIR]:
+        if self._efs_ir is None and self.req_ir is not None:
+            try:
+                from core.compiler.efs_compiler import RequirementToEFSCompiler
+                compiler = RequirementToEFSCompiler(self.req_ir)
+                self._efs_ir = compiler.compile()
+            except Exception:
+                pass
+        return self._efs_ir
+
+    @efs_ir.setter
+    def efs_ir(self, val: Optional[EFSIR]):
+        self._efs_ir = val
 
     def to_full_json(self) -> Dict[str, Any]:
         """Produce full complete combined JSON representation across all extracted categories."""
@@ -167,11 +204,25 @@ def _noop_progress(msg: str, pct: float) -> None:
     logger.debug(f"[{pct*100:5.1f}%] {msg}")
 
 
-def run_pipeline(filepath: str, filename: Optional[str] = None,
-                  progress_cb: Optional[ProgressCallback] = None) -> PipelineResult:
-    """Run the full ingestion and compilation pipeline for a single uploaded document."""
+def run_pipeline(
+    filepath: str,
+    filename: Optional[str] = None,
+    progress_cb: Optional[ProgressCallback] = None,
+    knowledge_domain: Optional[str] = None
+) -> PipelineResult:
+    """Run the knowledge ingestion pipeline for an uploaded specification document."""
     progress_cb = progress_cb or _noop_progress
     errors: List[str] = []
+
+    # Determine knowledge domain (reusable protocol vs design specification)
+    if knowledge_domain:
+        domain = knowledge_domain
+    else:
+        fn_lower = (filename or os.path.basename(filepath)).lower()
+        if any(k in fn_lower for k in ["protocol", "amba", "axi", "apb", "ahb", "pcie", "uart", "spi", "i2c"]):
+            domain = "protocol"
+        else:
+            domain = "design"
 
     # -- Step 1: Document Parsing -----------------------------------------
     progress_cb("Parsing document structure...", 0.05)
@@ -257,8 +308,27 @@ def run_pipeline(filepath: str, filename: Optional[str] = None,
     if cached_bundle:
         progress_cb("Reusing cached Requirement IR representation...", 0.35)
         _, req_ir = cached_bundle
-        compiler = RequirementToEFSCompiler(req_ir)
-        efs_ir = compiler.compile()
+        req_ir.document_id = parsed_doc.doc_id
+        req_ir.document_hash = doc_hash
+        req_ir.ingestion_id = ingestion_id
+        if hasattr(req_ir, "doc_ir") and req_ir.doc_ir:
+            req_ir.doc_ir.document_id = parsed_doc.doc_id
+            req_ir.doc_ir.document_hash = doc_hash
+            req_ir.doc_ir.ingestion_id = ingestion_id
+        if hasattr(req_ir, "entities") and req_ir.entities:
+            for ent in req_ir.entities:
+                for ref in getattr(ent, "source_references", []):
+                    ref.document_id = parsed_doc.doc_id
+        if hasattr(req_ir, "requirements") and req_ir.requirements:
+            for req in req_ir.requirements:
+                for ref in getattr(req, "source_references", []):
+                    ref.document_id = parsed_doc.doc_id
+        if hasattr(req_ir, "edges") and req_ir.edges:
+            for edge in req_ir.edges:
+                ref = getattr(edge, "source_reference", None)
+                if ref and hasattr(ref, "document_id"):
+                    ref.document_id = parsed_doc.doc_id
+        efs_ir = None
     else:
         # -- Step 3: Generic Semantic & Atomic Requirement Extraction -----------
         progress_cb("Extracting atomic requirements and dynamic entities...", 0.25)
@@ -301,79 +371,35 @@ def run_pipeline(filepath: str, filename: Optional[str] = None,
         except Exception as e:
             logger.warning(f"Validation warning: {e}")
 
-        # -- Step 7: EFS IR Compiler ------------------------------------------
-        progress_cb("Compiling Requirement IR into canonical EFS IR...", 0.80)
-        try:
-            compiler = RequirementToEFSCompiler(req_ir)
-            efs_ir = compiler.compile()
-        except Exception as e:
-            logger.exception("EFS IR compilation failed")
-            errors.append(f"EFS IR compilation failed: {e}")
-            efs_ir = EFSIR()
-
-        # Cache compiled representations
+        # -- Step 7: Persist Extracted Intermediate Knowledge ----------------
+        progress_cb("Persisting extracted Requirement IR to persistent knowledge cache...", 0.80)
         try:
             save_requirement_ir_to_cache(doc_hash, doc_ir, req_ir)
         except Exception as ex:
             logger.warning(f"Could not persist cache: {ex}")
 
-    # -- Step 7.5: Source Evidence Index, Source-Backed Recovery & Completeness Validation
+        # In Knowledge-Base-Driven architecture, complete executable EFS IR
+        # is NOT compiled during document ingestion. It is generated dynamically at query-time.
+        efs_ir = None
+
     extraction_quality: Dict[str, Any] = {}
-    if efs_ir and doc_ir:
-        progress_cb("Performing source-backed recovery and completeness validation...", 0.82)
-        try:
-            evidence_index = SourceEvidenceIndex(doc_ir)
-            SourceBackedRecovery.recover_efs_ir(efs_ir, doc_ir, evidence_index)
 
-            curr_docs = [d.name if hasattr(d, "name") else str(d) for d in (efs_ir.metadata.source_documents or [])]
-            if not curr_docs and getattr(parsed_doc, "filename", None):
-                curr_docs = [parsed_doc.filename]
-            curr_comps = [c.name for c in (efs_ir.components or [])]
-            curr_rels = [
-                f"{r.get('source')} -> {r.get('target')}" if isinstance(r, dict) else f"{getattr(r, 'source', '')} -> {getattr(r, 'target', '')}"
-                for r in (getattr(efs_ir, "relationships", []) or [])
-            ]
-            summary_log = (
-                f"\nCURRENT DESIGN DOCUMENTS: {curr_docs}\n"
-                f"CURRENT CANONICAL COMPONENTS: {curr_comps}\n"
-                f"CURRENT INTER-MODULE RELATIONSHIPS: {curr_rels}\n"
-            )
-            print(summary_log)
-            logger.info(summary_log)
-
-            completeness_gaps = ConflictResolutionEngine.validate_hardware_completeness(
-                efs_ir, doc_ir=doc_ir, evidence_index=evidence_index
-            )
-            existing_keys = {c.semantic_key or ConflictResolutionEngine.compute_semantic_key(c) for c in efs_ir.conflicts}
-            for c in completeness_gaps:
-                k = c.semantic_key or ConflictResolutionEngine.compute_semantic_key(c)
-                if k not in existing_keys:
-                    existing_keys.add(k)
-                    efs_ir.conflicts.append(c)
-
-            efs_ir.conflicts = ConflictResolutionEngine.deduplicate_conflicts(efs_ir.conflicts)
-
-            extraction_quality = calculate_extraction_quality_metrics(efs_ir, doc_ir, evidence_index)
-            logger.info(f"Extraction Quality Metrics: {extraction_quality}")
-        except Exception as ex:
-            logger.warning(f"Source-backed recovery pass error: {ex}")
-
-    # Save active EFS IR representation to disk so UI displays current document IR
-    if efs_ir:
-        try:
-            ir_dir = os.path.join(CONFIG.data_dir, "efs_ir")
-            os.makedirs(ir_dir, exist_ok=True)
-            active_ir_path = os.path.join(ir_dir, "active_design_ir.json")
-            with open(active_ir_path, "w", encoding="utf-8") as f:
-                json.dump(efs_ir.to_dict(), f, indent=2, default=str)
-            logger.info(f"Persisted active EFS IR to '{active_ir_path}'")
-        except Exception as ex:
-            logger.warning(f"Could not write active_design_ir.json: {ex}")
-
-    # -- Step 8: Legacy Chunking & Graph/Vector Indexing ----------------------
-    progress_cb("Building hierarchical chunks for legacy RAG & vector store...", 0.85)
+    # -- Step 8: Hierarchical Chunking & Knowledge Base Ingestion -------------
+    progress_cb("Building hierarchical chunks with knowledge domain metadata...", 0.85)
     try:
         chunks = chunk_document(parsed_doc)
+        for ch in chunks:
+            ch.knowledge_domain = domain
+            if not hasattr(ch, "metadata") or ch.metadata is None:
+                ch.metadata = {}
+            ch.metadata["knowledge_domain"] = domain
+            ch.metadata["document_version"] = getattr(parsed_doc, "version", "1.0")
+            ch.metadata["document_id"] = parsed_doc.doc_id
+            ch.metadata["source_location"] = f"page_{ch.page}_sec_{ch.section}"
+            ch.metadata["chunk_type"] = getattr(ch, "content_type", "text")
+            if domain == "protocol":
+                proto_name = (filename or os.path.basename(filepath)).split(".")[0].upper()
+                ch.metadata["protocol"] = proto_name
     except Exception as e:
         logger.exception("Chunking failed")
         chunks = []
@@ -393,7 +419,8 @@ def run_pipeline(filepath: str, filename: Optional[str] = None,
                 chunk_id=getattr(ref, "block_id", None) or "BLK_001",
                 doc_id=parsed_doc.doc_id,
                 page=getattr(ref, "page", None) or 1,
-                section=getattr(ref, "section", None) or ""
+                section=getattr(ref, "section", None) or "",
+                knowledge_domain=domain
             ))
 
     if req_ir and getattr(req_ir, "edges", None):
@@ -405,11 +432,18 @@ def run_pipeline(filepath: str, filename: Optional[str] = None,
                 relation=getattr(ed, "relationship", "RELATED_TO"),
                 target=getattr(ed, "target", ""),
                 chunk_id=getattr(ref, "block_id", None) or "BLK_001",
-                doc_id=parsed_doc.doc_id
+                doc_id=parsed_doc.doc_id,
+                knowledge_domain=domain
             ))
 
     try:
-        graph_stats = build_graph(normalized_entities, all_relationships, efs_ir=efs_ir)
+        graph_stats = build_graph(
+            normalized_entities,
+            all_relationships,
+            efs_ir=None,
+            req_ir=req_ir,
+            knowledge_domain=domain
+        )
     except Exception as e:
         logger.warning(f"Knowledge graph building error: {e}")
         graph_stats = {}
@@ -421,7 +455,7 @@ def run_pipeline(filepath: str, filename: Optional[str] = None,
     except Exception as e:
         errors.append(f"Vector store update failed: {e}")
 
-    progress_cb("Pipeline complete.", 1.0)
+    progress_cb("Knowledge ingestion complete.", 1.0)
 
     return PipelineResult(
         doc=parsed_doc,
@@ -431,6 +465,6 @@ def run_pipeline(filepath: str, filename: Optional[str] = None,
         graph_stats=graph_stats,
         errors=errors,
         req_ir=req_ir,
-        efs_ir=efs_ir,
+        efs_ir=None,
         extraction_quality=extraction_quality,
     )

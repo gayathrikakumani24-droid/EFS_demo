@@ -130,7 +130,8 @@ def resolve_protocol_context(
 
         if is_relevant:
             seen_rule_ids.add(rule_key)
-            rule_entry = {
+            rule_entry = dict(rule) if isinstance(rule, dict) else {}
+            rule_entry.update({
                 "text": rule_text,
                 "protocol": active_proto,
                 "protocol_document_id": doc_id,
@@ -138,7 +139,9 @@ def resolve_protocol_context(
                 "page": page,
                 "section": section,
                 "original_text": rule_text
-            }
+            })
+            if "rule_id" not in rule_entry and "id" in rule_entry:
+                rule_entry["rule_id"] = rule_entry["id"]
             selected_rules.append(rule_entry)
 
     # 7. Semantic + Graph + Vector Retrieval for Protocol Chunks

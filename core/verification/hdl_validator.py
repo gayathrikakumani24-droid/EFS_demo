@@ -973,3 +973,18 @@ def _run_external_hdl_tool(code: str, language: HDLLanguage, version: str) -> Di
         }
 
     return {"status": "TOOL_NOT_RUN", "details": None, "errors": []}
+
+
+def validate_rtl_contract(
+    code: str,
+    rtl_plan: Any,
+    target_language: str = "Verilog"
+) -> Any:
+    """
+    Perform deterministic structural and behavioral contract verification
+    of generated HDL against the authoritative RTLGenerationPlan.
+    """
+    from core.verification.rtl_contract_validator import RTLContractValidator
+    validator = RTLContractValidator()
+    return validator.validate_contract(code, rtl_plan, target_language=target_language)
+

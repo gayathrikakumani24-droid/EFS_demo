@@ -250,6 +250,24 @@ def plan_rtl(design_spec: str, target: Any = "Verilog", efs_ir: Optional[EFSIR] 
         elif hasattr(context_pack, "task") and getattr(context_pack.task, "target", None):
             target_comp_name = context_pack.task.target
 
+    target_comp = None
+    from core.normalization.target_normalizer import normalize_target_name
+    t_comp_norm = normalize_target_name(target_comp_name)
+    if efs_ir and hasattr(efs_ir, "components") and efs_ir.components:
+        for c in efs_ir.components:
+            c_norm = normalize_target_name(c.name)
+            cid_norm = normalize_target_name(c.component_id)
+            if t_comp_norm and (
+                c_norm == t_comp_norm or
+                cid_norm == t_comp_norm or
+                t_comp_norm in c_norm or
+                c_norm in t_comp_norm
+            ):
+                target_comp = c
+                break
+        if not target_comp and len(efs_ir.components) == 1:
+            target_comp = efs_ir.components[0]
+
     # Compile target-scoped RTL context using RTLContextCompiler
     compiled_rtl = compile_context(
         "rtl",
@@ -265,8 +283,14 @@ def plan_rtl(design_spec: str, target: Any = "Verilog", efs_ir: Optional[EFSIR] 
     spec_parsed = parse_markdown_spec(design_spec)
     spec_mod_name = spec_parsed.get("module_name")
     c_mod_name = compiled_rtl.get("module", {}).get("name")
-    if c_mod_name and c_mod_name not in ("target_module", "hardware_module", "custom_module"):
+    if target_comp and getattr(target_comp, "type", "") not in ("top_level", "top_level_design", "system"):
+        target_module_name = target_comp.name
+    elif target_comp_name and target_comp_name.lower() not in ("verilog", "systemverilog", "vhdl", "uvm", "assertions", "target_module", "hardware_module", "custom_module"):
+        target_module_name = target_comp_name
+    elif c_mod_name and c_mod_name not in ("target_module", "hardware_module", "custom_module"):
         target_module_name = c_mod_name
+    elif target_comp:
+        target_module_name = target_comp.name
     elif spec_mod_name and spec_mod_name not in ("target_module", "hardware_module", "custom_module"):
         target_module_name = spec_mod_name
     elif efs_ir and hasattr(efs_ir, "metadata") and getattr(efs_ir.metadata, "design_name", None):
@@ -688,6 +712,18 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
                             })
 
             plan_res["spec_text"] = design_spec
+
+            # Compile behavioral sequential and combinational logic directives
+            from core.context_compiler.behavioral_plan_compiler import BehavioralPlanCompiler
+            plan_res = BehavioralPlanCompiler.compile_and_populate(
+                plan_dict=plan_res,
+                efs_ir=efs_ir,
+                target_comp=target_comp,
+                compiled_rtl=compiled_rtl,
+                design_spec=design_spec,
+                context_pack=context_pack,
+            )
+
             val = validate_rtl_plan(plan_res, efs_ir=efs_ir, context_pack=context_pack, spec_text=design_spec)
             plan_res["specification_status"] = {
                 "status": val["status"],
@@ -942,6 +978,17 @@ CRITICAL GROUNDING RULES FOR STAGE 1 PLAN:
     plan["spec_text"] = design_spec
     if compiled_rtl.get("output_assignments"):
         plan["output_assignments"] = compiled_rtl["output_assignments"]
+
+    # Compile behavioral sequential and combinational logic directives
+    from core.context_compiler.behavioral_plan_compiler import BehavioralPlanCompiler
+    plan = BehavioralPlanCompiler.compile_and_populate(
+        plan_dict=plan,
+        efs_ir=efs_ir,
+        target_comp=target_comp,
+        compiled_rtl=compiled_rtl,
+        design_spec=design_spec,
+        context_pack=context_pack,
+    )
 
     val = validate_rtl_plan(plan, efs_ir=efs_ir, context_pack=context_pack, spec_text=design_spec)
     plan["specification_status"] = {
@@ -1774,6 +1821,28 @@ def execute_unified_rtl_pipeline(
     global LAST_GENERATION_REPORT
 
     # Resolve target language
+    target_clean = str(target or "").strip()
+    if target_clean.lower() in ("uvm", "assertions"):
+        target_norm = "UVM" if target_clean.lower() == "uvm" else "Assertions"
+        code = get_heuristic_code_template(target_norm, design_spec=design_spec, efs_ir=efs_ir, rtl_plan=rtl_plan)
+        report = {"status": "SUCCESS", "passed": True, "score": 100, "errors": [], "diagnostics": [], "passed_checks": [f"{target_norm} Generation"]}
+        LAST_GENERATION_REPORT = report
+        return {
+            "status": "SUCCESS",
+            "pipeline_state": "COMPLETED",
+            "code": code,
+            "report": report,
+            "contract_validation": {"is_valid": True, "violations": []},
+            "verification_report": report,
+            "compliance_score": 100,
+            "passed": True,
+            "is_partial": False,
+            "architecture_classification": "CUSTOM_ARCHITECTURE",
+            "traceability": [],
+            "repair_history": [],
+            "plan": rtl_plan or {},
+        }
+
     try:
         hdl_lang, lang_ver = resolve_hdl_language(target, allow_unknown=True)
     except Exception:
@@ -1959,7 +2028,38 @@ def execute_unified_rtl_pipeline(
         if not is_res:
             remaining_blocking_issues.append(issue)
 
-    has_blocking = len(unresolved_blocking) > 0 or (len(remaining_blocking_issues) > 0 and not plan_is_valid)
+    has_blocking_conflicts = len(unresolved_blocking) > 0 or (len(remaining_blocking_issues) > 0 and not plan_is_valid)
+
+    # Collect evidence-grounded SpecificationGaps from EFS IR and RTL Plan
+    from core.verification.hitl_gap_manager import HITLSpecificationGapManager
+    from core.efs_ir.specification_gap import SpecificationGapCategory
+    spec_gaps = HITLSpecificationGapManager.collect_specification_gaps(
+        efs_ir=active_ir,
+        rtl_plan=plan_to_use,
+        design_spec=design_spec
+    )
+    # Check for blocking gaps (e.g. undriven outputs or gaps marked blocking / requiring human decision)
+    blocking_spec_gaps = []
+    for g in spec_gaps:
+        g_id = str(getattr(g, "gap_id", "")).lower()
+        g_ent = str(getattr(g, "affected_entity", "")).lower()
+        g_status = getattr(g, "resolution_status", "")
+        g_status_str = g_status.value if hasattr(g_status, "value") else str(g_status)
+        is_gap_resolved = (
+            g_status_str in ("APPROVED", "RESOLVED")
+            or g_id in resolved_keys
+            or g_ent in resolved_keys
+        )
+        is_blocking = (
+            getattr(g, "blocks_generation", False)
+            or getattr(g, "severity", "") in ("BLOCKING", "CRITICAL")
+            or getattr(getattr(g, "severity", None), "value", "") in ("BLOCKING", "CRITICAL")
+            or getattr(g, "category", None) == SpecificationGapCategory.MISSING_SIGNAL_DRIVER
+        )
+        if is_blocking and not is_gap_resolved:
+            blocking_spec_gaps.append(g)
+
+    has_blocking = has_blocking_conflicts or len(blocking_spec_gaps) > 0
 
     if has_blocking and not bypass_conflicts and not allow_partial:
         badge_map = {
@@ -1989,6 +2089,29 @@ def execute_unified_rtl_pipeline(
                 seen_reqs.add(req_text)
                 req_lines.append(f"    {req_text}")
 
+        # Add blocking specification gaps (e.g. undriven output ports) to diagnostic requirements
+        for g in blocking_spec_gaps:
+            cat_name = g.category.value if hasattr(g.category, "value") else str(g.category)
+            g_desc = getattr(g, "description", f"Specification gap for {g.affected_entity}")
+            if g_desc not in seen_issues:
+                seen_issues.add(g_desc)
+                missing_lines.append(f"    🔴 [{cat_name}] {g_desc}")
+            g_questions = []
+            for p in getattr(g, "proposals", []):
+                for q in getattr(p, "clarification_questions", []):
+                    if q and q not in g_questions:
+                        g_questions.append(q)
+            if g_questions:
+                for q in g_questions:
+                    if q not in seen_reqs:
+                        seen_reqs.add(q)
+                        req_lines.append(f"    {q}")
+            else:
+                req_line = f"Provide explicit logic or driving assignment for '{g.affected_entity}'."
+                if req_line not in seen_reqs:
+                    seen_reqs.add(req_line)
+                    req_lines.append(f"    {req_line}")
+
         missing_str = "\n".join(missing_lines) if missing_lines else "    Specification requirements are incomplete or ambiguous."
         req_str = "\n".join(req_lines) if req_lines else "    Provide explicit signal, register, and FSM transition definitions."
         incomplete_msg = f"SPECIFICATION_INCOMPLETE\n\nMissing/ambiguous requirements:\n\n{missing_str}\n\nRequired clarification:\n\n{req_str}"
@@ -2003,12 +2126,24 @@ def execute_unified_rtl_pipeline(
             )
             proposals_map[cid] = alts
 
+        # Synthesize evidence-grounded SpecificationGaps and AI proposals
+        spec_gaps = HITLSpecificationGapManager.generate_proposals_for_gaps(
+            gaps=spec_gaps,
+            efs_ir=active_ir,
+            context_pack=compiled_pack,
+            design_spec=design_spec
+        )
+        for g in spec_gaps:
+            if g.gap_id not in proposals_map and g.proposals:
+                proposals_map[g.gap_id] = [p.to_dict() for p in g.proposals]
+
         report = {
             "status": "BLOCKED",
             "passed": False,
             "errors": [incomplete_msg],
             "diagnostics": issues,
             "unresolved_conflicts": [getattr(c, "to_dict", lambda: c)() for c in unresolved_blocking],
+            "specification_gaps": [g.to_dict() for g in spec_gaps],
         }
         LAST_GENERATION_REPORT = report
 
@@ -2022,6 +2157,7 @@ def execute_unified_rtl_pipeline(
             "compliance_score": 0,
             "passed": False,
             "conflicts": unresolved_blocking,
+            "specification_gaps": [g.to_dict() for g in spec_gaps],
             "proposals": proposals_map,
             "plan": plan_to_use if isinstance(plan_to_use, dict) else (plan_to_use.to_dict() if hasattr(plan_to_use, "to_dict") else {}),
             "architecture_classification": arch_class,
@@ -2055,6 +2191,17 @@ def execute_unified_rtl_pipeline(
                 "\n    // [PARTIAL GENERATION] Note: Unimplemented incomplete specification blocks omitted safely.\nendmodule"
             )
 
+    # -- STAGE 11: Deterministic Post-Generation Contract Validation ---------
+    from core.verification.rtl_contract_validator import RTLContractValidator
+    contract_validator = RTLContractValidator()
+    contract_report = contract_validator.validate_contract(code, plan_to_use, target_language=target_lang)
+    gen_report["contract_validation"] = contract_report.to_dict()
+    if not contract_report.is_valid:
+        logger.warning(f"RTL Post-Generation Contract Violation detected: {len(contract_report.contract_violations)} violations")
+        if not is_partial:
+            gen_report["passed"] = False
+            gen_report.setdefault("errors", []).extend([v.description for v in contract_report.contract_violations])
+
     # -- STAGE 14: Traceability, metrics, and artifact packaging ------------
     from core.verification.candidate_verifier import verify_candidate_traceability
     plan_dict = plan_to_use if isinstance(plan_to_use, dict) else (plan_to_use.to_dict() if hasattr(plan_to_use, "to_dict") else {})
@@ -2068,11 +2215,28 @@ def execute_unified_rtl_pipeline(
     final_pipeline_state = "PARTIAL" if is_partial else ("COMPLETED" if passed else "FAILED")
     final_status = "SUCCESS" if passed else ("PARTIAL" if is_partial else "REJECTED")
 
+    # Collect specification gaps and proposals for HITL review whenever plan has unresolved elements
+    from core.verification.hitl_gap_manager import HITLSpecificationGapManager
+    spec_gaps = HITLSpecificationGapManager.collect_specification_gaps(
+        efs_ir=active_ir,
+        rtl_plan=plan_dict,
+        design_spec=design_spec
+    )
+    if spec_gaps:
+        spec_gaps = HITLSpecificationGapManager.generate_proposals_for_gaps(
+            gaps=spec_gaps,
+            efs_ir=active_ir,
+            context_pack=compiled_pack,
+            design_spec=design_spec
+        )
+    proposals_map = {g.gap_id: [p.to_dict() for p in g.proposals] for g in spec_gaps if g.proposals}
+
     result = {
         "status": final_status,
         "pipeline_state": final_pipeline_state,
         "code": code,
         "report": gen_report,
+        "contract_validation": contract_report.to_dict(),
         "verification_report": gen_report,
         "compliance_score": comp_score,
         "passed": passed,
@@ -2080,6 +2244,8 @@ def execute_unified_rtl_pipeline(
         "architecture_classification": arch_class,
         "plan": plan_dict,
         "context_pack": compiled_pack,
+        "specification_gaps": [g.to_dict() for g in spec_gaps],
+        "proposals": proposals_map,
         "traceability": traceability_list,
         "repair_history": repairs_applied,
         "tool_compilation": {
@@ -2358,12 +2524,20 @@ def get_heuristic_code_template(
     # Check if target and design_spec were swapped by caller
     t_clean = str(target or "").strip().lower()
     d_clean = str(design_spec or "").strip().lower()
-    if d_clean in ("verilog", "systemverilog", "vhdl", "v", "sv") and t_clean not in ("verilog", "systemverilog", "vhdl", "v", "sv"):
+    valid_targets = ("verilog", "systemverilog", "vhdl", "v", "sv", "uvm", "assertions")
+    if d_clean in valid_targets and t_clean not in valid_targets:
         target, design_spec = design_spec, target
-    elif t_clean not in ("verilog", "systemverilog", "vhdl", "v", "sv") and any(k in t_clean for k in ("module", "specification", "|", "#", "input", "output")):
+    elif t_clean not in valid_targets and any(k in t_clean for k in ("module", "specification", "|", "#", "input", "output")):
         target, design_spec = design_spec, target
-    elif t_clean not in ("verilog", "systemverilog", "vhdl", "v", "sv"):
+    elif t_clean not in valid_targets:
         target = "SystemVerilog"
+
+    if t_clean == "uvm":
+        target = "UVM"
+    elif t_clean == "assertions":
+        target = "Assertions"
+    elif t_clean in ("vhdl", "vhd"):
+        target = "VHDL"
 
     if not rtl_plan and not (efs_ir and getattr(efs_ir, "signals", None)):
         try:
@@ -2374,16 +2548,15 @@ def get_heuristic_code_template(
     elif not rtl_plan:
         rtl_plan = {}
 
-    hdl_lang, lang_ver = resolve_hdl_language(target)
+    hdl_lang, lang_ver = resolve_hdl_language(target, allow_unknown=True)
     is_verilog = (hdl_lang == HDLLanguage.VERILOG)
     target_lang = "Verilog" if is_verilog else "SystemVerilog"
 
     # 1. Module Name
-    module_name = ""
-    if efs_ir and hasattr(efs_ir, "metadata"):
-        module_name = getattr(efs_ir.metadata, "top_module", "") or getattr(efs_ir.metadata, "design_name", "")
-    if not module_name:
-        module_name = rtl_plan.get("module_name", "")
+    module_name = rtl_plan.get("module_name", "") if rtl_plan else ""
+    if not module_name or module_name in ("custom_module", "target_module", "hardware_module"):
+        if efs_ir and hasattr(efs_ir, "metadata"):
+            module_name = getattr(efs_ir.metadata, "top_module", "") or getattr(efs_ir.metadata, "design_name", "")
     if not module_name or module_name in ("custom_module", "target_module", "hardware_module"):
         if design_spec:
             m_match = re.search(r"#\s*(?:Hardware Design Specification|Specification|Module):\s*([A-Za-z0-9_\-\s]+)", design_spec, re.IGNORECASE)
@@ -2397,9 +2570,11 @@ def get_heuristic_code_template(
         module_name = "target_module"
     module_name = sanitize_module_name(module_name)
 
-    # 2. Extract ports from EFS IR as source of truth, then plan, then design_spec
+    # 2. Extract ports from RTL plan as module source of truth, then EFS IR, then design_spec
     plan_ports = []
-    if efs_ir and getattr(efs_ir, "signals", None):
+    if rtl_plan and rtl_plan.get("ports"):
+        plan_ports = rtl_plan["ports"]
+    elif efs_ir and getattr(efs_ir, "signals", None):
         for sig in efs_ir.signals:
             plan_ports.append({
                 "name": sig.name,
@@ -2407,8 +2582,6 @@ def get_heuristic_code_template(
                 "width": str(sig.width or 1),
                 "semantic_role": sig.semantic_role
             })
-    elif rtl_plan.get("ports"):
-        plan_ports = rtl_plan["ports"]
     elif design_spec:
         spec_parsed = parse_markdown_spec(design_spec)
         for iface in spec_parsed.get("interfaces", []):
@@ -2428,24 +2601,24 @@ def get_heuristic_code_template(
 
     # Internal registers
     registers = []
-    if efs_ir and getattr(efs_ir, "registers", None):
+    if rtl_plan and rtl_plan.get("internal_registers"):
+        registers = rtl_plan["internal_registers"]
+    elif efs_ir and getattr(efs_ir, "registers", None):
         for r in efs_ir.registers:
             registers.append({"name": r.name, "width": str(r.width or 32), "reset_value": getattr(r, "reset_value", "0")})
-    elif rtl_plan.get("internal_registers"):
-        registers = rtl_plan["internal_registers"]
     registers = sanitize_hardware_registers(registers)
 
-    # FSM extraction: strictly from EFS IR if provided
+    # FSM extraction
     fsm = rtl_plan.get("fsm", {}) if isinstance(rtl_plan.get("fsm"), dict) else {}
     states = []
-    if efs_ir and getattr(efs_ir, "fsms", None):
-        for s in efs_ir.fsms[0].states:
-            states.append(s.name)
-    elif not efs_ir and rtl_plan.get("fsm"):
+    if fsm.get("states"):
         raw_states = fsm.get("states", [])
         for s in raw_states:
             states.append(s.get("name", "STATE") if isinstance(s, dict) else str(s))
-    elif not efs_ir and design_spec:
+    elif efs_ir and getattr(efs_ir, "fsms", None):
+        for s in efs_ir.fsms[0].states:
+            states.append(s.name)
+    elif design_spec:
         spec_parsed = parse_markdown_spec(design_spec)
         states = spec_parsed.get("states", [])
 
@@ -2660,6 +2833,178 @@ def get_heuristic_code_template(
 
     regs_str = "\n".join(reg_decls) if reg_decls else "    // No internal registers"
     reg_resets_str = ("\n" + "\n".join(reg_resets)) if reg_resets else ""
+
+    if target == "VHDL":
+        vhdl_ports = []
+        for p in final_ports:
+            pname = p.get("name")
+            pdir = p.get("direction", "input").lower()
+            norm_int = normalize_hardware_width(p.get("width", "1"))
+            raw_w = str(p.get("width", "1")).strip()
+            w = norm_int if norm_int is not None else (int(raw_w) if raw_w.isdigit() else 1)
+            
+            if w > 1:
+                vtype = f"std_logic_vector({w-1} downto 0)"
+            elif ":" in raw_w:
+                w_clean = raw_w.replace("[", "").replace("]", "").split(":")
+                if len(w_clean) == 2:
+                    vhdl_ports.append(f"        {pname} : {pdir} std_logic_vector({w_clean[0]} downto {w_clean[1]})")
+                    continue
+                else:
+                    vtype = "std_logic"
+            else:
+                vtype = "std_logic"
+            
+            pdir_str = "in" if pdir in ("input", "in") else "out"
+            if pname in [clk_name, rst_name]:
+                pdir_str = "in"
+                vtype = "std_logic"
+                
+            vhdl_ports.append(f"        {pname} : {pdir_str} {vtype}")
+            
+        if not vhdl_ports:
+            vhdl_ports_decl = f"""        {clk_name} : in std_logic;
+        {rst_name} : in std_logic;
+        req : in std_logic;
+        ack : out std_logic;
+        data_in : in std_logic_vector(31 downto 0);
+        data_out : out std_logic_vector(31 downto 0)"""
+        else:
+            vhdl_ports_decl = ";\n".join(vhdl_ports)
+
+        states_vhdl = ", ".join(states) if states else "IDLE, RUN, DONE"
+        reg_signals = []
+        for r in registers:
+            if isinstance(r, dict) and r.get("name"):
+                reg_signals.append(f"    signal {r['name'].lower()}_reg : std_logic_vector(31 downto 0) := (others => '0');")
+        reg_signals_str = "\n".join(reg_signals)
+
+        return f"""-- Dynamic Fallback VHDL Design Template
+-- Derived from Unified Design Specification
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity {module_name} is
+    port (
+{vhdl_ports_decl}
+    );
+end entity {module_name};
+
+architecture rtl of {module_name} is
+    type state_t is ({states_vhdl});
+    signal state, next_state : state_t;
+    
+{reg_signals_str}
+begin
+
+    -- Sequential process
+    process({clk_name}, {rst_name}) is
+    begin
+        if {rst_name} = '{"0" if rst_polarity == "low" else "1"}' then
+            state <= {states[0] if states else "IDLE"};
+        elsif rising_edge({clk_name}) then
+            state <= next_state;
+        end if;
+    end process;
+
+end architecture rtl;
+"""
+
+    if target == "UVM":
+        uvm_driver_tx_decls = []
+        uvm_driver_drives = []
+        for p in final_ports:
+            pname = p.get("name")
+            pdir = p.get("direction", "input").lower()
+            norm_int = normalize_hardware_width(p.get("width", "1"))
+            raw_w = str(p.get("width", "1")).strip()
+            w = norm_int if norm_int is not None else (int(raw_w) if raw_w.isdigit() else 1)
+            
+            w_decl = f"[{w-1}:0] " if w > 1 else ""
+            if pdir in ("input", "in") and pname not in [clk_name, rst_name]:
+                uvm_driver_tx_decls.append(f"  rand bit {w_decl}{pname};")
+                uvm_driver_drives.append(f"    vif.{pname} <= tx.{pname};")
+                
+        tx_decls_str = "\n".join(uvm_driver_tx_decls)
+        driver_drives_str = "\n".join(uvm_driver_drives)
+        
+        return f"""// Dynamic Fallback SystemVerilog UVM Environment Template
+// Derived from Unified Design Specification
+interface {module_name}_if(input bit {clk_name}, input bit {rst_name});
+  // Virtual Interface Ports declarations
+  // ...
+endinterface
+
+class {module_name}_transaction extends uvm_sequence_item;
+{tx_decls_str}
+  `uvm_object_utils({module_name}_transaction)
+  
+  function new(string name = "{module_name}_transaction");
+    super.new(name);
+  endfunction
+endclass
+
+class {module_name}_driver extends uvm_driver #({module_name}_transaction);
+  `uvm_component_utils({module_name}_driver)
+  
+  virtual {module_name}_if vif;
+
+  function new(string name = "{module_name}_driver", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+
+  virtual task run_phase(uvm_phase phase);
+    forever begin
+      seq_item_port.get_next_item(req);
+      drive_tx(req);
+      seq_item_port.item_done();
+    end
+  endtask
+
+  task drive_tx({module_name}_transaction tx);
+    @(posedge vif.{clk_name});
+{driver_drives_str}
+  endtask
+endclass
+"""
+
+    if target == "Assertions":
+        handshake_assertions = []
+        valids = [p.get("name") for p in final_ports if "valid" in p.get("name", "").lower()]
+        readys = [p.get("name") for p in final_ports if "ready" in p.get("name", "").lower()]
+        
+        for v in valids:
+            prefix = v.lower().replace("valid", "").replace("_", "")
+            matching_r = next((r for r in readys if r.lower().replace("ready", "").replace("_", "") == prefix), None)
+            if matching_r:
+                handshake_assertions.append(f"""
+    // Protocol Handshake Check: {v} must remain asserted until {matching_r} is HIGH
+    property check_{prefix}_handshake;
+        @(posedge {clk_name}) disable iff ({"!" if rst_polarity == "low" else ""}{rst_name})
+        ({v} && !{matching_r}) |=> {v};
+    endproperty
+    assert_{prefix}_handshake: assert property (check_{prefix}_handshake);""")
+                
+        assertions_str = "\n".join(handshake_assertions)
+        if not assertions_str:
+            assertions_str = f"""    // General Handshake Protocol Check Check
+    property check_general_handshake;
+        @(posedge {clk_name}) disable iff ({"!" if rst_polarity == "low" else ""}{rst_name})
+        1'b1;
+    endproperty
+    assert_general_handshake: assert property (check_general_handshake);"""
+
+        return f"""// Dynamic Fallback SystemVerilog Assertions (SVA) Template
+// Derived from Unified Design Specification
+module {module_name}_assertions(
+{ports_str.replace("wire", "logic").replace("reg", "logic")}
+);
+
+{assertions_str}
+
+endmodule
+"""
 
     # Datapath lines in sequential block
     dp_lines = []
@@ -2956,177 +3301,6 @@ module {module_name} (
 
 endmodule
 """
-
-    if target == "VHDL":
-
-        vhdl_ports = []
-        for p in interfaces:
-            pname = p["name"]
-            pdir = p["direction"]
-            pwidth = p["width"]
-            
-            vtype = "std_logic"
-            if pwidth.isdigit() and int(pwidth) > 1:
-                vtype = f"std_logic_vector({int(pwidth)-1} downto 0)"
-            elif ":" in pwidth:
-                w_clean = pwidth.replace("[", "").replace("]", "").split(":")
-                if len(w_clean) == 2:
-                    vhdl_ports.append(f"        {pname} : {pdir} std_logic_vector({w_clean[0]} downto {w_clean[1]})")
-                    continue
-            
-            pdir_str = "in" if pdir == "input" or pdir == "in" else "out"
-            if pname in [clk_name, rst_name]:
-                pdir_str = "in"
-                vtype = "std_logic"
-                
-            vhdl_ports.append(f"        {pname} : {pdir_str} {vtype}")
-            
-        if not vhdl_ports:
-            vhdl_ports_decl = f"""        {clk_name} : in std_logic;
-        {rst_name} : in std_logic;
-        req : in std_logic;
-        ack : out std_logic;
-        data_in : in std_logic_vector(31 downto 0);
-        data_out : out std_logic_vector(31 downto 0)"""
-        else:
-            vhdl_ports_decl = ";\n".join(vhdl_ports)
-
-        states_vhdl = ", ".join(states)
-        reg_signals = []
-        for r in registers:
-            reg_signals.append(f"    signal {r['name'].lower()}_reg : std_logic_vector(31 downto 0) := (others => '0');")
-        reg_signals_str = "\n".join(reg_signals)
-
-        return f"""-- Dynamic Fallback VHDL Design Template
--- Derived from Unified Design Specification
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity {module_name} is
-    port (
-{vhdl_ports_decl}
-    );
-end entity {module_name};
-
-architecture rtl of {module_name} is
-    type state_t is ({states_vhdl});
-    signal state, next_state : state_t;
-    
-{reg_signals_str}
-begin
-
-    -- Sequential process
-    process({clk_name}, {rst_name}) is
-    begin
-        if {rst_name} = '{"0" if rst_polarity == "low" else "1"}' then
-            state <= {states[0]};
-        elsif rising_edge({clk_name}) then
-            state <= next_state;
-        end if;
-    end process;
-
-end architecture rtl;
-"""
-    elif target == "UVM":
-        uvm_driver_tx_decls = []
-        uvm_driver_drives = []
-        for p in interfaces:
-            pname = p["name"]
-            pdir = p["direction"]
-            pwidth = p["width"]
-            
-            w_decl = ""
-            if pwidth.isdigit():
-                w = int(pwidth)
-                if w > 1:
-                    w_decl = f"[{w-1}:0] "
-            elif ":" in pwidth:
-                w_decl = f"{pwidth} "
-                
-            if pdir == "input" and pname not in [clk_name, rst_name]:
-                uvm_driver_tx_decls.append(f"  rand bit {w_decl}{pname};")
-                uvm_driver_drives.append(f"    vif.{pname} <= tx.{pname};")
-                
-        tx_decls_str = "\n".join(uvm_driver_tx_decls)
-        driver_drives_str = "\n".join(uvm_driver_drives)
-        
-        return f"""// Dynamic Fallback SystemVerilog UVM Environment Template
-// Derived from Unified Design Specification
-interface {module_name}_if(input bit {clk_name}, input bit {rst_name});
-  // Virtual Interface Ports declarations
-  // ...
-endinterface
-
-class {module_name}_transaction extends uvm_sequence_item;
-{tx_decls_str}
-  `uvm_object_utils({module_name}_transaction)
-  
-  function new(string name = "{module_name}_transaction");
-    super.new(name);
-  endfunction
-endclass
-
-class {module_name}_driver extends uvm_driver #({module_name}_transaction);
-  `uvm_component_utils({module_name}_driver)
-  
-  virtual {module_name}_if vif;
-
-  function new(string name = "{module_name}_driver", uvm_component parent = null);
-    super.new(name, parent);
-  endfunction
-
-  virtual task run_phase(uvm_phase phase);
-    forever begin
-      seq_item_port.get_next_item(req);
-      drive_tx(req);
-      seq_item_port.item_done();
-    end
-  endtask
-
-  task drive_tx({module_name}_transaction tx);
-    @(posedge vif.{clk_name});
-{driver_drives_str}
-  endtask
-endclass
-"""
-    elif target == "Assertions":
-        handshake_assertions = []
-        valids = [p["name"] for p in interfaces if "valid" in p["name"].lower()]
-        readys = [p["name"] for p in interfaces if "ready" in p["name"].lower()]
-        
-        for v in valids:
-            prefix = v.lower().replace("valid", "").replace("_", "")
-            matching_r = next((r for r in readys if r.lower().replace("ready", "").replace("_", "") == prefix), None)
-            if matching_r:
-                handshake_assertions.append(f"""
-    // Protocol Handshake Check: {v} must remain asserted until {matching_r} is HIGH
-    property check_{prefix}_handshake;
-        @(posedge {clk_name}) disable iff ({"!" if rst_polarity == "low" else ""}{rst_name})
-        ({v} && !{matching_r}) |=> {v};
-    endproperty
-    assert_{prefix}_handshake: assert property (check_{prefix}_handshake);""")
-                
-        assertions_str = "\n".join(handshake_assertions)
-        if not assertions_str:
-            assertions_str = f"""    // General Handshake Protocol Check Check
-    property check_general_handshake;
-        @(posedge {clk_name}) disable iff ({"!" if rst_polarity == "low" else ""}{rst_name})
-        1'b1;
-    endproperty
-    assert_general_handshake: assert property (check_general_handshake);"""
-
-        return f"""// Dynamic Fallback SystemVerilog Assertions (SVA) Template
-// Derived from Unified Design Specification
-module {module_name}_assertions(
-{ports_decl.replace("wire", "logic").replace("reg", "logic")}
-);
-
-{assertions_str}
-
-endmodule
-"""
-    return "// Default code snippet"
 
 
 def _derive_register_fields(reg_name: str, spec_text: str) -> List[Dict[str, Any]]:

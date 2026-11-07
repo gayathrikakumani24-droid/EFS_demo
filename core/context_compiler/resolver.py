@@ -175,6 +175,8 @@ class ContextResolver:
 
         # Interface IDs attached to this component
         comp_interface_ids = set(component.interfaces or [])
+        subcomp_ids = set(getattr(component, "subcomponents", []) or [])
+        subcomp_names_lower = {str(s).lower() for s in subcomp_ids}
         for iface in (self.efs_ir.interfaces or []):
             if iface.source_component == comp_id or iface.name.lower() in [i.lower() for i in comp_interface_ids]:
                 comp_interface_ids.add(iface.interface_id)
@@ -197,6 +199,7 @@ class ContextResolver:
                 continue
 
             is_direct_owner = (s.owner == comp_id) or (s_owner == comp_name_lower)
+            is_subcomp_owner = (s.owner in subcomp_ids) or (s_owner in subcomp_names_lower)
             is_direct_consumer = (getattr(s, "consumer", None) == comp_id) or (s_consumer == comp_name_lower)
             iface_sig_refs = [
                 sig_ref for iface in (self.efs_ir.interfaces or [])
@@ -210,8 +213,7 @@ class ContextResolver:
                 or s.signal_id in iface_sig_refs
                 or s_name.lower() in iface_sig_refs_lower
             )
-            is_decoder = "decoder" in comp_name_lower or "decoder" in (getattr(component, "type", "") or "").lower()
-            is_clock_reset = s.semantic_role in ("clock", "reset") and not is_decoder and (
+            is_clock_reset = s.semantic_role in ("clock", "reset") and (
                 getattr(s, "clock", None) == component.clock_domain or
                 getattr(s, "reset", None) == component.reset_domain or
                 not s.owner or
@@ -221,7 +223,7 @@ class ContextResolver:
                 not component.clock_domain
             )
 
-            if is_direct_owner or is_direct_consumer or is_iface_member or is_clock_reset:
+            if is_direct_owner or is_direct_consumer or is_subcomp_owner or is_iface_member or is_clock_reset:
                 if s_name.lower() not in seen_sig_names:
                     seen_sig_names.add(s_name.lower())
                     matched_signals.append(s)
@@ -229,25 +231,26 @@ class ContextResolver:
         return matched_signals
 
     def get_component_registers(self, component: EFSComponent) -> List[EFSRegister]:
-        """Retrieve all registers owned by the given component."""
+        """Retrieve all registers owned by the given component or its subcomponents."""
         if not self.efs_ir:
             return []
         comp_id = component.component_id
         comp_name_lower = (component.name or "").lower()
-        is_decoder = "decoder" in comp_name_lower or "decoder" in (getattr(component, "type", "") or "").lower()
-        if is_decoder:
-            return []
+        subcomp_ids = set(getattr(component, "subcomponents", []) or [])
 
         matched: List[EFSRegister] = []
         seen_reg_names: Set[str] = set()
         for r in (self.efs_ir.registers or []):
             r_owner = (r.owner or "").lower()
-            if r.owner == comp_id or r_owner == comp_name_lower:
+            if (r.owner == comp_id or 
+                r_owner == comp_name_lower or
+                r.owner in subcomp_ids or
+                r_owner in [s.lower() for s in subcomp_ids]):
                 r_name = (r.name or "").strip()
                 if r_name.lower() not in seen_reg_names:
                     seen_reg_names.add(r_name.lower())
                     matched.append(r)
-        if not matched and not is_decoder and (len(self.efs_ir.components) <= 1 or not any(getattr(r, "owner", None) for r in self.efs_ir.registers)):
+        if not matched and (len(self.efs_ir.components) <= 1 or not any(getattr(r, "owner", None) for r in self.efs_ir.registers)):
             matched = list(self.efs_ir.registers or [])
         return matched
 
@@ -257,17 +260,18 @@ class ContextResolver:
             return None
         comp_id = component.component_id
         comp_name_lower = (component.name or "").lower()
-        is_decoder = "decoder" in comp_name_lower or "decoder" in (getattr(component, "type", "") or "").lower()
-        if is_decoder:
-            return None
+        subcomp_ids = set(getattr(component, "subcomponents", []) or [])
 
         for f in self.efs_ir.fsms:
-            f_owner = (getattr(f, "owner", "") or "").lower()
+            f_owner = (getattr(f, "owner", "") or getattr(f, "component_id", "") or "").lower()
             f_name = (f.name or "").lower()
-            if f_owner == comp_id or f_owner == comp_name_lower or comp_name_lower in f_name:
+            if (f_owner == comp_id.lower() or 
+                f_owner == comp_name_lower or 
+                comp_name_lower in f_name or
+                f_owner in [s.lower() for s in subcomp_ids]):
                 return f
         # Default to first FSM if single component or no owner specified
-        if not is_decoder and (len(self.efs_ir.components) <= 1 or not any(getattr(f, "owner", None) for f in self.efs_ir.fsms)):
+        if len(self.efs_ir.components) <= 1 or not any(getattr(f, "owner", None) for f in self.efs_ir.fsms):
             return self.efs_ir.fsms[0]
         return None
 

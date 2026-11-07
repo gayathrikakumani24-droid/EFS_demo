@@ -55,6 +55,9 @@ class GenerationContext:
     opcodes: List[Dict[str, Any]] = field(default_factory=list)
     instructions: List[Dict[str, Any]] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    entity_provenance: Dict[str, Any] = field(default_factory=dict)
+    unresolved_entities: List[Dict[str, Any]] = field(default_factory=list)
+    projection_rationale: Dict[str, Any] = field(default_factory=dict)
 
     # Telemetry measurements
     original_context_tokens: int = 0
@@ -102,6 +105,12 @@ class GenerationContext:
             d["traceability"] = self.traceability
         if self.metadata:
             d["metadata"] = self.metadata
+        if self.entity_provenance:
+            d["entity_provenance"] = self.entity_provenance
+        if self.unresolved_entities:
+            d["unresolved_entities"] = self.unresolved_entities
+        if self.projection_rationale:
+            d["projection_rationale"] = self.projection_rationale
         return d
 
     def to_prompt_json(self, indent: int = 2) -> str:
@@ -386,6 +395,42 @@ class GenerationContext:
             ctx.metadata["design_plan"] = compiled_rtl["design_plan"]
         if "clock_reset" in compiled_rtl:
             ctx.metadata["clock_reset"] = compiled_rtl["clock_reset"]
+
+        # Populate entity provenance
+        provenance_map: Dict[str, Any] = {}
+        for s in compiled_rtl.get("signals", compiled_rtl.get("ports", [])):
+            s_name = s.get("name") if isinstance(s, dict) else str(s)
+            if s_name:
+                w_prov = s.get("width_provenance", "explicit_numeric") if isinstance(s, dict) else "explicit"
+                provenance_map[f"signal:{s_name}"] = {
+                    "origin": "INHERITED" if w_prov != "inferred_bus_width" else "DERIVED",
+                    "width_provenance": w_prov,
+                    "source_ref": s.get("source_references", []) if isinstance(s, dict) else []
+                }
+        for r in compiled_rtl.get("registers", []):
+            r_name = r.get("name") if isinstance(r, dict) else str(r)
+            if r_name:
+                provenance_map[f"register:{r_name}"] = {
+                    "origin": "INHERITED" if (isinstance(r, dict) and r.get("source") == "EFS") else "DERIVED",
+                    "reset_source": r.get("reset_source", "explicit") if isinstance(r, dict) else "explicit"
+                }
+        ctx.entity_provenance = provenance_map
+
+        # Populate unresolved entities
+        unresolved = list(compiled_rtl.get("unresolved_entities", []))
+        if "unresolved_conflicts" in compiled_rtl:
+            unresolved.extend(compiled_rtl["unresolved_conflicts"])
+        ctx.unresolved_entities = unresolved
+
+        # Populate projection rationale
+        ctx.projection_rationale = {
+            "target_component": mod.get("name", "target_module"),
+            "component_type": mod.get("type", "module"),
+            "is_top_level": mod.get("type") in ("top_level", "top_level_design", "top_module"),
+            "compiled_ports_count": len(compiled_rtl.get("ports", [])),
+            "compiled_registers_count": len(compiled_rtl.get("registers", [])),
+            "has_fsm": bool(compiled_rtl.get("fsm")),
+        }
 
         raw_metrics = compiled_rtl.get("_metrics", {})
         ctx.original_context_tokens = raw_metrics.get("original_context_tokens", estimate_tokens(compiled_rtl))

@@ -145,18 +145,17 @@ class VectorStore:
                    efs_metadata_by_chunk: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
         if not chunks:
             return
+
+        # Deduplicate incoming chunks against existing index (idempotent ingestion)
+        existing_cids = set(self.chunk_ids)
+        new_chunks = [c for c in chunks if c.chunk_id not in existing_cids]
+
         entity_names_by_chunk = entity_names_by_chunk or {}
         linked_node_ids_by_chunk = linked_node_ids_by_chunk or {}
         efs_metadata_by_chunk = efs_metadata_by_chunk or {}
 
-        texts = [c.text for c in chunks]
-        vectors = self._embed(texts)
-        # normalize for cosine similarity via inner product
-        norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-        norms[norms == 0] = 1.0
-        vectors = vectors / norms
-
         for c in chunks:
+            c_meta = getattr(c, "metadata", {}) or {}
             efs_meta = efs_metadata_by_chunk.get(c.chunk_id, {})
             self.metadata[c.chunk_id] = {
                 "text": c.text,
@@ -167,7 +166,13 @@ class VectorStore:
                 "subsection": c.subsection,
                 "heading": c.heading,
                 "content_type": c.content_type,
-                "entities": entity_names_by_chunk.get(c.chunk_id, []),
+                "knowledge_domain": c_meta.get("knowledge_domain") or getattr(c, "knowledge_domain", "design"),
+                "document_version": c_meta.get("document_version", "1.0"),
+                "source_location": c_meta.get("source_location", f"{c.doc_id}:{c.section}"),
+                "component": c_meta.get("component", ""),
+                "protocol": c_meta.get("protocol", ""),
+                "chunk_type": c_meta.get("chunk_type", c.content_type),
+                "entities": entity_names_by_chunk.get(c.chunk_id, []) or c_meta.get("entities", []),
                 "linked_node_ids": linked_node_ids_by_chunk.get(c.chunk_id, []),
                 # EFS IR metadata links
                 "efs_ir_id": efs_meta.get("efs_ir_id"),
@@ -176,7 +181,19 @@ class VectorStore:
                 "component_ids": efs_meta.get("component_ids", []),
                 "transaction_ids": efs_meta.get("transaction_ids", []),
             }
-        self.chunk_ids.extend(c.chunk_id for c in chunks)
+
+        if not new_chunks:
+            self._save()
+            return
+
+        texts = [c.text for c in new_chunks]
+        vectors = self._embed(texts)
+        # normalize for cosine similarity via inner product
+        norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        vectors = vectors / norms
+
+        self.chunk_ids.extend(c.chunk_id for c in new_chunks)
 
         if _HAS_FAISS:
             if self._index is None:
@@ -186,7 +203,7 @@ class VectorStore:
             self._vectors = vectors if self._vectors is None else np.vstack([self._vectors, vectors])
 
         self._save()
-        logger.info(f"Added {len(chunks)} chunks to vector store (total: {len(self.chunk_ids)}).")
+        logger.info(f"Added {len(new_chunks)} chunks to vector store (total: {len(self.chunk_ids)}).")
 
     def clear_document(self, document_id: str) -> None:
         """Remove all chunks associated with a specific document_id."""
@@ -214,7 +231,16 @@ class VectorStore:
         self._save()
         logger.info(f"Cleared document '{document_id}' from vector store.")
 
-    def search(self, query: str, top_k: int = 6, document_id: Optional[str] = None) -> List[RetrievedChunk]:
+    def search(
+        self,
+        query: str,
+        top_k: int = 6,
+        document_id: Optional[str] = None,
+        knowledge_domain: Optional[str] = None,
+        protocol: Optional[str] = None,
+        domain: Optional[str] = None,
+    ) -> List[RetrievedChunk]:
+        knowledge_domain = knowledge_domain or domain
         if not self.chunk_ids:
             return []
         q_vec = self._embed([query])
@@ -222,8 +248,9 @@ class VectorStore:
         if norm > 0:
             q_vec = q_vec / norm
 
-        # Fetch more candidates if document filtering is active
-        fetch_k = min(top_k * 5 if document_id else top_k, len(self.chunk_ids))
+        # Fetch more candidates if filtering is active
+        has_filter = bool(document_id or knowledge_domain or protocol)
+        fetch_k = min(top_k * 5 if has_filter else top_k, len(self.chunk_ids))
 
         if _HAS_FAISS and self._index is not None:
             scores, indices = self._index.search(q_vec, fetch_k)
@@ -244,6 +271,19 @@ class VectorStore:
             if document_id:
                 meta_doc = meta.get("doc_id") or meta.get("document_id")
                 if meta_doc and meta_doc != document_id:
+                    continue
+
+            # Knowledge domain filter (e.g. 'protocol' vs 'design')
+            if knowledge_domain:
+                meta_domain = meta.get("knowledge_domain", "design")
+                if meta_domain != knowledge_domain:
+                    continue
+
+            # Protocol filter
+            if protocol:
+                meta_proto = str(meta.get("protocol", "")).lower()
+                req_proto = protocol.lower()
+                if meta_proto and req_proto not in meta_proto and meta_proto not in req_proto:
                     continue
 
             results.append(

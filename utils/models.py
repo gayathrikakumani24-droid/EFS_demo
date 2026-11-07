@@ -92,6 +92,8 @@ class Chunk:
     overlap_prefix: str = ""        # text carried over from previous chunk (10-20%)
     document_hash: str = ""
     ingestion_id: str = ""
+    knowledge_domain: str = "design"
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -142,6 +144,7 @@ class Entity:
     aliases: List[str] = field(default_factory=list)
     document_hash: str = ""
     ingestion_id: str = ""
+    knowledge_domain: str = "design"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -160,6 +163,7 @@ class Relationship:
     evidence: str = ""
     document_hash: str = ""
     ingestion_id: str = ""
+    knowledge_domain: str = "design"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

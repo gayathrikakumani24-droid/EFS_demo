@@ -284,6 +284,9 @@ class EFSComponent:
     interfaces: List[str] = field(default_factory=list)  # list of interface_ids
     clock_domain: Optional[str] = None
     reset_domain: Optional[str] = None
+    parent_id: Optional[str] = None
+    subcomponents: List[str] = field(default_factory=list)
+    aliases: List[str] = field(default_factory=list)
     traceability: EFSTraceability = field(default_factory=EFSTraceability)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -1519,6 +1522,7 @@ class EFSIR:
     constraints: List[EFSConstraint] = field(default_factory=list)
     timing_rules: List[EFSTimingRule] = field(default_factory=list)
     protocol_rules: List[EFSProtocolRule] = field(default_factory=list)
+    protocol_context: Dict[str, Any] = field(default_factory=dict)
     flows: List[EFSFlow] = field(default_factory=list)
     functional_behavior: List[EFSFunctionalBehavior] = field(default_factory=list)
     assertions: List[EFSAssertionIntent] = field(default_factory=list)
@@ -1829,19 +1833,67 @@ class EFSIR:
                             description="Terminal count flag indicating state duration has elapsed."
                         ))
 
-            # Apply to Missing Signals / ACKs / Completeness Gaps
-            if conf and conf.type in ("MISSING_SIGNAL", "MISSING_ACK") or "signal" in res.proposed_change.lower():
-                sig_name = val_str.split("=")[-1].strip() if "=" in val_str else val_str
-                if sig_name and not any(s.name.lower() == sig_name.lower() for s in resolved_ir.signals):
-                    role = "control" if "ack" in sig_name.lower() else "data"
-                    direction = "input" if "req" in sig_name.lower() else "output"
-                    resolved_ir.signals.append(EFSSignal(
-                        name=sig_name,
-                        direction=direction,
-                        width="1",
-                        semantic_role=role,
-                        description=f"Resolved signal for {conf.conflict_id if conf else 'requirement'}"
-                    ))
+            # Apply to Missing Signals / ACKs / Completeness Gaps / Signals Output Contradiction
+            is_signal_target = (
+                (conf and conf.type in ("MISSING_SIGNAL", "MISSING_ACK")) or
+                "signal" in res.proposed_change.lower() or
+                target_prop_name.lower() in ("signals", "signal", "signals_direction", "outputs") or
+                (conf and getattr(conf, "property", "") in ("signals", "signal"))
+            )
+            if is_signal_target:
+                sig_raw = val_str.split("=")[-1].strip() if "=" in val_str else val_str
+                sig_items = [s.strip() for s in sig_raw.split(",") if s.strip()]
+                for item in sig_items:
+                    m = re.match(r"([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z_]+))?(?:\s*\[?(\d+(?::\d+)?|\d+)\]?)?", item)
+                    if m:
+                        s_name = m.group(1)
+                        s_dir = (m.group(2) or "output").lower()
+                        s_width = m.group(3) or "1"
+                        existing_sig = next((s for s in resolved_ir.signals if s.name.lower() == s_name.lower()), None)
+                        if existing_sig:
+                            existing_sig.direction = s_dir
+                            existing_sig.width = s_width
+                            existing_sig.direction_source = "human_resolution"
+                        else:
+                            role = "control" if any(k in s_name.lower() for k in ("done", "valid", "ready", "ack", "err")) else "data"
+                            resolved_ir.signals.append(EFSSignal(
+                                name=s_name,
+                                direction=s_dir,
+                                width=s_width,
+                                semantic_role=role,
+                                description=f"Resolved signal for {conf.conflict_id if conf else 'requirement'}"
+                            ))
+
+            # Apply to Missing Register Definitions
+            is_reg_target = (
+                target_prop_name.lower() in ("registers", "register", "register_definitions") or
+                "register" in res.proposed_change.lower() or
+                (conf and getattr(conf, "category", "") == "Registers") or
+                (conf and getattr(conf, "property", "") == "registers")
+            )
+            if is_reg_target:
+                reg_raw = val_str.split("=")[-1].strip() if "=" in val_str else val_str
+                reg_items = [r.strip() for r in re.split(r"\),|\);|\n", reg_raw) if r.strip()]
+                for item in reg_items:
+                    m = re.search(r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(\s*offset:\s*(0x[0-9a-fA-F]+|\d+)(?:,\s*width:\s*(\d+))?(?:,\s*mode:\s*([a-zA-Z]+))?\s*\)?)?", item)
+                    if m and m.group(1):
+                        r_name = m.group(1)
+                        r_offset = m.group(2) or f"0x{len(resolved_ir.registers)*4:02x}"
+                        r_width = int(m.group(3)) if m.group(3) else 32
+                        r_mode = (m.group(4) or "RW").upper()
+                        existing_reg = next((r for r in resolved_ir.registers if r.name.lower() == r_name.lower()), None)
+                        if not existing_reg:
+                            resolved_ir.registers.append(EFSRegister(
+                                register_id=new_efs_id("reg"),
+                                name=r_name,
+                                offset=r_offset,
+                                offset_source="explicit",
+                                width=r_width,
+                                access_type=r_mode,
+                                access=r_mode,
+                                reset_value="0x0",
+                                description=f"Register defined via resolution for {conf.conflict_id if conf else 'requirement'}"
+                            ))
 
             # Apply to Conflicting Resets (e.g. Reset vs rst_n)
             is_reset_conflict = (conf and getattr(conf, "type", "") in ("CONFLICTING_RESET", "RESET_POLARITY_CONFLICT")) or target_prop_name.lower() in ("reset", "reset_polarity") or (conf and getattr(conf, "property", "") == "reset")
@@ -1975,12 +2027,23 @@ class EFSIR:
                 # 4. Interfaces and Relationships completeness
                 if "interface" in target_prop_name.lower() or "relationship" in target_prop_name.lower() or "interface" in res.proposed_change.lower() or (conf and conf.property == "interfaces"):
                     c_names = [c.name for c in resolved_ir.components if c.name]
-                    src = c_names[0] if c_names else "top"
-                    dst = c_names[1] if len(c_names) > 1 else "core"
+                    src = c_names[0] if c_names else "multi_core_matrix_system"
+                    dst = c_names[1] if len(c_names) > 1 else (c_names[0] if c_names else "Shared Memory Hierarchy")
+                    if "->" in val_str:
+                        parts = val_str.split("->")
+                        src = parts[0].split(":")[-1].replace("connecting", "").strip()
+                        dst = parts[1].strip()
+                    elif "between" in val_str.lower() and "and" in val_str.lower():
+                        m_b = re.search(r"between\s+([^and\n]+)\s+and\s+([^\n]+)", val_str, re.IGNORECASE)
+                        if m_b:
+                            src = m_b.group(1).strip()
+                            dst = m_b.group(2).strip()
+                    proto = "AXI4" if "axi" in val_str.lower() else ("APB" if "apb" in val_str.lower() else ("AHB" if "ahb" in val_str.lower() else "generic"))
+                    if_name = val_str.split(":")[0].strip() if ":" in val_str else "axi_interconnect"
                     if not resolved_ir.interfaces:
                         resolved_ir.interfaces.append(EFSInterface(
-                            name="data_bus",
-                            protocol="generic",
+                            name=if_name,
+                            protocol=proto,
                             source_component=src,
                             destination_component=dst
                         ))
@@ -2084,6 +2147,7 @@ class EFSIR:
             "memory_regions": [m.to_dict() for m in self.memory_regions],
             "memory": [m.to_dict() for m in self.memory_regions],
             "protocol_rules": [p.to_dict() for p in self.protocol_rules],
+            "protocol_context": self.protocol_context,
             "timing_rules": [t.to_dict() for t in self.timing_rules],
             "timing_requirements": [t.to_dict() for t in self.timing_rules],
             "performance_requirements": [p.to_dict() for p in self.performance_requirements],
@@ -2178,6 +2242,7 @@ class EFSIR:
             constraints=[EFSConstraint.from_dict(c) for c in data.get("constraints", [])],
             timing_rules=[EFSTimingRule.from_dict(t) for t in data.get("timing_rules", [])],
             protocol_rules=[EFSProtocolRule.from_dict(p) for p in data.get("protocol_rules", [])],
+            protocol_context=dict(data.get("protocol_context", {})),
             flows=[EFSFlow.from_dict(f) for f in data.get("flows", [])],
             functional_behavior=[EFSFunctionalBehavior.from_dict(b) for b in data.get("functional_behavior", [])],
             assertions=[EFSAssertionIntent.from_dict(a) for a in data.get("assertions", [])],
